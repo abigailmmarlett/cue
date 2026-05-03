@@ -6,6 +6,7 @@ export interface TimerExercise {
   duration: number;
   sectionId: string;
   notes?: string | null;
+  tags: { tagValueId: string; categoryName: string; label: string }[];
 }
 
 export interface TimerSection {

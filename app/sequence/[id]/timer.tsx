@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import * as Haptics from 'expo-haptics';
 import { StatusBar } from 'expo-status-bar';
 import { Text } from '@/components/ui/Text';
+import { TagChips } from '@/components/TagChips';
 import { TimerControls } from '@/components/timer/TimerControls';
 import { TripleRing } from '@/components/timer/TripleRing';
 import { Colors, Spacing, Radius, FontSize } from '@/constants/theme';
@@ -22,6 +23,7 @@ export default function TimerScreen() {
     duration: e.duration,
     sectionId: e.section_id,
     notes: e.notes,
+    tags: e.tags,
   }));
 
   const timerSections: TimerSection[] = sections.map((s) => ({
@@ -142,6 +144,7 @@ export default function TimerScreen() {
               <Text style={styles.countdown}>
                 {formatSeconds(timeRemaining)}
               </Text>
+              <TagChips tags={currentExercise.tags} style={styles.timerTagChips} />
             </View>
           )}
         </TripleRing>
@@ -217,6 +220,10 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'] as const,
     letterSpacing: -1,
     lineHeight: 72,
+  },
+  timerTagChips: {
+    justifyContent: 'center',
+    marginTop: 6,
   },
   nextContainer: {
     alignItems: 'center',

@@ -50,6 +50,10 @@ export default function RootLayout() {
           name="sequence/[id]/timer"
           options={{ headerShown: false }}
         />
+        <Stack.Screen
+          name="tags/index"
+          options={{ title: 'Tags' }}
+        />
       </Stack>
       <StatusBar style="dark" />
     </ThemeProvider>

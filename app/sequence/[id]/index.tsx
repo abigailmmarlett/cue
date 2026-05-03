@@ -6,6 +6,7 @@ import { useCallback, useEffect } from 'react';
 import { Text } from '@/components/ui/Text';
 import { Button } from '@/components/ui/Button';
 import { Divider } from '@/components/ui/Divider';
+import { TagChips } from '@/components/TagChips';
 import { Colors, Spacing } from '@/constants/theme';
 import { useSequence } from '@/lib/hooks/useSequence';
 import { formatSeconds, totalDuration } from '@/lib/utils/time';
@@ -104,6 +105,7 @@ export default function SequenceDetailScreen() {
                                 {ex.notes}
                               </Text>
                             ) : null}
+                            <TagChips tags={ex.tags} style={styles.tagChips} />
                           </View>
                           <Text variant="label" color="secondary" style={styles.exerciseDuration}>
                             {formatSeconds(ex.duration)}
@@ -187,6 +189,7 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 2,
   },
+  tagChips: { marginTop: 4 },
   exerciseDuration: { fontVariant: ['tabular-nums'] },
   footer: {
     flexDirection: 'row',

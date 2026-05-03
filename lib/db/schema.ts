@@ -45,6 +45,34 @@ export function runMigrations(): void {
     // Column already exists — safe to ignore
   }
 
+  db.execSync(`
+    CREATE TABLE IF NOT EXISTS tag_categories (
+      id         TEXT    PRIMARY KEY NOT NULL,
+      name       TEXT    NOT NULL,
+      created_at INTEGER NOT NULL
+    );
+  `);
+
+  db.execSync(`
+    CREATE TABLE IF NOT EXISTS tag_values (
+      id          TEXT    PRIMARY KEY NOT NULL,
+      category_id TEXT    NOT NULL,
+      label       TEXT    NOT NULL,
+      created_at  INTEGER NOT NULL,
+      FOREIGN KEY (category_id) REFERENCES tag_categories(id) ON DELETE CASCADE
+    );
+  `);
+
+  db.execSync(`
+    CREATE TABLE IF NOT EXISTS exercise_tags (
+      exercise_id  TEXT NOT NULL,
+      tag_value_id TEXT NOT NULL,
+      PRIMARY KEY (exercise_id, tag_value_id),
+      FOREIGN KEY (exercise_id)  REFERENCES exercises(id)   ON DELETE CASCADE,
+      FOREIGN KEY (tag_value_id) REFERENCES tag_values(id)  ON DELETE CASCADE
+    );
+  `);
+
   // Data migration: assign existing exercises (section_id IS NULL) to a default "Main" section
   const unmigrated = db.getAllSync<{ sequence_id: string }>(
     `SELECT DISTINCT sequence_id FROM exercises WHERE section_id IS NULL;`

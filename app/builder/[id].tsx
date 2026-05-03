@@ -16,9 +16,11 @@ import { ExerciseRow, type LocalExercise } from '@/components/ExerciseRow';
 import { SectionGroup } from '@/components/SectionGroup';
 import { Divider } from '@/components/ui/Divider';
 import { Colors, Spacing, Radius, FontSize, FontWeight } from '@/constants/theme';
+import { TagPicker } from '@/components/TagPicker';
 import { getSequenceById, updateSequence } from '@/lib/db/sequences';
 import { getExercisesBySequenceId, upsertExercise, deleteExercise } from '@/lib/db/exercises';
 import { getSectionsBySequenceId, upsertSection, deleteSection } from '@/lib/db/sections';
+import { getTagsForExercise, setExerciseTags } from '@/lib/db/tags';
 import { generateId } from '@/lib/utils/id';
 import { emitSequenceChange } from '@/lib/sequenceEvents';
 
@@ -35,6 +37,11 @@ export default function EditSequenceScreen() {
   const [sections, setSections] = useState<LocalSection[]>([]);
   const [scrollEnabled, setScrollEnabled] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [tagPickerExerciseId, setTagPickerExerciseId] = useState<string | null>(null);
+
+  const activeExercise = tagPickerExerciseId
+    ? sections.flatMap((s) => s.exercises).find((e) => e.id === tagPickerExerciseId) ?? null
+    : null;
 
   useEffect(() => {
     const seq = getSequenceById(id);
@@ -50,7 +57,13 @@ export default function EditSequenceScreen() {
         name: s.name,
         exercises: allExercises
           .filter((e) => e.section_id === s.id)
-          .map((e) => ({ id: e.id, name: e.name, duration: e.duration, notes: e.notes })),
+          .map((e) => ({
+            id: e.id,
+            name: e.name,
+            duration: e.duration,
+            notes: e.notes,
+            tagValueIds: getTagsForExercise(e.id).map((t) => t.tagValueId),
+          })),
       }))
     );
     setLoading(false);
@@ -74,7 +87,7 @@ export default function EditSequenceScreen() {
     setSections((prev) =>
       prev.map((s) =>
         s.id === sectionId
-          ? { ...s, exercises: [...s.exercises, { id: generateId(), name: '', duration: 30, notes: null }] }
+          ? { ...s, exercises: [...s.exercises, { id: generateId(), name: '', duration: 30, notes: null, tagValueIds: [] }] }
           : s
       )
     );
@@ -145,6 +158,7 @@ export default function EditSequenceScreen() {
           eIdx,
           ex.notes ?? null
         );
+        setExerciseTags(ex.id, ex.tagValueIds);
       }
     }
 
@@ -205,6 +219,7 @@ export default function EditSequenceScreen() {
                     onNameChange={(n) => updateExercise(section.id, item.id, { name: n })}
                     onDurationChange={(d) => updateExercise(section.id, item.id, { duration: d })}
                     onDelete={() => removeExercise(section.id, item.id)}
+                    onEditTags={() => setTagPickerExerciseId(item.id)}
                   />
                 )}
                 onReorder={(from, to) => reorderExercises(section.id, from, to)}
@@ -231,6 +246,20 @@ export default function EditSequenceScreen() {
           <Text variant="label" color="inverse">Save Changes</Text>
         </TouchableOpacity>
       </View>
+
+      {activeExercise && tagPickerExerciseId && (
+        <TagPicker
+          selectedTagValueIds={activeExercise.tagValueIds}
+          onConfirm={(ids) => {
+            const sectionId = sections.find((s) =>
+              s.exercises.some((e) => e.id === tagPickerExerciseId)
+            )?.id;
+            if (sectionId) updateExercise(sectionId, tagPickerExerciseId, { tagValueIds: ids });
+            setTagPickerExerciseId(null);
+          }}
+          onClose={() => setTagPickerExerciseId(null)}
+        />
+      )}
     </KeyboardAvoidingView>
   );
 }

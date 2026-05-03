@@ -28,13 +28,22 @@ export default function LibraryScreen() {
   useEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <TouchableOpacity
-          onPress={() => router.push('/builder')}
-          hitSlop={8}
-          style={styles.addButton}
-        >
-          <Text style={styles.addIcon}>+</Text>
-        </TouchableOpacity>
+        <View style={styles.headerButtons}>
+          <TouchableOpacity
+            onPress={() => router.push('/tags')}
+            hitSlop={8}
+            style={styles.tagsButton}
+          >
+            <Text style={styles.tagsIcon}>🏷</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push('/builder')}
+            hitSlop={8}
+            style={styles.addButton}
+          >
+            <Text style={styles.addIcon}>+</Text>
+          </TouchableOpacity>
+        </View>
       ),
     });
   }, [navigation, router]);
@@ -99,9 +108,18 @@ const styles = StyleSheet.create({
   list: {
     padding: Spacing.md,
   },
-  addButton: {
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
     marginRight: Spacing.sm,
   },
+  tagsButton: {},
+  tagsIcon: {
+    fontSize: 20,
+    lineHeight: 26,
+  },
+  addButton: {},
   addIcon: {
     fontSize: 28,
     fontWeight: '300',

@@ -9,6 +9,7 @@ export interface LocalExercise {
   name: string;
   duration: number;
   notes?: string | null;
+  tagValueIds: string[];
 }
 
 interface Props {
@@ -16,9 +17,10 @@ interface Props {
   onNameChange: (name: string) => void;
   onDurationChange: (duration: number) => void;
   onDelete: () => void;
+  onEditTags: () => void;
 }
 
-export function ExerciseRow({ exercise, onNameChange, onDurationChange, onDelete }: Props) {
+export function ExerciseRow({ exercise, onNameChange, onDurationChange, onDelete, onEditTags }: Props) {
   const editDuration = () => {
     if (Platform.OS === 'ios') {
       Alert.prompt(
@@ -36,11 +38,8 @@ export function ExerciseRow({ exercise, onNameChange, onDurationChange, onDelete
 
   return (
     <View style={styles.row}>
-      {/* Drag handle — gesture is applied by DraggableList's GestureDetector */}
       <View style={styles.handle}>
-        <Text color="tertiary" style={styles.handleIcon}>
-          ≡
-        </Text>
+        <Text color="tertiary" style={styles.handleIcon}>≡</Text>
       </View>
 
       <TextInput
@@ -53,6 +52,12 @@ export function ExerciseRow({ exercise, onNameChange, onDurationChange, onDelete
         maxLength={60}
       />
 
+      <TouchableOpacity onPress={onEditTags} hitSlop={8} style={styles.tagButton}>
+        <Text style={[styles.tagIcon, exercise.tagValueIds.length > 0 && styles.tagIconActive]}>
+          {exercise.tagValueIds.length > 0 ? `🏷 ${exercise.tagValueIds.length}` : '🏷'}
+        </Text>
+      </TouchableOpacity>
+
       <TouchableOpacity onPress={editDuration} style={styles.durationButton} hitSlop={8}>
         <Text variant="label" color="secondary" style={styles.durationText}>
           {formatSeconds(exercise.duration)}
@@ -60,9 +65,7 @@ export function ExerciseRow({ exercise, onNameChange, onDurationChange, onDelete
       </TouchableOpacity>
 
       <TouchableOpacity onPress={onDelete} hitSlop={8} style={styles.deleteButton}>
-        <Text color="tertiary" style={styles.deleteIcon}>
-          ✕
-        </Text>
+        <Text color="tertiary" style={styles.deleteIcon}>✕</Text>
       </TouchableOpacity>
     </View>
   );
@@ -94,6 +97,18 @@ const styles = StyleSheet.create({
     color: Colors.text.primary,
     paddingVertical: 0,
     marginHorizontal: Spacing.sm,
+  },
+  tagButton: {
+    paddingHorizontal: Spacing.xs,
+    paddingVertical: Spacing.xs,
+    marginRight: Spacing.xs,
+  },
+  tagIcon: {
+    fontSize: 13,
+    color: Colors.text.tertiary,
+  },
+  tagIconActive: {
+    color: Colors.text.secondary,
   },
   durationButton: {
     paddingHorizontal: Spacing.sm,
