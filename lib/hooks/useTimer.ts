@@ -4,7 +4,14 @@ export interface TimerExercise {
   id: string;
   name: string;
   duration: number;
+  sectionId: string;
   notes?: string | null;
+}
+
+export interface TimerSection {
+  id: string;
+  name: string;
+  duration: number;
 }
 
 export type TimerStatus = 'idle' | 'running' | 'paused' | 'finished';
@@ -16,6 +23,9 @@ export interface TimerState {
   currentExercise: TimerExercise | null;
   nextExercise: TimerExercise | null;
   totalExercises: number;
+  currentSectionIndex: number;
+  currentSection: TimerSection | null;
+  sectionTimeRemaining: number;
 }
 
 export interface TimerControls {
@@ -28,12 +38,31 @@ export interface TimerControls {
   end: () => void;
 }
 
-export function useTimer(exercises: TimerExercise[]): TimerState & { controls: TimerControls } {
+function computeSectionTimeRemaining(
+  exercises: TimerExercise[],
+  exerciseIndex: number,
+  timeRemaining: number
+): number {
+  const sectionId = exercises[exerciseIndex]?.sectionId ?? '';
+  let total = timeRemaining;
+  for (let i = exerciseIndex + 1; i < exercises.length; i++) {
+    if (exercises[i].sectionId !== sectionId) break;
+    total += exercises[i].duration;
+  }
+  return total;
+}
+
+export function useTimer(
+  exercises: TimerExercise[],
+  sections: TimerSection[]
+): TimerState & { controls: TimerControls } {
   const [status, setStatus] = useState<TimerStatus>('idle');
   const [exerciseIndex, setExerciseIndex] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState(exercises[0]?.duration ?? 0);
+  const [sectionTimeRemaining, setSectionTimeRemaining] = useState(
+    computeSectionTimeRemaining(exercises, 0, exercises[0]?.duration ?? 0)
+  );
 
-  // Refs to avoid stale closures and enable drift-free timing
   const anchorTimeRef = useRef<number>(0);
   const anchorSecondsRef = useRef<number>(0);
   const exerciseIndexRef = useRef<number>(0);
@@ -41,14 +70,19 @@ export function useTimer(exercises: TimerExercise[]): TimerState & { controls: T
   const timeRemainingRef = useRef<number>(exercises[0]?.duration ?? 0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Keep refs in sync with state
   useEffect(() => { statusRef.current = status; }, [status]);
   useEffect(() => { timeRemainingRef.current = timeRemaining; }, [timeRemaining]);
 
-  const setTime = useCallback((value: number) => {
-    timeRemainingRef.current = value;
-    setTimeRemaining(value);
-  }, []);
+  const currentSectionIndex = sections.findIndex(
+    (s) => s.id === (exercises[exerciseIndex]?.sectionId ?? '')
+  );
+  const currentSection = sections[currentSectionIndex] ?? null;
+
+  const setTime = useCallback((exIdx: number, remaining: number) => {
+    timeRemainingRef.current = remaining;
+    setTimeRemaining(remaining);
+    setSectionTimeRemaining(computeSectionTimeRemaining(exercises, exIdx, remaining));
+  }, [exercises]);
 
   const clearTimer = useCallback(() => {
     if (intervalRef.current !== null) {
@@ -64,14 +98,14 @@ export function useTimer(exercises: TimerExercise[]): TimerState & { controls: T
       const remaining = Math.max(0, anchorSecondsRef.current - elapsed);
 
       if (remaining > 0) {
-        setTime(remaining);
+        setTime(exerciseIndexRef.current, remaining);
         return;
       }
 
       const nextIndex = exerciseIndexRef.current + 1;
       if (nextIndex >= exercises.length) {
         clearTimer();
-        setTime(0);
+        setTime(exerciseIndexRef.current, 0);
         statusRef.current = 'finished';
         setStatus('finished');
       } else {
@@ -80,7 +114,7 @@ export function useTimer(exercises: TimerExercise[]): TimerState & { controls: T
         const nextDuration = exercises[nextIndex].duration;
         anchorTimeRef.current = Date.now();
         anchorSecondsRef.current = nextDuration;
-        setTime(nextDuration);
+        setTime(nextIndex, nextDuration);
       }
     }, 200);
   }, [clearTimer, exercises, setTime]);
@@ -93,7 +127,7 @@ export function useTimer(exercises: TimerExercise[]): TimerState & { controls: T
     setExerciseIndex(0);
     anchorTimeRef.current = Date.now();
     anchorSecondsRef.current = exercises[0].duration;
-    setTime(exercises[0].duration);
+    setTime(0, exercises[0].duration);
     statusRef.current = 'running';
     setStatus('running');
     startInterval();
@@ -117,7 +151,7 @@ export function useTimer(exercises: TimerExercise[]): TimerState & { controls: T
     const nextIndex = exerciseIndexRef.current + 1;
     if (nextIndex >= exercises.length) {
       clearTimer();
-      setTime(0);
+      setTime(exerciseIndexRef.current, 0);
       statusRef.current = 'finished';
       setStatus('finished');
     } else {
@@ -126,7 +160,7 @@ export function useTimer(exercises: TimerExercise[]): TimerState & { controls: T
       const nextDuration = exercises[nextIndex].duration;
       anchorTimeRef.current = Date.now();
       anchorSecondsRef.current = nextDuration;
-      setTime(nextDuration);
+      setTime(nextIndex, nextDuration);
       if (statusRef.current !== 'running') {
         statusRef.current = 'running';
         setStatus('running');
@@ -146,7 +180,7 @@ export function useTimer(exercises: TimerExercise[]): TimerState & { controls: T
     const duration = exercises[targetIndex].duration;
     anchorTimeRef.current = Date.now();
     anchorSecondsRef.current = duration;
-    setTime(duration);
+    setTime(targetIndex, duration);
 
     if (statusRef.current === 'running') startInterval();
   }, [exercises, setTime, startInterval]);
@@ -156,7 +190,7 @@ export function useTimer(exercises: TimerExercise[]): TimerState & { controls: T
     exerciseIndexRef.current = 0;
     setExerciseIndex(0);
     const firstDuration = exercises[0]?.duration ?? 0;
-    setTime(firstDuration);
+    setTime(0, firstDuration);
     statusRef.current = 'idle';
     setStatus('idle');
   }, [clearTimer, exercises, setTime]);
@@ -174,6 +208,9 @@ export function useTimer(exercises: TimerExercise[]): TimerState & { controls: T
     currentExercise: exercises[exerciseIndex] ?? null,
     nextExercise: exercises[exerciseIndex + 1] ?? null,
     totalExercises: exercises.length,
+    currentSectionIndex,
+    currentSection,
+    sectionTimeRemaining,
     controls: { start, pause, resume, skip, goBack, reset, end },
   };
 }

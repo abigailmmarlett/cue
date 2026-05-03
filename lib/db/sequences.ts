@@ -74,19 +74,34 @@ export function duplicateSequence(id: string): Sequence {
     [newId, newName, now, now]
   );
 
-  const exercises = db.getAllSync<{
-    id: string; name: string; duration: number; order_index: number; notes: string | null;
+  const sections = db.getAllSync<{
+    id: string; name: string; order_index: number;
   }>(
-    `SELECT id, name, duration, order_index, notes FROM exercises WHERE sequence_id = ? ORDER BY order_index;`,
+    `SELECT id, name, order_index FROM sections WHERE sequence_id = ? ORDER BY order_index;`,
     [id]
   );
 
-  for (const ex of exercises) {
+  for (const sec of sections) {
+    const newSectionId = generateId();
     db.runSync(
-      `INSERT INTO exercises (id, sequence_id, name, duration, order_index, notes, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?);`,
-      [generateId(), newId, ex.name, ex.duration, ex.order_index, ex.notes ?? null, now]
+      `INSERT INTO sections (id, sequence_id, name, order_index, created_at) VALUES (?, ?, ?, ?, ?);`,
+      [newSectionId, newId, sec.name, sec.order_index, now]
     );
+
+    const exercises = db.getAllSync<{
+      name: string; duration: number; order_index: number; notes: string | null;
+    }>(
+      `SELECT name, duration, order_index, notes FROM exercises WHERE section_id = ? ORDER BY order_index;`,
+      [sec.id]
+    );
+
+    for (const ex of exercises) {
+      db.runSync(
+        `INSERT INTO exercises (id, sequence_id, section_id, name, duration, order_index, notes, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
+        [generateId(), newId, newSectionId, ex.name, ex.duration, ex.order_index, ex.notes ?? null, now]
+      );
+    }
   }
 
   return { id: newId, name: newName, created_at: now, updated_at: now };

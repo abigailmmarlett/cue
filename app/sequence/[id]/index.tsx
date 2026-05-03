@@ -14,7 +14,7 @@ export default function SequenceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const navigation = useNavigation();
-  const { sequence, exercises, loading, refresh } = useSequence(id);
+  const { sequence, sections, exercises, loading, refresh } = useSequence(id);
 
   useFocusEffect(
     useCallback(() => {
@@ -69,31 +69,53 @@ export default function SequenceDetailScreen() {
           </View>
         ) : (
           <View>
-            {exercises.map((ex, i) => (
-              <View key={ex.id}>
-                <View style={styles.exerciseRow}>
-                  <View style={styles.exerciseIndex}>
-                    <Text variant="caption" color="tertiary">
-                      {String(i + 1).padStart(2, '0')}
-                    </Text>
-                  </View>
-                  <View style={styles.exerciseInfo}>
-                    <Text variant="body" numberOfLines={1}>
-                      {ex.name}
-                    </Text>
-                    {ex.notes ? (
-                      <Text variant="caption" color="tertiary" numberOfLines={1}>
-                        {ex.notes}
+            {sections.map((section, sIdx) => {
+              const sectionDuration = section.exercises.reduce((s, e) => s + e.duration, 0);
+              return (
+                <View key={section.id}>
+                  {sections.length > 1 && (
+                    <View style={styles.sectionHeader}>
+                      <Text variant="caption" color="tertiary" style={styles.sectionLabel}>
+                        {section.name.toUpperCase()}
                       </Text>
-                    ) : null}
-                  </View>
-                  <Text variant="label" color="secondary" style={styles.exerciseDuration}>
-                    {formatSeconds(ex.duration)}
-                  </Text>
+                      <Text variant="caption" color="tertiary">
+                        {formatSeconds(sectionDuration)}
+                      </Text>
+                    </View>
+                  )}
+                  {section.exercises.map((ex, i) => {
+                    const globalIndex = sections
+                      .slice(0, sIdx)
+                      .reduce((sum, s) => sum + s.exercises.length, 0) + i;
+                    const isLastInSection = i === section.exercises.length - 1;
+                    const isLastSection = sIdx === sections.length - 1;
+                    return (
+                      <View key={ex.id}>
+                        <View style={styles.exerciseRow}>
+                          <View style={styles.exerciseIndex}>
+                            <Text variant="caption" color="tertiary">
+                              {String(globalIndex + 1).padStart(2, '0')}
+                            </Text>
+                          </View>
+                          <View style={styles.exerciseInfo}>
+                            <Text variant="body" numberOfLines={1}>{ex.name}</Text>
+                            {ex.notes ? (
+                              <Text variant="caption" color="tertiary" numberOfLines={1}>
+                                {ex.notes}
+                              </Text>
+                            ) : null}
+                          </View>
+                          <Text variant="label" color="secondary" style={styles.exerciseDuration}>
+                            {formatSeconds(ex.duration)}
+                          </Text>
+                        </View>
+                        {!(isLastInSection && isLastSection) && <Divider inset />}
+                      </View>
+                    );
+                  })}
                 </View>
-                {i < exercises.length - 1 && <Divider inset />}
-              </View>
-            ))}
+              );
+            })}
           </View>
         )}
       </ScrollView>
@@ -131,9 +153,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.xs,
   },
-  summaryLabel: {
-    letterSpacing: 0.8,
-  },
+  summaryLabel: { letterSpacing: 0.8 },
   summaryDivider: {
     width: StyleSheet.hairlineWidth,
     backgroundColor: Colors.border,
@@ -143,6 +163,15 @@ const styles = StyleSheet.create({
     padding: Spacing.xl,
     alignItems: 'center',
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.xs,
+  },
+  sectionLabel: { letterSpacing: 0.8 },
   exerciseRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -158,9 +187,7 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 2,
   },
-  exerciseDuration: {
-    fontVariant: ['tabular-nums'],
-  },
+  exerciseDuration: { fontVariant: ['tabular-nums'] },
   footer: {
     flexDirection: 'row',
     gap: Spacing.sm,
