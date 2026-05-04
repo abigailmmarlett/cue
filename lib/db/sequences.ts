@@ -1,5 +1,6 @@
 import db from './client';
 import { generateId } from '../utils/id';
+import type { ExerciseTag } from './tags';
 
 export interface Sequence {
   id: string;
@@ -11,6 +12,10 @@ export interface Sequence {
 export interface SequenceWithMeta extends Sequence {
   exercise_count: number;
   total_duration: number;
+}
+
+export interface SequenceWithTags extends SequenceWithMeta {
+  tags: ExerciseTag[];
 }
 
 export function getAllSequences(): SequenceWithMeta[] {
@@ -102,6 +107,17 @@ export function duplicateSequence(id: string): Sequence {
         [generateId(), newId, newSectionId, ex.name, ex.duration, ex.order_index, ex.notes ?? null, now]
       );
     }
+  }
+
+  const seqTags = db.getAllSync<{ tag_value_id: string }>(
+    `SELECT tag_value_id FROM sequence_tags WHERE sequence_id = ?;`,
+    [id]
+  );
+  for (const { tag_value_id } of seqTags) {
+    db.runSync(
+      `INSERT INTO sequence_tags (sequence_id, tag_value_id) VALUES (?, ?);`,
+      [newId, tag_value_id]
+    );
   }
 
   return { id: newId, name: newName, created_at: now, updated_at: now };

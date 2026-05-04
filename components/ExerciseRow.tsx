@@ -10,6 +10,7 @@ export interface LocalExercise {
   duration: number;
   notes?: string | null;
   tagValueIds: string[];
+  libraryExerciseId?: string | null;
 }
 
 interface Props {
@@ -21,6 +22,7 @@ interface Props {
 }
 
 export function ExerciseRow({ exercise, onNameChange, onDurationChange, onDelete, onEditTags }: Props) {
+  const isLinked = !!exercise.libraryExerciseId;
   const editDuration = () => {
     if (Platform.OS === 'ios') {
       Alert.prompt(
@@ -43,20 +45,25 @@ export function ExerciseRow({ exercise, onNameChange, onDurationChange, onDelete
       </View>
 
       <TextInput
-        style={styles.nameInput}
+        style={[styles.nameInput, isLinked && styles.nameInputLinked]}
         value={exercise.name}
         onChangeText={onNameChange}
         placeholder="Exercise name"
         placeholderTextColor={Colors.text.tertiary}
         returnKeyType="done"
         maxLength={60}
+        editable={!isLinked}
       />
 
-      <TouchableOpacity onPress={onEditTags} hitSlop={8} style={styles.tagButton}>
-        <Text style={[styles.tagIcon, exercise.tagValueIds.length > 0 && styles.tagIconActive]}>
-          {exercise.tagValueIds.length > 0 ? `🏷 ${exercise.tagValueIds.length}` : '🏷'}
-        </Text>
-      </TouchableOpacity>
+      {isLinked ? (
+        <Text style={styles.linkedIcon}>⊞</Text>
+      ) : (
+        <TouchableOpacity onPress={onEditTags} hitSlop={8} style={styles.tagButton}>
+          <Text style={[styles.tagIcon, exercise.tagValueIds.length > 0 && styles.tagIconActive]}>
+            {exercise.tagValueIds.length > 0 ? `🏷 ${exercise.tagValueIds.length}` : '🏷'}
+          </Text>
+        </TouchableOpacity>
+      )}
 
       <TouchableOpacity onPress={editDuration} style={styles.durationButton} hitSlop={8}>
         <Text variant="label" color="secondary" style={styles.durationText}>
@@ -97,6 +104,15 @@ const styles = StyleSheet.create({
     color: Colors.text.primary,
     paddingVertical: 0,
     marginHorizontal: Spacing.sm,
+  },
+  nameInputLinked: {
+    color: Colors.text.secondary,
+  },
+  linkedIcon: {
+    fontSize: 14,
+    color: Colors.text.tertiary,
+    paddingHorizontal: Spacing.xs,
+    marginRight: Spacing.xs,
   },
   tagButton: {
     paddingHorizontal: Spacing.xs,

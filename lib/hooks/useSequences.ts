@@ -1,13 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getAllSequences, type SequenceWithMeta } from '../db/sequences';
+import { getAllSequences, type SequenceWithTags } from '../db/sequences';
+import { getAllSequenceTags } from '../db/tags';
 import { onSequenceChange } from '../sequenceEvents';
 
 export function useSequences() {
-  const [sequences, setSequences] = useState<SequenceWithMeta[]>([]);
+  const [sequences, setSequences] = useState<SequenceWithTags[]>([]);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(() => {
-    setSequences(getAllSequences());
+    const seqs = getAllSequences();
+    const tagsMap = getAllSequenceTags();
+    setSequences(seqs.map((s) => ({ ...s, tags: tagsMap.get(s.id) ?? [] })));
     setLoading(false);
   }, []);
 

@@ -10,6 +10,7 @@ export interface Exercise {
   order_index: number;
   notes: string | null;
   created_at: number;
+  library_exercise_id: string | null;
 }
 
 export function getExercisesBySequenceId(sequenceId: string): Exercise[] {
@@ -38,7 +39,8 @@ export function createExercise(
   sectionId: string,
   name: string,
   duration: number,
-  notes?: string
+  notes?: string,
+  libraryExerciseId?: string | null
 ): Exercise {
   const id = generateId();
   const now = Date.now();
@@ -49,12 +51,12 @@ export function createExercise(
   const orderIndex = (maxIndex?.max_index ?? -1) + 1;
 
   db.runSync(
-    `INSERT INTO exercises (id, sequence_id, section_id, name, duration, order_index, notes, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
-    [id, sequenceId, sectionId, name, duration, orderIndex, notes ?? null, now]
+    `INSERT INTO exercises (id, sequence_id, section_id, name, duration, order_index, notes, created_at, library_exercise_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+    [id, sequenceId, sectionId, name, duration, orderIndex, notes ?? null, now, libraryExerciseId ?? null]
   );
 
-  return { id, sequence_id: sequenceId, section_id: sectionId, name, duration, order_index: orderIndex, notes: notes ?? null, created_at: now };
+  return { id, sequence_id: sequenceId, section_id: sectionId, name, duration, order_index: orderIndex, notes: notes ?? null, created_at: now, library_exercise_id: libraryExerciseId ?? null };
 }
 
 export function upsertExercise(
@@ -64,18 +66,20 @@ export function upsertExercise(
   name: string,
   duration: number,
   orderIndex: number,
-  notes: string | null
+  notes: string | null,
+  libraryExerciseId: string | null = null
 ): void {
   db.runSync(
-    `INSERT INTO exercises (id, sequence_id, section_id, name, duration, order_index, notes, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `INSERT INTO exercises (id, sequence_id, section_id, name, duration, order_index, notes, created_at, library_exercise_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(id) DO UPDATE SET
        name = excluded.name,
        duration = excluded.duration,
        section_id = excluded.section_id,
        order_index = excluded.order_index,
-       notes = excluded.notes;`,
-    [id, sequenceId, sectionId, name, duration, orderIndex, notes, Date.now()]
+       notes = excluded.notes,
+       library_exercise_id = excluded.library_exercise_id;`,
+    [id, sequenceId, sectionId, name, duration, orderIndex, notes, Date.now(), libraryExerciseId]
   );
 }
 

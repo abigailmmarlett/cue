@@ -73,6 +73,41 @@ export function runMigrations(): void {
     );
   `);
 
+  db.execSync(`
+    CREATE TABLE IF NOT EXISTS sequence_tags (
+      sequence_id  TEXT NOT NULL,
+      tag_value_id TEXT NOT NULL,
+      PRIMARY KEY (sequence_id, tag_value_id),
+      FOREIGN KEY (sequence_id)  REFERENCES sequences(id)   ON DELETE CASCADE,
+      FOREIGN KEY (tag_value_id) REFERENCES tag_values(id)  ON DELETE CASCADE
+    );
+  `);
+
+  db.execSync(`
+    CREATE TABLE IF NOT EXISTS library_exercises (
+      id         TEXT    PRIMARY KEY NOT NULL,
+      name       TEXT    NOT NULL,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+  `);
+
+  db.execSync(`
+    CREATE TABLE IF NOT EXISTS library_exercise_tags (
+      library_exercise_id TEXT NOT NULL,
+      tag_value_id        TEXT NOT NULL,
+      PRIMARY KEY (library_exercise_id, tag_value_id),
+      FOREIGN KEY (library_exercise_id) REFERENCES library_exercises(id) ON DELETE CASCADE,
+      FOREIGN KEY (tag_value_id)        REFERENCES tag_values(id)        ON DELETE CASCADE
+    );
+  `);
+
+  try {
+    db.execSync(`ALTER TABLE exercises ADD COLUMN library_exercise_id TEXT REFERENCES library_exercises(id) ON DELETE SET NULL;`);
+  } catch {
+    // Column already exists
+  }
+
   // Data migration: assign existing exercises (section_id IS NULL) to a default "Main" section
   const unmigrated = db.getAllSync<{ sequence_id: string }>(
     `SELECT DISTINCT sequence_id FROM exercises WHERE section_id IS NULL;`

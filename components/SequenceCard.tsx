@@ -1,11 +1,12 @@
 import { View, TouchableOpacity, StyleSheet, Alert, ActionSheetIOS, Platform } from 'react-native';
 import { Text } from './ui/Text';
+import { TagChips } from './TagChips';
 import { Colors, Spacing, Radius } from '@/constants/theme';
 import { formatSeconds } from '@/lib/utils/time';
-import type { SequenceWithMeta } from '@/lib/db/sequences';
+import type { SequenceWithTags } from '@/lib/db/sequences';
 
 interface Props {
-  sequence: SequenceWithMeta;
+  sequence: SequenceWithTags;
   onPress: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
@@ -64,6 +65,7 @@ export function SequenceCard({ sequence, onPress, onDuplicate, onDelete }: Props
             {exerciseLabel}
           </Text>
         </View>
+        {sequence.tags.length > 0 && <TagChips tags={sequence.tags} style={styles.cardTags} />}
       </View>
       <TouchableOpacity onPress={showMenu} hitSlop={12} style={styles.moreButton}>
         <Text variant="body" color="tertiary" style={styles.moreIcon}>
@@ -80,7 +82,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.lg,
     padding: Spacing.md,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: Spacing.sm,
   },
   body: {
@@ -97,8 +99,12 @@ const styles = StyleSheet.create({
   dot: {
     fontSize: 10,
   },
+  cardTags: {
+    marginTop: Spacing.xs,
+  },
   moreButton: {
     paddingLeft: Spacing.sm,
+    paddingTop: 2,
   },
   moreIcon: {
     letterSpacing: 1,

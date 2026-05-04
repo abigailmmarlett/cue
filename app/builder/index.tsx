@@ -7,6 +7,7 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Text } from '@/components/ui/Text';
@@ -14,12 +15,20 @@ import { DraggableList } from '@/components/DraggableList';
 import { ExerciseRow, type LocalExercise } from '@/components/ExerciseRow';
 import { SectionGroup } from '@/components/SectionGroup';
 import { TagPicker } from '@/components/TagPicker';
+import { ExerciseSearchSheet } from '@/components/ExerciseSearchSheet';
 import { Divider } from '@/components/ui/Divider';
 import { Colors, Spacing, Radius, FontSize, FontWeight } from '@/constants/theme';
+import { TagChips } from '@/components/TagChips';
 import { createSequence } from '@/lib/db/sequences';
 import { createExercise } from '@/lib/db/exercises';
 import { createSection } from '@/lib/db/sections';
-import { setExerciseTags } from '@/lib/db/tags';
+import {
+  setExerciseTags,
+  setSequenceTags as saveSequenceTags,
+  getAllTagValuesWithCategory,
+  type ExerciseTag,
+} from '@/lib/db/tags';
+import { createLibraryExercise, setLibraryExerciseTags } from '@/lib/db/libraryExercises';
 import { generateId } from '@/lib/utils/id';
 import { emitSequenceChange } from '@/lib/sequenceEvents';
 
@@ -37,6 +46,9 @@ export default function NewSequenceScreen() {
   ]);
   const [scrollEnabled, setScrollEnabled] = useState(true);
   const [tagPickerExerciseId, setTagPickerExerciseId] = useState<string | null>(null);
+  const [sequenceTags, setSequenceTags] = useState<ExerciseTag[]>([]);
+  const [showSequenceTagPicker, setShowSequenceTagPicker] = useState(false);
+  const [exerciseSheetSectionId, setExerciseSheetSectionId] = useState<string | null>(null);
 
   const activeExercise = tagPickerExerciseId
     ? sections.flatMap((s) => s.exercises).find((e) => e.id === tagPickerExerciseId) ?? null
@@ -56,11 +68,11 @@ export default function NewSequenceScreen() {
     setSections((prev) => prev.filter((s) => s.id !== sectionId));
   }, []);
 
-  const addExercise = useCallback((sectionId: string) => {
+  const addExercise = useCallback((sectionId: string, name = '', libraryExerciseId: string | null = null, tagValueIds: string[] = []) => {
     setSections((prev) =>
       prev.map((s) =>
         s.id === sectionId
-          ? { ...s, exercises: [...s.exercises, { id: generateId(), name: '', duration: 30, notes: null, tagValueIds: [] }] }
+          ? { ...s, exercises: [...s.exercises, { id: generateId(), name, duration: 30, notes: null, tagValueIds, libraryExerciseId }] }
           : s
       )
     );
@@ -96,19 +108,59 @@ export default function NewSequenceScreen() {
     );
   }, []);
 
-  const save = useCallback(() => {
+  const doSave = useCallback((sectionsToSave: typeof sections) => {
     const trimmedName = name.trim() || 'Untitled Sequence';
     const seq = createSequence(trimmedName);
-    for (const section of sections) {
+    if (sequenceTags.length > 0) saveSequenceTags(seq.id, sequenceTags.map((t) => t.tagValueId));
+    for (const section of sectionsToSave) {
       const dbSection = createSection(seq.id, section.name.trim() || 'Section');
       for (const ex of section.exercises) {
-        const dbEx = createExercise(seq.id, dbSection.id, ex.name.trim() || 'Exercise', ex.duration, ex.notes ?? undefined);
-        if (ex.tagValueIds.length > 0) setExerciseTags(dbEx.id, ex.tagValueIds);
+        const libId = ex.libraryExerciseId ?? null;
+        createExercise(seq.id, dbSection.id, ex.name.trim() || 'Exercise', ex.duration, ex.notes ?? undefined, libId);
+        if (!libId && ex.tagValueIds.length > 0) setExerciseTags(ex.id, ex.tagValueIds);
       }
     }
     emitSequenceChange();
     router.back();
-  }, [name, sections, router]);
+  }, [name, sequenceTags, router]);
+
+  const save = useCallback(() => {
+    const unlinked = sections
+      .flatMap((s) => s.exercises)
+      .filter((e) => !e.libraryExerciseId && e.name.trim());
+
+    if (unlinked.length > 0) {
+      const names = unlinked.map((e) => e.name.trim()).join(', ');
+      Alert.alert(
+        'Save to exercise library?',
+        `${names} ${unlinked.length === 1 ? 'isn\'t' : 'aren\'t'} in your library yet.`,
+        [
+          {
+            text: 'Not now',
+            style: 'cancel',
+            onPress: () => doSave(sections),
+          },
+          {
+            text: 'Add to library',
+            onPress: () => {
+              const updated = sections.map((s) => ({
+                ...s,
+                exercises: s.exercises.map((ex) => {
+                  if (ex.libraryExerciseId || !ex.name.trim()) return ex;
+                  const libEx = createLibraryExercise(ex.name.trim());
+                  if (ex.tagValueIds.length > 0) setLibraryExerciseTags(libEx.id, ex.tagValueIds);
+                  return { ...ex, libraryExerciseId: libEx.id };
+                }),
+              }));
+              doSave(updated);
+            },
+          },
+        ]
+      );
+    } else {
+      doSave(sections);
+    }
+  }, [sections, doSave]);
 
   const totalExercises = sections.reduce((sum, s) => sum + s.exercises.length, 0);
   const canSave = totalExercises > 0;
@@ -136,6 +188,15 @@ export default function NewSequenceScreen() {
           autoFocus
         />
 
+        <View style={styles.sequenceTagsRow}>
+          {sequenceTags.length > 0 && <TagChips tags={sequenceTags} style={styles.sequenceTagChips} />}
+          <TouchableOpacity onPress={() => setShowSequenceTagPicker(true)} hitSlop={8}>
+            <Text variant="caption" color="tertiary">
+              {sequenceTags.length > 0 ? 'Edit tags' : '+ Add tags'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         <Divider style={styles.divider} />
 
         {sections.map((section) => (
@@ -145,7 +206,7 @@ export default function NewSequenceScreen() {
             canDelete={sections.length > 1}
             onRename={(n) => renameSection(section.id, n)}
             onDelete={() => removeSection(section.id)}
-            onAddExercise={() => addExercise(section.id)}
+            onAddExercise={() => setExerciseSheetSectionId(section.id)}
           >
             {section.exercises.length > 0 && (
               <DraggableList
@@ -197,6 +258,36 @@ export default function NewSequenceScreen() {
           onClose={() => setTagPickerExerciseId(null)}
         />
       )}
+
+      {exerciseSheetSectionId && (
+        <ExerciseSearchSheet
+          onSelect={(libEx) => {
+            addExercise(exerciseSheetSectionId, libEx.name, libEx.id, libEx.tags.map((t) => t.tagValueId));
+            setExerciseSheetSectionId(null);
+          }}
+          onCreateNew={(name) => {
+            addExercise(exerciseSheetSectionId, name, null, []);
+            setExerciseSheetSectionId(null);
+          }}
+          onClose={() => setExerciseSheetSectionId(null)}
+        />
+      )}
+
+      {showSequenceTagPicker && (
+        <TagPicker
+          selectedTagValueIds={sequenceTags.map((t) => t.tagValueId)}
+          onConfirm={(ids) => {
+            const all = getAllTagValuesWithCategory();
+            const map = new Map(all.map((t) => [t.id, t]));
+            setSequenceTags(ids.flatMap((id) => {
+              const t = map.get(id);
+              return t ? [{ tagValueId: t.id, categoryName: t.categoryName, label: t.label }] : [];
+            }));
+            setShowSequenceTagPicker(false);
+          }}
+          onClose={() => setShowSequenceTagPicker(false)}
+        />
+      )}
     </KeyboardAvoidingView>
   );
 }
@@ -212,6 +303,14 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
     letterSpacing: -0.5,
   },
+  sequenceTagsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    gap: Spacing.sm,
+  },
+  sequenceTagChips: { flex: 1 },
   divider: { marginBottom: Spacing.xs },
   addSectionRow: {
     flexDirection: 'row',

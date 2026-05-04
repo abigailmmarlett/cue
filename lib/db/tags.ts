@@ -79,6 +79,21 @@ export function deleteTagValue(id: string): void {
 }
 
 export function getTagsForExercise(exerciseId: string): ExerciseTag[] {
+  const row = db.getFirstSync<{ library_exercise_id: string | null }>(
+    `SELECT library_exercise_id FROM exercises WHERE id = ?;`,
+    [exerciseId]
+  );
+  if (row?.library_exercise_id) {
+    return db.getAllSync<ExerciseTag>(
+      `SELECT tv.id AS tagValueId, tc.name AS categoryName, tv.label
+       FROM library_exercise_tags let
+       JOIN tag_values tv ON tv.id = let.tag_value_id
+       JOIN tag_categories tc ON tc.id = tv.category_id
+       WHERE let.library_exercise_id = ?
+       ORDER BY tc.name, tv.label;`,
+      [row.library_exercise_id]
+    );
+  }
   return db.getAllSync<ExerciseTag>(
     `SELECT tv.id AS tagValueId, tc.name AS categoryName, tv.label
      FROM exercise_tags et
@@ -98,4 +113,47 @@ export function setExerciseTags(exerciseId: string, tagValueIds: string[]): void
       [exerciseId, tagValueId]
     );
   }
+}
+
+export function getTagsForSequence(sequenceId: string): ExerciseTag[] {
+  return db.getAllSync<ExerciseTag>(
+    `SELECT tv.id AS tagValueId, tc.name AS categoryName, tv.label
+     FROM sequence_tags st
+     JOIN tag_values tv ON tv.id = st.tag_value_id
+     JOIN tag_categories tc ON tc.id = tv.category_id
+     WHERE st.sequence_id = ?
+     ORDER BY tc.name, tv.label;`,
+    [sequenceId]
+  );
+}
+
+export function setSequenceTags(sequenceId: string, tagValueIds: string[]): void {
+  db.runSync(`DELETE FROM sequence_tags WHERE sequence_id = ?;`, [sequenceId]);
+  for (const tagValueId of tagValueIds) {
+    db.runSync(
+      `INSERT INTO sequence_tags (sequence_id, tag_value_id) VALUES (?, ?);`,
+      [sequenceId, tagValueId]
+    );
+  }
+}
+
+export function getAllSequenceTags(): Map<string, ExerciseTag[]> {
+  const rows = db.getAllSync<{
+    sequence_id: string;
+    tagValueId: string;
+    categoryName: string;
+    label: string;
+  }>(
+    `SELECT st.sequence_id, tv.id AS tagValueId, tc.name AS categoryName, tv.label
+     FROM sequence_tags st
+     JOIN tag_values tv ON tv.id = st.tag_value_id
+     JOIN tag_categories tc ON tc.id = tv.category_id
+     ORDER BY st.sequence_id, tc.name, tv.label;`
+  );
+  const map = new Map<string, ExerciseTag[]>();
+  for (const row of rows) {
+    if (!map.has(row.sequence_id)) map.set(row.sequence_id, []);
+    map.get(row.sequence_id)!.push({ tagValueId: row.tagValueId, categoryName: row.categoryName, label: row.label });
+  }
+  return map;
 }
