@@ -1,312 +1,302 @@
-import { View, FlatList, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
-import { useNavigation } from '@react-navigation/native';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  View,
+  FlatList,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  StyleSheet,
+} from 'react-native';
 import { Text } from '@/components/ui/Text';
 import { SequenceCard } from '@/components/SequenceCard';
-import { TagPicker } from '@/components/TagPicker';
-import { Colors, Spacing, Radius } from '@/constants/theme';
+import { TabBar } from '@/components/TabBar';
+import { Colors, Spacing } from '@/constants/theme';
 import { useSequences } from '@/lib/hooks/useSequences';
 import { deleteSequence, duplicateSequence } from '@/lib/db/sequences';
+import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
+import { useState, useCallback, useMemo, useRef } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ExerciseTag } from '@/lib/db/tags';
 
-interface FilterBarProps {
-  activeFilterTags: ExerciseTag[];
-  onRemoveTag: (tagValueId: string) => void;
-  onOpenPicker: () => void;
-  onClear: () => void;
-}
-
-function FilterBar({ activeFilterTags, onRemoveTag, onOpenPicker, onClear }: FilterBarProps) {
-  if (activeFilterTags.length === 0) {
-    return (
-      <View style={styles.filterBar}>
-        <TouchableOpacity onPress={onOpenPicker} style={styles.filterPill} activeOpacity={0.7}>
-          <Text style={styles.filterIcon}>🏷</Text>
-          <Text variant="caption" color="secondary">Filter</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  return (
-    <View style={styles.filterBar}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.activeFilterRow}
-        keyboardShouldPersistTaps="handled"
-      >
-        {activeFilterTags.map((tag) => (
-          <TouchableOpacity
-            key={tag.tagValueId}
-            style={styles.filterChip}
-            onPress={() => onRemoveTag(tag.tagValueId)}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.filterChipLabel}>{tag.label}</Text>
-            <Text style={styles.filterChipRemove}>✕</Text>
-          </TouchableOpacity>
-        ))}
-        <TouchableOpacity onPress={onOpenPicker} style={styles.filterAddChip} activeOpacity={0.7}>
-          <Text style={styles.filterAddIcon}>+</Text>
-        </TouchableOpacity>
-      </ScrollView>
-      <TouchableOpacity onPress={onClear} style={styles.clearButton} hitSlop={8}>
-        <Text variant="caption" color="secondary">Clear</Text>
-      </TouchableOpacity>
-    </View>
-  );
-}
-
-export default function LibraryScreen() {
+export default function SequencesScreen() {
   const router = useRouter();
-  const navigation = useNavigation();
-  const { bottom } = useSafeAreaInsets();
+  const { top } = useSafeAreaInsets();
   const { sequences, loading, refresh } = useSequences();
-  const flatListRef = useRef<FlatList>(null);
-  const prevLengthRef = useRef(0);
-
+  const [search, setSearch] = useState('');
   const [activeFilterTags, setActiveFilterTags] = useState<ExerciseTag[]>([]);
-  const [showFilterPicker, setShowFilterPicker] = useState(false);
+  const listRef = useRef<FlatList>(null);
 
-  const filteredSequences = activeFilterTags.length === 0
-    ? sequences
-    : sequences.filter((s) =>
-        s.tags.some((t) => activeFilterTags.some((f) => f.tagValueId === t.tagValueId))
-      );
+  useFocusEffect(useCallback(() => { refresh(); }, [refresh]));
 
-  const handleFilterConfirm = useCallback((ids: string[]) => {
-    if (ids.length === 0) {
-      setActiveFilterTags([]);
-      setShowFilterPicker(false);
-      return;
-    }
-    const tagMap = new Map<string, ExerciseTag>();
+  const allTagPills = useMemo(() => {
+    const seen = new Map<string, ExerciseTag>();
     for (const s of sequences) {
-      for (const t of s.tags) tagMap.set(t.tagValueId, t);
+      for (const t of s.tags) seen.set(t.tagValueId, t);
     }
-    setActiveFilterTags(ids.flatMap((id) => tagMap.has(id) ? [tagMap.get(id)!] : []));
-    setShowFilterPicker(false);
+    return [...seen.values()].sort((a, b) => a.label.localeCompare(b.label));
   }, [sequences]);
 
-  useEffect(() => {
-    if (sequences.length > prevLengthRef.current) {
-      flatListRef.current?.scrollToOffset({ offset: 0, animated: false });
+  const filteredSequences = useMemo(() => {
+    let result = sequences;
+    if (activeFilterTags.length > 0) {
+      result = result.filter((s) =>
+        s.tags.some((t) => activeFilterTags.some((f) => f.tagValueId === t.tagValueId))
+      );
     }
-    prevLengthRef.current = sequences.length;
-  }, [sequences.length]);
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter((s) => s.name.toLowerCase().includes(q));
+    }
+    return result;
+  }, [sequences, activeFilterTags, search]);
 
-  useEffect(() => {
-    navigation.setOptions({
-      headerRight: () => (
-        <View style={styles.headerButtons}>
-          <TouchableOpacity
-            onPress={() => router.push('/tags')}
-            hitSlop={8}
-            style={styles.tagsButton}
-          >
-            <Text style={styles.tagsIcon}>🏷</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => router.push('/builder')}
-            hitSlop={8}
-            style={styles.addButton}
-          >
-            <Text style={styles.addIcon}>+</Text>
-          </TouchableOpacity>
-        </View>
-      ),
-    });
-  }, [navigation, router]);
-
-  useFocusEffect(
-    useCallback(() => {
-      refresh();
-    }, [refresh])
-  );
-
-  if (loading) {
-    return <View style={styles.empty} />;
-  }
-
-  if (sequences.length === 0) {
-    return (
-      <View style={styles.empty}>
-        <Text variant="heading" style={styles.emptyTitle}>
-          No sequences yet
-        </Text>
-        <Text variant="body" color="secondary" style={styles.emptySubtitle}>
-          Create your first workout sequence to get started.
-        </Text>
-        <TouchableOpacity
-          style={styles.createButton}
-          onPress={() => router.push('/builder')}
-          activeOpacity={0.8}
-        >
-          <Text variant="label" color="inverse">
-            New Sequence
-          </Text>
-        </TouchableOpacity>
-      </View>
+  const toggleTag = (tag: ExerciseTag) => {
+    setActiveFilterTags((prev) =>
+      prev.some((t) => t.tagValueId === tag.tagValueId)
+        ? prev.filter((t) => t.tagValueId !== tag.tagValueId)
+        : [...prev, tag]
     );
-  }
+  };
 
   return (
-    <View style={styles.flex}>
-      <FilterBar
-        activeFilterTags={activeFilterTags}
-        onRemoveTag={(id) => setActiveFilterTags((prev) => prev.filter((t) => t.tagValueId !== id))}
-        onOpenPicker={() => setShowFilterPicker(true)}
-        onClear={() => setActiveFilterTags([])}
-      />
-
-      {filteredSequences.length === 0 ? (
-        <View style={styles.noResults}>
-          <Text variant="body" color="tertiary">No sequences match these filters.</Text>
+    <View style={styles.container}>
+      {/* Header */}
+      <View style={[styles.header, { paddingTop: top + 8 }]}>
+        <View style={styles.wordmarkRow}>
+          <View style={styles.wordmarkLeft}>
+            <View style={styles.accentBar} />
+            <View>
+              <Text style={styles.wordmark}>cue</Text>
+              <Text style={styles.countLabel}>
+                {sequences.length} sequence{sequences.length !== 1 ? 's' : ''}
+              </Text>
+            </View>
+          </View>
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => router.push('/builder')}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.addButtonText}>+</Text>
+          </TouchableOpacity>
         </View>
-      ) : (
-        <FlatList
-          ref={flatListRef}
-          data={filteredSequences}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={[styles.list, { paddingBottom: Spacing.md + bottom }]}
-          renderItem={({ item }) => (
-            <SequenceCard
-              sequence={item}
-              onPress={() => router.push(`/sequence/${item.id}`)}
-              onDuplicate={() => {
-                duplicateSequence(item.id);
-                refresh();
-              }}
-              onDelete={() => {
-                deleteSequence(item.id);
-                refresh();
-              }}
-            />
-          )}
-        />
-      )}
 
-      {showFilterPicker && (
-        <TagPicker
-          selectedTagValueIds={activeFilterTags.map((t) => t.tagValueId)}
-          onConfirm={handleFilterConfirm}
-          onClose={() => setShowFilterPicker(false)}
-        />
-      )}
+        <View style={styles.searchBar}>
+          <Text style={styles.searchIcon}>⌕</Text>
+          <TextInput
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Search sequences…"
+            placeholderTextColor={Colors.text.tertiary}
+            style={styles.searchInput}
+          />
+          {search.length > 0 && (
+            <TouchableOpacity onPress={() => setSearch('')} hitSlop={8}>
+              <Text style={styles.searchClear}>✕</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {allTagPills.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.pillsRow}
+            keyboardShouldPersistTaps="handled"
+          >
+            {allTagPills.map((tag) => {
+              const active = activeFilterTags.some((t) => t.tagValueId === tag.tagValueId);
+              return (
+                <TouchableOpacity
+                  key={tag.tagValueId}
+                  style={[styles.pill, active && styles.pillActive]}
+                  onPress={() => toggleTag(tag)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.pillText, active && styles.pillTextActive]}>
+                    {tag.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        )}
+      </View>
+
+      {/* List */}
+      <View style={styles.listWrapper}>
+        {loading ? null : filteredSequences.length === 0 ? (
+          <View style={styles.empty}>
+            <Text variant="body" color="tertiary">
+              {search || activeFilterTags.length > 0 ? 'No sequences match.' : 'No sequences yet.'}
+            </Text>
+            {!search && activeFilterTags.length === 0 && (
+              <TouchableOpacity
+                style={styles.createButton}
+                onPress={() => router.push('/builder')}
+                activeOpacity={0.8}
+              >
+                <Text variant="label" color="inverse">New Sequence</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        ) : (
+          <FlatList
+            ref={listRef}
+            data={filteredSequences}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.list}
+            keyboardShouldPersistTaps="handled"
+            renderItem={({ item }) => (
+              <SequenceCard
+                sequence={item}
+                onPress={() => router.push(`/sequence/${item.id}`)}
+                onPlay={() => router.push(`/sequence/${item.id}/timer`)}
+                onDuplicate={() => { duplicateSequence(item.id); refresh(); }}
+                onDelete={() => { deleteSequence(item.id); refresh(); }}
+              />
+            )}
+          />
+        )}
+      </View>
+
+      <TabBar />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  list: {
-    padding: Spacing.md,
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
   },
-  headerButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    marginRight: Spacing.sm,
-  },
-  tagsButton: {},
-  tagsIcon: {
-    fontSize: 20,
-    lineHeight: 26,
-  },
-  addButton: {},
-  addIcon: {
-    fontSize: 28,
-    fontWeight: '300',
-    color: Colors.text.primary,
-    lineHeight: 32,
-  },
-  filterBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+  header: {
+    backgroundColor: Colors.headerBg,
+    paddingHorizontal: 22,
+    paddingBottom: 20,
+    borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
-  filterPill: {
+  wordmarkRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 22,
+  },
+  wordmarkLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.xs,
-    alignSelf: 'flex-start',
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.full,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
+    gap: 12,
   },
-  filterIcon: {
-    fontSize: 13,
+  accentBar: {
+    width: 3,
+    height: 62,
+    backgroundColor: Colors.accent,
+    borderRadius: 2,
+  },
+  wordmark: {
+    fontSize: 66,
+    fontWeight: '800',
+    letterSpacing: -3.5,
+    color: Colors.text.primary,
+    lineHeight: 57,
+  },
+  countLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: Colors.text.tertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+    marginTop: 7,
+  },
+  addButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: Colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 6,
+  },
+  addButtonText: {
+    fontSize: 22,
+    fontWeight: '300',
+    color: Colors.accent,
+    lineHeight: 26,
+    marginTop: -1,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: 'rgba(255,255,255,0.8)',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    borderWidth: 1,
+    borderColor: Colors.borderMid,
+    marginBottom: 14,
+  },
+  searchIcon: {
+    fontSize: 16,
+    color: Colors.text.tertiary,
     lineHeight: 18,
   },
-  activeFilterRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
+  searchInput: {
     flex: 1,
+    fontSize: 14,
+    color: Colors.text.primary,
+    padding: 0,
   },
-  filterChip: {
+  searchClear: {
+    fontSize: 12,
+    color: Colors.text.tertiary,
+  },
+  pillsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: Colors.fill.primary,
-    borderRadius: Radius.full,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 3,
+    gap: 7,
+    paddingRight: 4,
   },
-  filterChipLabel: {
+  pill: {
+    backgroundColor: Colors.pill.bg,
+    borderWidth: 1,
+    borderColor: Colors.pill.border,
+    borderTopLeftRadius: 4,
+    borderBottomLeftRadius: 4,
+    borderTopRightRadius: 12,
+    borderBottomRightRadius: 12,
+    paddingVertical: 6,
+    paddingLeft: 11,
+    paddingRight: 13,
+  },
+  pillActive: {
+    backgroundColor: Colors.pill.activeBg,
+    borderColor: Colors.accent,
+  },
+  pillText: {
     fontSize: 11,
-    fontWeight: '500' as const,
-    color: Colors.text.inverse,
+    fontWeight: '700',
+    color: Colors.pill.text,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  filterChipRemove: {
-    fontSize: 10,
-    color: Colors.text.inverse,
+  pillTextActive: {
+    color: Colors.pill.activeText,
   },
-  filterAddChip: {
-    width: 24,
-    height: 24,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  filterAddIcon: {
-    fontSize: 16,
-    color: Colors.text.secondary,
-    lineHeight: 20,
-  },
-  clearButton: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    marginLeft: Spacing.xs,
-  },
-  noResults: {
+  listWrapper: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: Spacing.xl,
+  },
+  list: {
+    padding: 14,
+    paddingBottom: Spacing.md,
   },
   empty: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: Spacing.xl,
     gap: Spacing.sm,
-  },
-  emptyTitle: {
-    textAlign: 'center',
-  },
-  emptySubtitle: {
-    textAlign: 'center',
-    marginBottom: Spacing.lg,
+    padding: Spacing.xl,
   },
   createButton: {
     backgroundColor: Colors.fill.primary,

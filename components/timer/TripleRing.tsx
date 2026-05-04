@@ -63,24 +63,24 @@ export function TripleRing({ exerciseProgress, sectionProgress, totalProgress, c
   return (
     <View style={styles.container}>
       <Svg width={SIZE} height={SIZE} style={StyleSheet.absoluteFill}>
-        {/* Track rings (background) */}
+        {/* Track rings */}
         <Circle
           cx={CENTER} cy={CENTER} r={R_INNER}
-          stroke="#E8E8E8" strokeWidth={STROKE} fill="none"
+          stroke="rgba(0,0,0,0.07)" strokeWidth={STROKE} fill="none"
         />
         <Circle
           cx={CENTER} cy={CENTER} r={R_MID}
-          stroke="#E8E8E8" strokeWidth={STROKE} fill="none"
+          stroke="rgba(0,0,0,0.07)" strokeWidth={STROKE} fill="none"
         />
         <Circle
           cx={CENTER} cy={CENTER} r={R_OUTER}
-          stroke="#E8E8E8" strokeWidth={STROKE} fill="none"
+          stroke="rgba(0,0,0,0.07)" strokeWidth={STROKE} fill="none"
         />
 
         {/* Progress rings — rotate -90° so they start at the top */}
         <AnimatedCircle
           cx={CENTER} cy={CENTER} r={R_INNER}
-          stroke="#000000" strokeWidth={STROKE} fill="none"
+          stroke="#16a34a" strokeWidth={STROKE} fill="none"
           strokeDasharray={C_INNER}
           strokeLinecap="round"
           rotation="-90"
@@ -89,7 +89,7 @@ export function TripleRing({ exerciseProgress, sectionProgress, totalProgress, c
         />
         <AnimatedCircle
           cx={CENTER} cy={CENTER} r={R_MID}
-          stroke="#6B6B6B" strokeWidth={STROKE} fill="none"
+          stroke="#4ade80" strokeWidth={STROKE} fill="none"
           strokeDasharray={C_MID}
           strokeLinecap="round"
           rotation="-90"
@@ -98,7 +98,7 @@ export function TripleRing({ exerciseProgress, sectionProgress, totalProgress, c
         />
         <AnimatedCircle
           cx={CENTER} cy={CENTER} r={R_OUTER}
-          stroke="#D0D0D0" strokeWidth={STROKE} fill="none"
+          stroke="rgba(22,163,74,0.3)" strokeWidth={STROKE} fill="none"
           strokeDasharray={C_OUTER}
           strokeLinecap="round"
           rotation="-90"

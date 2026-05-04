@@ -1,6 +1,6 @@
 import { View, StyleSheet, ViewStyle } from 'react-native';
 import { Text } from './ui/Text';
-import { Colors, Spacing, Radius } from '@/constants/theme';
+import { Colors } from '@/constants/theme';
 import type { ExerciseTag } from '@/lib/db/tags';
 
 interface Props {
@@ -10,17 +10,11 @@ interface Props {
 
 export function TagChips({ tags, style }: Props) {
   if (tags.length === 0) return null;
-
   return (
     <View style={[styles.row, style]}>
       {tags.map((tag) => (
         <View key={tag.tagValueId} style={styles.chip}>
-          <Text variant="caption" color="secondary" style={styles.category}>
-            {tag.categoryName}
-          </Text>
-          <Text variant="caption" style={styles.label}>
-            {tag.label}
-          </Text>
+          <Text style={styles.label}>{tag.label}</Text>
         </View>
       ))}
     </View>
@@ -31,25 +25,25 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: Spacing.xs,
+    gap: 4,
   },
   chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.full,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 3,
-  },
-  category: {
-    fontSize: 10,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
+    backgroundColor: Colors.pill.bg,
+    borderWidth: 1,
+    borderColor: Colors.pill.border,
+    borderTopLeftRadius: 3,
+    borderBottomLeftRadius: 3,
+    borderTopRightRadius: 10,
+    borderBottomRightRadius: 10,
+    paddingVertical: 2,
+    paddingLeft: 6,
+    paddingRight: 8,
   },
   label: {
-    fontSize: 11,
-    fontWeight: '500' as const,
-    color: Colors.text.primary,
+    fontSize: 9,
+    fontWeight: '700',
+    color: Colors.pill.text,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 });

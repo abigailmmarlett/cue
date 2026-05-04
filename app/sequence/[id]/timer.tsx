@@ -84,12 +84,15 @@ export default function TimerScreen() {
       <SafeAreaView style={styles.container}>
         <StatusBar style="dark" />
         <View style={styles.completionContainer}>
-          <Text style={styles.checkmark}>✓</Text>
+          <Text style={styles.checkmark}>✦</Text>
           <Text variant="title" style={styles.completeTitle}>
-            Complete
+            Done.
           </Text>
           <Text variant="body" color="secondary" style={styles.completeSubtitle}>
             {sequence.name}
+          </Text>
+          <Text style={styles.completeTotalTime}>
+            {formatSeconds(totalDuration)}
           </Text>
 
           <View style={styles.completionActions}>
@@ -118,13 +121,17 @@ export default function TimerScreen() {
       <StatusBar style="dark" />
 
       <View style={styles.topBar}>
-        <TouchableOpacity onPress={controls.end} hitSlop={12} style={styles.endButton}>
-          <Text variant="label" color="secondary">End</Text>
+        <TouchableOpacity onPress={controls.end} hitSlop={12} style={styles.backButton}>
+          <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
         <Text variant="caption" color="tertiary" style={styles.sequenceTitle} numberOfLines={1}>
           {sequence.name}
         </Text>
-        <View style={styles.endButtonPlaceholder} />
+        <View style={styles.totalTimeBadge}>
+          <Text style={styles.totalTimeBadgeText}>
+            {formatSeconds(totalTimeRemaining)}
+          </Text>
+        </View>
       </View>
 
       <View style={styles.ringContainer}>
@@ -177,20 +184,46 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Spacing.lg,
+    paddingHorizontal: Spacing.md,
     paddingTop: Spacing.sm,
     paddingBottom: Spacing.md,
+    gap: Spacing.sm,
   },
-  endButton: {
-    paddingVertical: Spacing.xs,
-    paddingHorizontal: Spacing.sm,
+  backButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   },
-  endButtonPlaceholder: { width: 40 },
+  backIcon: {
+    fontSize: 16,
+    color: Colors.text.secondary,
+  },
   sequenceTitle: {
     flex: 1,
     textAlign: 'center',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+    fontWeight: '700',
+  },
+  totalTimeBadge: {
+    backgroundColor: Colors.accentDim,
+    borderRadius: 8,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: Colors.pill.border,
+    flexShrink: 0,
+  },
+  totalTimeBadgeText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: Colors.accent,
+    fontVariant: ['tabular-nums'] as const,
   },
   ringContainer: {
     flex: 1,
@@ -241,12 +274,19 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   checkmark: {
-    fontSize: 56,
-    color: Colors.text.primary,
+    fontSize: 52,
+    color: Colors.accent,
     marginBottom: Spacing.md,
   },
   completeTitle: { letterSpacing: -0.5 },
-  completeSubtitle: { marginBottom: Spacing.xl },
+  completeSubtitle: {},
+  completeTotalTime: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: Colors.accent,
+    fontVariant: ['tabular-nums'] as const,
+    marginBottom: Spacing.xl,
+  },
   completionActions: {
     flexDirection: 'row',
     gap: Spacing.sm,
@@ -257,12 +297,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.xl,
     borderRadius: Radius.md,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: Colors.borderMid,
   },
   exitButton: {
     paddingVertical: Spacing.sm + 2,
     paddingHorizontal: Spacing.xl,
     borderRadius: Radius.md,
-    backgroundColor: Colors.fill.primary,
+    backgroundColor: Colors.accent,
   },
 });

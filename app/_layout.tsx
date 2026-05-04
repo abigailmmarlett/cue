@@ -33,7 +33,8 @@ export default function RootLayout() {
           contentStyle: { backgroundColor: Colors.background },
         }}
       >
-        <Stack.Screen name="index" options={{ title: 'Cue', headerLargeTitle: true }} />
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="library" options={{ headerShown: false }} />
         <Stack.Screen
           name="builder/index"
           options={{ title: 'New Sequence', presentation: 'modal' }}
