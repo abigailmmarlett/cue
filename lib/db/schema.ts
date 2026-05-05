@@ -108,6 +108,13 @@ export function runMigrations(): void {
     // Column already exists
   }
 
+  db.execSync(`
+    CREATE TABLE IF NOT EXISTS preferences (
+      key   TEXT PRIMARY KEY NOT NULL,
+      value TEXT NOT NULL
+    );
+  `);
+
   // Data migration: assign existing exercises (section_id IS NULL) to a default "Main" section
   const unmigrated = db.getAllSync<{ sequence_id: string }>(
     `SELECT DISTINCT sequence_id FROM exercises WHERE section_id IS NULL;`

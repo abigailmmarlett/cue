@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Divider } from '@/components/ui/Divider';
 import { TagChips } from '@/components/TagChips';
 import { Colors, Spacing } from '@/constants/theme';
+import { useTheme } from '@/lib/contexts/ThemeContext';
 import { useSequence } from '@/lib/hooks/useSequence';
 import { formatSeconds, totalDuration } from '@/lib/utils/time';
 
@@ -15,6 +16,8 @@ export default function SequenceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const navigation = useNavigation();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const { sequence, sections, exercises, loading, refresh } = useSequence(id);
 
   useFocusEffect(
@@ -141,65 +144,67 @@ export default function SequenceDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  container: { flex: 1 },
-  scroll: { paddingBottom: Spacing.xl },
-  summary: {
-    flexDirection: 'row',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.lg,
-  },
-  summaryItem: {
-    flex: 1,
-    alignItems: 'center',
-    gap: Spacing.xs,
-  },
-  summaryLabel: { letterSpacing: 0.8 },
-  summaryDivider: {
-    width: StyleSheet.hairlineWidth,
-    backgroundColor: Colors.border,
-    marginVertical: Spacing.xs,
-  },
-  noExercises: {
-    padding: Spacing.xl,
-    alignItems: 'center',
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.lg,
-    paddingBottom: Spacing.xs,
-  },
-  sectionLabel: { letterSpacing: 0.8 },
-  exerciseRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.md,
-    gap: Spacing.sm,
-  },
-  exerciseIndex: {
-    width: 28,
-    alignItems: 'center',
-  },
-  exerciseInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  tagChips: { marginTop: 4 },
-  exerciseDuration: { fontVariant: ['tabular-nums'] },
-  footer: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    padding: Spacing.md,
-    paddingBottom: Spacing.lg,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.border,
-    backgroundColor: Colors.background,
-  },
-  editButton: { flex: 1 },
-  startButton: { flex: 2 },
-});
+function makeStyles(c: typeof Colors) {
+  return StyleSheet.create({
+    loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+    container: { flex: 1 },
+    scroll: { paddingBottom: Spacing.xl },
+    summary: {
+      flexDirection: 'row',
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.lg,
+    },
+    summaryItem: {
+      flex: 1,
+      alignItems: 'center',
+      gap: Spacing.xs,
+    },
+    summaryLabel: { letterSpacing: 0.8 },
+    summaryDivider: {
+      width: StyleSheet.hairlineWidth,
+      backgroundColor: c.border,
+      marginVertical: Spacing.xs,
+    },
+    noExercises: {
+      padding: Spacing.xl,
+      alignItems: 'center',
+    },
+    sectionHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: Spacing.md,
+      paddingTop: Spacing.lg,
+      paddingBottom: Spacing.xs,
+    },
+    sectionLabel: { letterSpacing: 0.8 },
+    exerciseRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: Spacing.md,
+      paddingHorizontal: Spacing.md,
+      gap: Spacing.sm,
+    },
+    exerciseIndex: {
+      width: 28,
+      alignItems: 'center',
+    },
+    exerciseInfo: {
+      flex: 1,
+      gap: 2,
+    },
+    tagChips: { marginTop: 4 },
+    exerciseDuration: { fontVariant: ['tabular-nums'] },
+    footer: {
+      flexDirection: 'row',
+      gap: Spacing.sm,
+      padding: Spacing.md,
+      paddingBottom: Spacing.lg,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: c.border,
+      backgroundColor: c.background,
+    },
+    editButton: { flex: 1 },
+    startButton: { flex: 2 },
+  });
+}

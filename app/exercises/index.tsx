@@ -4,6 +4,7 @@ import { Text } from '@/components/ui/Text';
 import { TagChips } from '@/components/TagChips';
 import { TagPicker } from '@/components/TagPicker';
 import { Colors, Spacing, FontSize } from '@/constants/theme';
+import { useTheme } from '@/lib/contexts/ThemeContext';
 import {
   getAllLibraryExercises,
   createLibraryExercise,
@@ -15,6 +16,8 @@ import {
 } from '@/lib/db/libraryExercises';
 
 export default function ExerciseLibraryScreen() {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const [exercises, setExercises] = useState<LibraryExerciseWithTags[]>([]);
   const [addingNew, setAddingNew] = useState(false);
   const [newNameText, setNewNameText] = useState('');
@@ -125,7 +128,7 @@ export default function ExerciseLibraryScreen() {
               value={newNameText}
               onChangeText={setNewNameText}
               placeholder="Exercise name"
-              placeholderTextColor={Colors.text.tertiary}
+              placeholderTextColor={colors.text.tertiary}
               autoFocus
               returnKeyType="done"
               onSubmitEditing={handleAdd}
@@ -163,70 +166,72 @@ export default function ExerciseLibraryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: { paddingBottom: Spacing.xl },
-  row: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.border,
-    paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.sm,
-  },
-  nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  exerciseName: { flex: 1 },
-  editRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  editInput: {
-    flex: 1,
-    fontSize: FontSize.base,
-    color: Colors.text.primary,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderStrong,
-    paddingVertical: 2,
-  },
-  actionBtn: {
-    paddingHorizontal: Spacing.xs,
-    paddingVertical: Spacing.xs,
-  },
-  editIcon: {
-    fontSize: 15,
-    color: Colors.text.secondary,
-  },
-  deleteIcon: {
-    fontSize: 13,
-    color: Colors.text.tertiary,
-  },
-  tagsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: Spacing.xs,
-    gap: Spacing.sm,
-    flexWrap: 'wrap',
-  },
-  tagChips: { flex: 1 },
-  editTagsBtn: {},
-  addSection: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.border,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
-  },
-  addRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    paddingVertical: Spacing.sm,
-  },
-  addIcon: {
-    fontSize: 18,
-    color: Colors.text.tertiary,
-    lineHeight: 22,
-  },
-});
+function makeStyles(c: typeof Colors) {
+  return StyleSheet.create({
+    container: { flex: 1 },
+    content: { paddingBottom: Spacing.xl },
+    row: {
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: c.border,
+      paddingHorizontal: Spacing.md,
+      paddingTop: Spacing.md,
+      paddingBottom: Spacing.sm,
+    },
+    nameRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    exerciseName: { flex: 1 },
+    editRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+    },
+    editInput: {
+      flex: 1,
+      fontSize: FontSize.base,
+      color: c.text.primary,
+      borderBottomWidth: 1,
+      borderBottomColor: c.borderStrong,
+      paddingVertical: 2,
+    },
+    actionBtn: {
+      paddingHorizontal: Spacing.xs,
+      paddingVertical: Spacing.xs,
+    },
+    editIcon: {
+      fontSize: 15,
+      color: c.text.secondary,
+    },
+    deleteIcon: {
+      fontSize: 13,
+      color: c.text.tertiary,
+    },
+    tagsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: Spacing.xs,
+      gap: Spacing.sm,
+      flexWrap: 'wrap',
+    },
+    tagChips: { flex: 1 },
+    editTagsBtn: {},
+    addSection: {
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: c.border,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.md,
+    },
+    addRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+      paddingVertical: Spacing.sm,
+    },
+    addIcon: {
+      fontSize: 18,
+      color: c.text.tertiary,
+      lineHeight: 22,
+    },
+  });
+}

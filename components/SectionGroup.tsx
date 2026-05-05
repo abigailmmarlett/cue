@@ -1,6 +1,7 @@
 import { View, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { Text } from './ui/Text';
 import { Colors, Spacing, FontSize, FontWeight } from '@/constants/theme';
+import { useTheme } from '@/lib/contexts/ThemeContext';
 
 interface Props {
   name: string;
@@ -11,7 +12,54 @@ interface Props {
   children: React.ReactNode;
 }
 
+function makeStyles(c: typeof Colors) {
+  return StyleSheet.create({
+    container: {
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: c.border,
+      marginTop: Spacing.sm,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: Spacing.md,
+      paddingTop: Spacing.md,
+      paddingBottom: Spacing.xs,
+    },
+    nameInput: {
+      flex: 1,
+      fontSize: FontSize.sm,
+      fontWeight: FontWeight.semibold,
+      color: c.text.secondary,
+      letterSpacing: 0.5,
+      textTransform: 'uppercase',
+      paddingVertical: 0,
+    },
+    deleteButton: {
+      paddingLeft: Spacing.sm,
+    },
+    deleteIcon: {
+      fontSize: 14,
+    },
+    addExerciseRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.sm,
+    },
+    addIcon: {
+      fontSize: 20,
+      color: c.text.tertiary,
+      lineHeight: 24,
+    },
+  });
+}
+
 export function SectionGroup({ name, canDelete, onRename, onDelete, onAddExercise, children }: Props) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -20,7 +68,7 @@ export function SectionGroup({ name, canDelete, onRename, onDelete, onAddExercis
           value={name}
           onChangeText={onRename}
           placeholder="Section name"
-          placeholderTextColor={Colors.text.tertiary}
+          placeholderTextColor={colors.text.tertiary}
           returnKeyType="done"
           maxLength={60}
         />
@@ -40,45 +88,3 @@ export function SectionGroup({ name, canDelete, onRename, onDelete, onAddExercis
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.border,
-    marginTop: Spacing.sm,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.xs,
-  },
-  nameInput: {
-    flex: 1,
-    fontSize: FontSize.sm,
-    fontWeight: FontWeight.semibold,
-    color: Colors.text.secondary,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-    paddingVertical: 0,
-  },
-  deleteButton: {
-    paddingLeft: Spacing.sm,
-  },
-  deleteIcon: {
-    fontSize: 14,
-  },
-  addExerciseRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-  },
-  addIcon: {
-    fontSize: 20,
-    color: Colors.text.tertiary,
-    lineHeight: 24,
-  },
-});

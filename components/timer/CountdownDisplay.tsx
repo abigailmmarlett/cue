@@ -1,6 +1,7 @@
 import { View, StyleSheet } from 'react-native';
 import { Text } from '../ui/Text';
 import { Colors, Spacing } from '@/constants/theme';
+import { useTheme } from '@/lib/contexts/ThemeContext';
 import { formatSeconds } from '@/lib/utils/time';
 
 interface Props {
@@ -11,6 +12,40 @@ interface Props {
   nextExerciseName?: string | null;
 }
 
+function makeStyles(c: typeof Colors) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: Spacing.xl,
+    },
+    position: {
+      marginBottom: Spacing.md,
+      letterSpacing: 1,
+      textTransform: 'uppercase',
+    },
+    exerciseName: {
+      textAlign: 'center',
+      marginBottom: Spacing.lg,
+      fontSize: 28,
+      letterSpacing: -0.5,
+    },
+    countdown: {
+      color: c.text.primary,
+      marginBottom: Spacing.xl,
+    },
+    nextContainer: {
+      alignItems: 'center',
+      gap: 2,
+      minHeight: 36,
+    },
+    nextName: {
+      textAlign: 'center',
+    },
+  });
+}
+
 export function CountdownDisplay({
   timeRemaining,
   exerciseIndex,
@@ -18,6 +53,9 @@ export function CountdownDisplay({
   currentExerciseName,
   nextExerciseName,
 }: Props) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
+
   return (
     <View style={styles.container}>
       <Text variant="label" color="tertiary" style={styles.position}>
@@ -51,35 +89,3 @@ export function CountdownDisplay({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.xl,
-  },
-  position: {
-    marginBottom: Spacing.md,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-  },
-  exerciseName: {
-    textAlign: 'center',
-    marginBottom: Spacing.lg,
-    fontSize: 28,
-    letterSpacing: -0.5,
-  },
-  countdown: {
-    color: Colors.text.primary,
-    marginBottom: Spacing.xl,
-  },
-  nextContainer: {
-    alignItems: 'center',
-    gap: 2,
-    minHeight: 36,
-  },
-  nextName: {
-    textAlign: 'center',
-  },
-});

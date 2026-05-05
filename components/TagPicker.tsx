@@ -6,11 +6,11 @@ import {
   TextInput,
   StyleSheet,
   SafeAreaView,
-  Alert,
 } from 'react-native';
 import { useState, useEffect, useCallback } from 'react';
 import { Text } from './ui/Text';
 import { Colors, Spacing, Radius, FontSize } from '@/constants/theme';
+import { useTheme } from '@/lib/contexts/ThemeContext';
 import {
   getAllTagCategories,
   getTagValuesByCategory,
@@ -32,7 +32,109 @@ interface CategoryWithValues extends TagCategory {
   newValueText: string;
 }
 
+function makeStyles(c: typeof Colors) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.background },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.md,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.border,
+    },
+    headerBtn: { minWidth: 60 },
+    headerTitle: { textAlign: 'center' },
+    scroll: { flex: 1 },
+    empty: {
+      alignItems: 'center',
+      paddingVertical: Spacing.xl,
+      gap: Spacing.xs,
+    },
+    category: {
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: c.border,
+      paddingTop: Spacing.md,
+      paddingBottom: Spacing.xs,
+      paddingHorizontal: Spacing.md,
+    },
+    categoryName: {
+      letterSpacing: 0.8,
+      marginBottom: Spacing.sm,
+    },
+    valueRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.md,
+      paddingVertical: Spacing.sm,
+    },
+    checkbox: {
+      width: 22,
+      height: 22,
+      borderRadius: Radius.sm,
+      borderWidth: 1.5,
+      borderColor: c.borderStrong,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    checkmark: {
+      fontSize: 13,
+      color: c.text.inverse,
+      lineHeight: 16,
+    },
+    addValueRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+      paddingVertical: Spacing.sm,
+      marginTop: Spacing.xs,
+    },
+    addCategorySection: {
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: c.border,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.md,
+    },
+    addCategoryRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+      paddingVertical: Spacing.sm,
+    },
+    addIcon: {
+      fontSize: 18,
+      color: c.text.tertiary,
+      lineHeight: 22,
+    },
+    inlineInput: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+      paddingVertical: Spacing.xs,
+    },
+    input: {
+      flex: 1,
+      fontSize: FontSize.base,
+      color: c.text.primary,
+      borderBottomWidth: 1,
+      borderBottomColor: c.borderStrong,
+      paddingVertical: Spacing.xs,
+    },
+    inlineAddBtn: {
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: Spacing.xs,
+    },
+    inlineCancelBtn: {
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: Spacing.xs,
+    },
+  });
+}
+
 export function TagPicker({ selectedTagValueIds, onConfirm, onClose }: Props) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const [categories, setCategories] = useState<CategoryWithValues[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set(selectedTagValueIds));
   const [addingCategory, setAddingCategory] = useState(false);
@@ -97,7 +199,6 @@ export function TagPicker({ selectedTagValueIds, onConfirm, onClose }: Props) {
   return (
     <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <SafeAreaView style={styles.container}>
-        {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.headerBtn}>
             <Text variant="label" color="secondary">Cancel</Text>
@@ -131,7 +232,7 @@ export function TagPicker({ selectedTagValueIds, onConfirm, onClose }: Props) {
                     onPress={() => toggleValue(val.id)}
                     activeOpacity={0.7}
                   >
-                    <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
+                    <View style={[styles.checkbox, isSelected && { backgroundColor: colors.fill.primary, borderColor: colors.fill.primary }]}>
                       {isSelected && <Text style={styles.checkmark}>✓</Text>}
                     </View>
                     <Text variant="body">{val.label}</Text>
@@ -146,7 +247,7 @@ export function TagPicker({ selectedTagValueIds, onConfirm, onClose }: Props) {
                     value={cat.newValueText}
                     onChangeText={(t) => setCategoryField(cat.id, 'newValueText', t)}
                     placeholder="Value name"
-                    placeholderTextColor={Colors.text.tertiary}
+                    placeholderTextColor={colors.text.tertiary}
                     autoFocus
                     returnKeyType="done"
                     onSubmitEditing={() => handleAddValue(cat.id, cat.newValueText)}
@@ -177,7 +278,6 @@ export function TagPicker({ selectedTagValueIds, onConfirm, onClose }: Props) {
             </View>
           ))}
 
-          {/* Add category */}
           <View style={styles.addCategorySection}>
             {addingCategory ? (
               <View style={styles.inlineInput}>
@@ -186,7 +286,7 @@ export function TagPicker({ selectedTagValueIds, onConfirm, onClose }: Props) {
                   value={newCategoryText}
                   onChangeText={setNewCategoryText}
                   placeholder="Category name"
-                  placeholderTextColor={Colors.text.tertiary}
+                  placeholderTextColor={colors.text.tertiary}
                   autoFocus
                   returnKeyType="done"
                   onSubmitEditing={handleAddCategory}
@@ -217,105 +317,3 @@ export function TagPicker({ selectedTagValueIds, onConfirm, onClose }: Props) {
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
-  },
-  headerBtn: { minWidth: 60 },
-  headerTitle: { textAlign: 'center' },
-  scroll: { flex: 1 },
-  empty: {
-    alignItems: 'center',
-    paddingVertical: Spacing.xl,
-    gap: Spacing.xs,
-  },
-  category: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.border,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.xs,
-    paddingHorizontal: Spacing.md,
-  },
-  categoryName: {
-    letterSpacing: 0.8,
-    marginBottom: Spacing.sm,
-  },
-  valueRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    paddingVertical: Spacing.sm,
-  },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: Radius.sm,
-    borderWidth: 1.5,
-    borderColor: Colors.borderStrong,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkboxSelected: {
-    backgroundColor: Colors.fill.primary,
-    borderColor: Colors.fill.primary,
-  },
-  checkmark: {
-    fontSize: 13,
-    color: Colors.text.inverse,
-    lineHeight: 16,
-  },
-  addValueRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    paddingVertical: Spacing.sm,
-    marginTop: Spacing.xs,
-  },
-  addCategorySection: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.border,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
-  },
-  addCategoryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    paddingVertical: Spacing.sm,
-  },
-  addIcon: {
-    fontSize: 18,
-    color: Colors.text.tertiary,
-    lineHeight: 22,
-  },
-  inlineInput: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    paddingVertical: Spacing.xs,
-  },
-  input: {
-    flex: 1,
-    fontSize: FontSize.base,
-    color: Colors.text.primary,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderStrong,
-    paddingVertical: Spacing.xs,
-  },
-  inlineAddBtn: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-  },
-  inlineCancelBtn: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-  },
-});

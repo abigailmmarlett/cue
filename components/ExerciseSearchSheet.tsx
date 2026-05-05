@@ -13,6 +13,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Text } from './ui/Text';
 import { TagChips } from './TagChips';
 import { Colors, Spacing, Radius, FontSize } from '@/constants/theme';
+import { useTheme } from '@/lib/contexts/ThemeContext';
 import {
   getAllLibraryExercises,
   type LibraryExerciseWithTags,
@@ -24,7 +25,70 @@ interface Props {
   onClose: () => void;
 }
 
+function makeStyles(c: typeof Colors) {
+  return StyleSheet.create({
+    flex: { flex: 1 },
+    container: { flex: 1, backgroundColor: c.background },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.md,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.border,
+    },
+    cancelBtn: { minWidth: 60 },
+    headerTitle: { textAlign: 'center' },
+    searchRow: {
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.sm,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.border,
+    },
+    searchInput: {
+      backgroundColor: c.surface,
+      borderRadius: Radius.md,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.sm,
+      fontSize: FontSize.base,
+      color: c.text.primary,
+    },
+    emptyState: {
+      alignItems: 'center',
+      paddingVertical: Spacing.xl,
+      gap: Spacing.xs,
+    },
+    resultRow: {
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.md,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.border,
+    },
+    resultBody: {
+      gap: 4,
+    },
+    resultTags: {},
+    createRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.md,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: c.border,
+    },
+    createIcon: {
+      fontSize: 18,
+      color: c.text.tertiary,
+      lineHeight: 22,
+    },
+  });
+}
+
 export function ExerciseSearchSheet({ onSelect, onCreateNew, onClose }: Props) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const [query, setQuery] = useState('');
   const [library, setLibrary] = useState<LibraryExerciseWithTags[]>([]);
 
@@ -50,7 +114,6 @@ export function ExerciseSearchSheet({ onSelect, onCreateNew, onClose }: Props) {
           style={styles.flex}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          {/* Header */}
           <View style={styles.header}>
             <TouchableOpacity onPress={onClose} style={styles.cancelBtn}>
               <Text variant="label" color="secondary">Cancel</Text>
@@ -59,21 +122,19 @@ export function ExerciseSearchSheet({ onSelect, onCreateNew, onClose }: Props) {
             <View style={styles.cancelBtn} />
           </View>
 
-          {/* Search input */}
           <View style={styles.searchRow}>
             <TextInput
               style={styles.searchInput}
               value={query}
               onChangeText={setQuery}
               placeholder="Search or type a name…"
-              placeholderTextColor={Colors.text.tertiary}
+              placeholderTextColor={colors.text.tertiary}
               autoFocus
               returnKeyType="search"
               clearButtonMode="while-editing"
             />
           </View>
 
-          {/* Results */}
           <FlatList
             data={results}
             keyExtractor={(item) => item.id}
@@ -124,62 +185,3 @@ export function ExerciseSearchSheet({ onSelect, onCreateNew, onClose }: Props) {
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  container: { flex: 1, backgroundColor: Colors.background },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
-  },
-  cancelBtn: { minWidth: 60 },
-  headerTitle: { textAlign: 'center' },
-  searchRow: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
-  },
-  searchInput: {
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.md,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    fontSize: FontSize.base,
-    color: Colors.text.primary,
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: Spacing.xl,
-    gap: Spacing.xs,
-  },
-  resultRow: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
-  },
-  resultBody: {
-    gap: 4,
-  },
-  resultTags: {},
-  createRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.border,
-  },
-  createIcon: {
-    fontSize: 18,
-    color: Colors.text.tertiary,
-    lineHeight: 22,
-  },
-});

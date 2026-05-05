@@ -1,6 +1,6 @@
 import { View, StyleSheet, ViewStyle } from 'react-native';
 import { Text } from './ui/Text';
-import { Colors } from '@/constants/theme';
+import { useTheme } from '@/lib/contexts/ThemeContext';
 import type { ExerciseTag } from '@/lib/db/tags';
 
 interface Props {
@@ -9,12 +9,16 @@ interface Props {
 }
 
 export function TagChips({ tags, style }: Props) {
+  const { colors } = useTheme();
   if (tags.length === 0) return null;
   return (
     <View style={[styles.row, style]}>
       {tags.map((tag) => (
-        <View key={tag.tagValueId} style={styles.chip}>
-          <Text style={styles.label}>{tag.label}</Text>
+        <View
+          key={tag.tagValueId}
+          style={[styles.chip, { backgroundColor: colors.pill.bg, borderColor: colors.pill.border }]}
+        >
+          <Text style={[styles.label, { color: colors.pill.text }]}>{tag.label}</Text>
         </View>
       ))}
     </View>
@@ -28,9 +32,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   chip: {
-    backgroundColor: Colors.pill.bg,
     borderWidth: 1,
-    borderColor: Colors.pill.border,
     borderTopLeftRadius: 3,
     borderBottomLeftRadius: 3,
     borderTopRightRadius: 10,
@@ -42,7 +44,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 9,
     fontWeight: '700',
-    color: Colors.pill.text,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },

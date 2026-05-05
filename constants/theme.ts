@@ -2,6 +2,7 @@ export const Colors = {
   background: '#f4faf4',
   bgAlt: '#eaf4ea',
   headerBg: '#ddf3dd',
+  headerBgDark: '#b8e6bc',
   surface: 'rgba(0,0,0,0.03)',
   surfaceSolid: '#ffffff',
   border: 'rgba(0,0,0,0.07)',
@@ -32,6 +33,44 @@ export const Colors = {
   },
   nav: {
     bg: 'rgba(244,250,244,0.97)',
+  },
+};
+
+export const DarkBaseColors = {
+  background: '#111214',
+  bgAlt: '#191b1e',
+  headerBg: '#1c1f23',
+  headerBgDark: '#24282d',
+  surface: 'rgba(255,255,255,0.05)',
+  surfaceSolid: '#1c1f23',
+  border: 'rgba(255,255,255,0.08)',
+  borderMid: 'rgba(255,255,255,0.14)',
+  borderStrong: 'rgba(255,255,255,0.22)',
+  text: {
+    primary: '#eef2ee',
+    secondary: 'rgba(238,242,238,0.55)',
+    tertiary: 'rgba(238,242,238,0.35)',
+    inverse: '#111214',
+  },
+  accent: '#16a34a',
+  accentDeep: '#15803d',
+  accentDim: 'rgba(22,163,74,0.15)',
+  accentBorder: 'rgba(22,163,74,0.3)',
+  pill: {
+    bg: 'rgba(22,163,74,0.12)',
+    border: 'rgba(22,163,74,0.25)',
+    text: '#16a34a',
+    activeBg: '#16a34a',
+    activeText: '#eef2ee',
+  },
+  danger: '#f87171',
+  dangerDim: 'rgba(248,113,113,0.12)',
+  fill: {
+    primary: '#16a34a',
+    secondary: 'rgba(255,255,255,0.05)',
+  },
+  nav: {
+    bg: 'rgba(17,18,20,0.97)',
   },
 };
 

@@ -1,5 +1,6 @@
 import { View, StyleSheet, ViewStyle } from 'react-native';
-import { Colors, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
+import { useTheme } from '@/lib/contexts/ThemeContext';
 
 interface Props {
   inset?: boolean;
@@ -7,13 +8,22 @@ interface Props {
 }
 
 export function Divider({ inset, style }: Props) {
-  return <View style={[styles.line, inset && styles.inset, style]} />;
+  const { colors } = useTheme();
+  return (
+    <View
+      style={[
+        styles.line,
+        { backgroundColor: colors.border },
+        inset && styles.inset,
+        style,
+      ]}
+    />
+  );
 }
 
 const styles = StyleSheet.create({
   line: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: Colors.border,
   },
   inset: {
     marginLeft: Spacing.md,

@@ -1,6 +1,7 @@
 import { View, TextInput, TouchableOpacity, StyleSheet, Alert, Platform } from 'react-native';
 import { Text } from './ui/Text';
 import { Colors, Spacing, FontSize, FontWeight } from '@/constants/theme';
+import { useTheme } from '@/lib/contexts/ThemeContext';
 import { formatSeconds } from '@/lib/utils/time';
 import { DRAG_ITEM_HEIGHT } from './DraggableList';
 
@@ -21,8 +22,82 @@ interface Props {
   onEditTags: () => void;
 }
 
+function makeStyles(c: typeof Colors) {
+  return StyleSheet.create({
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      height: DRAG_ITEM_HEIGHT,
+      paddingHorizontal: Spacing.md,
+      backgroundColor: c.background,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.border,
+    },
+    handle: {
+      width: 32,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    handleIcon: {
+      fontSize: 18,
+      lineHeight: 24,
+    },
+    nameInput: {
+      flex: 1,
+      fontSize: FontSize.base,
+      fontWeight: FontWeight.regular,
+      color: c.text.primary,
+      paddingVertical: 0,
+      marginHorizontal: Spacing.sm,
+    },
+    nameInputLinked: {
+      color: c.text.secondary,
+    },
+    linkedIcon: {
+      fontSize: 14,
+      color: c.text.tertiary,
+      paddingHorizontal: Spacing.xs,
+      marginRight: Spacing.xs,
+    },
+    tagButton: {
+      paddingHorizontal: Spacing.xs,
+      paddingVertical: Spacing.xs,
+      marginRight: Spacing.xs,
+    },
+    tagIcon: {
+      fontSize: 13,
+      color: c.text.tertiary,
+    },
+    tagIconActive: {
+      color: c.text.secondary,
+    },
+    durationButton: {
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: Spacing.xs,
+      backgroundColor: c.surface,
+      borderRadius: 6,
+      minWidth: 48,
+      alignItems: 'center',
+    },
+    durationText: {
+      fontVariant: ['tabular-nums'],
+    },
+    deleteButton: {
+      width: 32,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    deleteIcon: {
+      fontSize: 14,
+    },
+  });
+}
+
 export function ExerciseRow({ exercise, onNameChange, onDurationChange, onDelete, onEditTags }: Props) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const isLinked = !!exercise.libraryExerciseId;
+
   const editDuration = () => {
     if (Platform.OS === 'ios') {
       Alert.prompt(
@@ -49,7 +124,7 @@ export function ExerciseRow({ exercise, onNameChange, onDurationChange, onDelete
         value={exercise.name}
         onChangeText={onNameChange}
         placeholder="Exercise name"
-        placeholderTextColor={Colors.text.tertiary}
+        placeholderTextColor={colors.text.tertiary}
         returnKeyType="done"
         maxLength={60}
         editable={!isLinked}
@@ -77,72 +152,3 @@ export function ExerciseRow({ exercise, onNameChange, onDurationChange, onDelete
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: DRAG_ITEM_HEIGHT,
-    paddingHorizontal: Spacing.md,
-    backgroundColor: Colors.background,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
-  },
-  handle: {
-    width: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  handleIcon: {
-    fontSize: 18,
-    lineHeight: 24,
-  },
-  nameInput: {
-    flex: 1,
-    fontSize: FontSize.base,
-    fontWeight: FontWeight.regular,
-    color: Colors.text.primary,
-    paddingVertical: 0,
-    marginHorizontal: Spacing.sm,
-  },
-  nameInputLinked: {
-    color: Colors.text.secondary,
-  },
-  linkedIcon: {
-    fontSize: 14,
-    color: Colors.text.tertiary,
-    paddingHorizontal: Spacing.xs,
-    marginRight: Spacing.xs,
-  },
-  tagButton: {
-    paddingHorizontal: Spacing.xs,
-    paddingVertical: Spacing.xs,
-    marginRight: Spacing.xs,
-  },
-  tagIcon: {
-    fontSize: 13,
-    color: Colors.text.tertiary,
-  },
-  tagIconActive: {
-    color: Colors.text.secondary,
-  },
-  durationButton: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    backgroundColor: Colors.surface,
-    borderRadius: 6,
-    minWidth: 48,
-    alignItems: 'center',
-  },
-  durationText: {
-    fontVariant: ['tabular-nums'],
-  },
-  deleteButton: {
-    width: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  deleteIcon: {
-    fontSize: 14,
-  },
-});

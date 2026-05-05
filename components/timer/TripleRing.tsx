@@ -2,6 +2,7 @@ import { View, StyleSheet } from 'react-native';
 import Animated, { useAnimatedProps, useSharedValue, withTiming, Easing } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
 import { useEffect } from 'react';
+import { useTheme } from '@/lib/contexts/ThemeContext';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -32,6 +33,7 @@ interface Props {
 }
 
 export function TripleRing({ exerciseProgress, sectionProgress, totalProgress, children }: Props) {
+  const { colors } = useTheme();
   const innerVal = useSharedValue(exerciseProgress);
   const midVal = useSharedValue(sectionProgress);
   const outerVal = useSharedValue(totalProgress);
@@ -66,21 +68,21 @@ export function TripleRing({ exerciseProgress, sectionProgress, totalProgress, c
         {/* Track rings */}
         <Circle
           cx={CENTER} cy={CENTER} r={R_INNER}
-          stroke="rgba(0,0,0,0.07)" strokeWidth={STROKE} fill="none"
+          stroke={colors.border} strokeWidth={STROKE} fill="none"
         />
         <Circle
           cx={CENTER} cy={CENTER} r={R_MID}
-          stroke="rgba(0,0,0,0.07)" strokeWidth={STROKE} fill="none"
+          stroke={colors.border} strokeWidth={STROKE} fill="none"
         />
         <Circle
           cx={CENTER} cy={CENTER} r={R_OUTER}
-          stroke="rgba(0,0,0,0.07)" strokeWidth={STROKE} fill="none"
+          stroke={colors.border} strokeWidth={STROKE} fill="none"
         />
 
         {/* Progress rings — rotate -90° so they start at the top */}
         <AnimatedCircle
           cx={CENTER} cy={CENTER} r={R_INNER}
-          stroke="#16a34a" strokeWidth={STROKE} fill="none"
+          stroke={colors.accent} strokeWidth={STROKE} fill="none"
           strokeDasharray={C_INNER}
           strokeLinecap="round"
           rotation="-90"
@@ -89,7 +91,7 @@ export function TripleRing({ exerciseProgress, sectionProgress, totalProgress, c
         />
         <AnimatedCircle
           cx={CENTER} cy={CENTER} r={R_MID}
-          stroke="#4ade80" strokeWidth={STROKE} fill="none"
+          stroke={colors.accentDeep} strokeWidth={STROKE} fill="none"
           strokeDasharray={C_MID}
           strokeLinecap="round"
           rotation="-90"
@@ -98,7 +100,7 @@ export function TripleRing({ exerciseProgress, sectionProgress, totalProgress, c
         />
         <AnimatedCircle
           cx={CENTER} cy={CENTER} r={R_OUTER}
-          stroke="rgba(22,163,74,0.3)" strokeWidth={STROKE} fill="none"
+          stroke={colors.accentDim} strokeWidth={STROKE} fill="none"
           strokeDasharray={C_OUTER}
           strokeLinecap="round"
           rotation="-90"

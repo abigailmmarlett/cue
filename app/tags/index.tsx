@@ -2,6 +2,7 @@ import { View, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert } from
 import { useState, useCallback, useEffect } from 'react';
 import { Text } from '@/components/ui/Text';
 import { Colors, Spacing, FontSize } from '@/constants/theme';
+import { useTheme } from '@/lib/contexts/ThemeContext';
 import {
   getAllTagCategories,
   getTagValuesByCategory,
@@ -24,6 +25,8 @@ interface CategoryWithValues extends TagCategory {
 }
 
 export default function TagsScreen() {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const [categories, setCategories] = useState<CategoryWithValues[]>([]);
   const [addingCategory, setAddingCategory] = useState(false);
   const [newCategoryText, setNewCategoryText] = useState('');
@@ -203,7 +206,7 @@ export default function TagsScreen() {
                 value={cat.newValueText}
                 onChangeText={(t) => setCatField(cat.id, { newValueText: t })}
                 placeholder="Value name"
-                placeholderTextColor={Colors.text.tertiary}
+                placeholderTextColor={colors.text.tertiary}
                 autoFocus
                 returnKeyType="done"
                 onSubmitEditing={() => handleAddValue(cat)}
@@ -240,7 +243,7 @@ export default function TagsScreen() {
               value={newCategoryText}
               onChangeText={setNewCategoryText}
               placeholder="Category name"
-              placeholderTextColor={Colors.text.tertiary}
+              placeholderTextColor={colors.text.tertiary}
               autoFocus
               returnKeyType="done"
               onSubmitEditing={handleAddCategory}
@@ -266,80 +269,82 @@ export default function TagsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: { paddingBottom: Spacing.xl },
-  category: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.border,
-    paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.xs,
-  },
-  categoryHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: Spacing.xs,
-    marginBottom: Spacing.xs,
-  },
-  categoryName: {
-    flex: 1,
-    fontSize: FontSize.base,
-    letterSpacing: 0.3,
-  },
-  valueRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: Spacing.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.border,
-  },
-  valueLabel: { flex: 1 },
-  editRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    paddingVertical: Spacing.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.border,
-  },
-  editInput: {
-    flex: 1,
-    fontSize: FontSize.base,
-    color: Colors.text.primary,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderStrong,
-    paddingVertical: 2,
-  },
-  actionBtn: {
-    paddingHorizontal: Spacing.xs,
-    paddingVertical: Spacing.xs,
-  },
-  editIcon: {
-    fontSize: 15,
-    color: Colors.text.secondary,
-  },
-  deleteIcon: {
-    fontSize: 13,
-    color: Colors.text.tertiary,
-  },
-  addRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    paddingVertical: Spacing.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.border,
-  },
-  addCategorySection: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.border,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
-  },
-  addIcon: {
-    fontSize: 18,
-    color: Colors.text.tertiary,
-    lineHeight: 22,
-  },
-});
+function makeStyles(c: typeof Colors) {
+  return StyleSheet.create({
+    container: { flex: 1 },
+    content: { paddingBottom: Spacing.xl },
+    category: {
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: c.border,
+      paddingHorizontal: Spacing.md,
+      paddingTop: Spacing.md,
+      paddingBottom: Spacing.xs,
+    },
+    categoryHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: Spacing.xs,
+      marginBottom: Spacing.xs,
+    },
+    categoryName: {
+      flex: 1,
+      fontSize: FontSize.base,
+      letterSpacing: 0.3,
+    },
+    valueRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: Spacing.sm,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: c.border,
+    },
+    valueLabel: { flex: 1 },
+    editRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+      paddingVertical: Spacing.sm,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: c.border,
+    },
+    editInput: {
+      flex: 1,
+      fontSize: FontSize.base,
+      color: c.text.primary,
+      borderBottomWidth: 1,
+      borderBottomColor: c.borderStrong,
+      paddingVertical: 2,
+    },
+    actionBtn: {
+      paddingHorizontal: Spacing.xs,
+      paddingVertical: Spacing.xs,
+    },
+    editIcon: {
+      fontSize: 15,
+      color: c.text.secondary,
+    },
+    deleteIcon: {
+      fontSize: 13,
+      color: c.text.tertiary,
+    },
+    addRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+      paddingVertical: Spacing.sm,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: c.border,
+    },
+    addCategorySection: {
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: c.border,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.md,
+    },
+    addIcon: {
+      fontSize: 18,
+      color: c.text.tertiary,
+      lineHeight: 22,
+    },
+  });
+}

@@ -11,8 +11,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '@/components/ui/Text';
 import { TagChips } from '@/components/TagChips';
 import { TagPicker } from '@/components/TagPicker';
+import { ScreenHeader } from '@/components/ScreenHeader';
 import { TabBar } from '@/components/TabBar';
 import { Colors, Spacing } from '@/constants/theme';
+import { useTheme } from '@/lib/contexts/ThemeContext';
 import {
   getAllLibraryExercises,
   createLibraryExercise,
@@ -24,18 +26,154 @@ import {
 } from '@/lib/db/libraryExercises';
 import type { ExerciseTag } from '@/lib/db/tags';
 
-const CAT_COLORS = [
-  '#16a34a', '#15803d', '#4d7c0f', '#065f46',
-  '#047857', '#166534', '#14532d', '#1a5c2a',
-];
+function buildCatColors(accent: string, deep: string): string[] {
+  return [
+    accent,
+    deep,
+    `${accent}dd`,
+    `${deep}dd`,
+    `${accent}bb`,
+    `${deep}bb`,
+    `${accent}99`,
+    `${deep}99`,
+  ];
+}
 
-function getCatColor(name: string, allNames: string[]) {
+function getCatColor(name: string, allNames: string[], catColors: string[]) {
   const idx = allNames.indexOf(name);
-  return CAT_COLORS[Math.max(0, idx) % CAT_COLORS.length];
+  return catColors[Math.max(0, idx) % catColors.length];
+}
+
+function makeStyles(c: typeof Colors) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.background },
+    scroll: { flex: 1 },
+    scrollContent: { paddingTop: 14, paddingHorizontal: 14 },
+    empty: { paddingTop: 80, alignItems: 'center' },
+    addRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+      backgroundColor: c.surfaceSolid,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: c.border,
+      paddingHorizontal: 13,
+      paddingVertical: 12,
+      marginBottom: 16,
+    },
+    addInput: {
+      flex: 1,
+      fontSize: 14,
+      color: c.text.primary,
+      padding: 0,
+    },
+    actionBtn: {},
+    actionAdd: {
+      fontSize: 13,
+      fontWeight: '600',
+    },
+    actionCancel: {
+      fontSize: 13,
+      fontWeight: '500',
+      color: c.text.tertiary,
+    },
+    group: { marginBottom: 22 },
+    groupHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginBottom: 10,
+    },
+    groupDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 2,
+    },
+    groupLabel: {
+      fontSize: 10,
+      fontWeight: '800',
+      letterSpacing: 1.2,
+    },
+    groupLine: {
+      flex: 1,
+      height: 1,
+      backgroundColor: c.border,
+    },
+    groupCount: {
+      fontSize: 10,
+      color: c.text.tertiary,
+      fontWeight: '500',
+    },
+    exCard: {
+      flexDirection: 'row',
+      backgroundColor: c.surface,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: c.border,
+      marginBottom: 6,
+      overflow: 'hidden',
+    },
+    exAccentBar: {
+      width: 2,
+      opacity: 0.6,
+    },
+    exBody: {
+      flex: 1,
+      paddingHorizontal: 12,
+      paddingVertical: 11,
+    },
+    exNameRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    exName: {
+      flex: 1,
+      fontSize: 14,
+      fontWeight: '600',
+      color: c.text.primary,
+      letterSpacing: -0.2,
+    },
+    iconBtn: { padding: 4 },
+    editIcon: { fontSize: 14, color: c.text.secondary },
+    deleteIcon: { fontSize: 12, color: c.text.tertiary },
+    editRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+    },
+    editInput: {
+      flex: 1,
+      fontSize: 14,
+      color: c.text.primary,
+      borderBottomWidth: 1,
+      borderBottomColor: c.borderMid,
+      paddingVertical: 2,
+      padding: 0,
+    },
+    exTagsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+      marginTop: 6,
+      flexWrap: 'wrap',
+    },
+    editTagsLabel: {
+      fontSize: 11,
+      color: c.text.tertiary,
+    },
+  });
 }
 
 export default function LibraryScreen() {
   const { top } = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
+  const catColors = useMemo(
+    () => buildCatColors(colors.accent, colors.accentDeep),
+    [colors.accent, colors.accentDeep]
+  );
   const [exercises, setExercises] = useState<LibraryExerciseWithTags[]>([]);
   const [search, setSearch] = useState('');
   const [activeFilterTags, setActiveFilterTags] = useState<ExerciseTag[]>([]);
@@ -128,70 +266,18 @@ export default function LibraryScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: top + 8 }]}>
-        <View style={styles.wordmarkRow}>
-          <View style={styles.wordmarkLeft}>
-            <View style={styles.accentBar} />
-            <View>
-              <Text style={styles.wordmark}>library</Text>
-              <Text style={styles.countLabel}>
-                {exercises.length} exercise{exercises.length !== 1 ? 's' : ''}
-              </Text>
-            </View>
-          </View>
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => setAddingNew(true)}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.addButtonText}>+</Text>
-          </TouchableOpacity>
-        </View>
+      <ScreenHeader
+        title="library"
+        countLabel={`${exercises.length} exercise${exercises.length !== 1 ? 's' : ''}`}
+        safeTop={top}
+        onAdd={() => setAddingNew(true)}
+        search={search}
+        onSearchChange={setSearch}
+        tagPills={allTagPills}
+        activeTagIds={activeFilterTags.map((t) => t.tagValueId)}
+        onTagToggle={toggleTag}
+      />
 
-        <View style={styles.searchBar}>
-          <Text style={styles.searchIcon}>⌕</Text>
-          <TextInput
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Search exercises…"
-            placeholderTextColor={Colors.text.tertiary}
-            style={styles.searchInput}
-          />
-          {search.length > 0 && (
-            <TouchableOpacity onPress={() => setSearch('')} hitSlop={8}>
-              <Text style={styles.searchClear}>✕</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {allTagPills.length > 0 && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.pillsRow}
-            keyboardShouldPersistTaps="handled"
-          >
-            {allTagPills.map((tag) => {
-              const active = activeFilterTags.some((t) => t.tagValueId === tag.tagValueId);
-              return (
-                <TouchableOpacity
-                  key={tag.tagValueId}
-                  style={[styles.pill, active && styles.pillActive]}
-                  onPress={() => toggleTag(tag)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.pillText, active && styles.pillTextActive]}>
-                    {tag.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        )}
-      </View>
-
-      {/* Exercise list */}
       <ScrollView
         style={styles.scroll}
         keyboardShouldPersistTaps="handled"
@@ -204,13 +290,13 @@ export default function LibraryScreen() {
               value={newNameText}
               onChangeText={setNewNameText}
               placeholder="Exercise name"
-              placeholderTextColor={Colors.text.tertiary}
+              placeholderTextColor={colors.text.tertiary}
               autoFocus
               returnKeyType="done"
               onSubmitEditing={handleAdd}
             />
             <TouchableOpacity onPress={handleAdd} style={styles.actionBtn} hitSlop={8}>
-              <Text style={styles.actionAdd}>Add</Text>
+              <Text style={[styles.actionAdd, { color: colors.accent }]}>Add</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => { setAddingNew(false); setNewNameText(''); }} hitSlop={8}>
               <Text style={styles.actionCancel}>Cancel</Text>
@@ -227,13 +313,13 @@ export default function LibraryScreen() {
         ) : (
           Array.from(grouped.entries()).map(([groupName, exs]) => {
             const color = groupName === 'Untagged'
-              ? Colors.text.tertiary
-              : getCatColor(groupName, allGroupNames);
+              ? colors.text.tertiary
+              : getCatColor(groupName, allGroupNames, catColors);
             return (
               <View key={groupName} style={styles.group}>
                 <View style={styles.groupHeader}>
                   <View style={[styles.groupDot, { backgroundColor: color }]} />
-                  <Text style={[styles.groupLabel, { color: Colors.text.tertiary }]}>
+                  <Text style={[styles.groupLabel, { color: colors.text.tertiary }]}>
                     {groupName.toUpperCase()}
                   </Text>
                   <View style={styles.groupLine} />
@@ -296,6 +382,8 @@ function ExerciseItem({
   ex, accentColor, isEditing, editText, onEditText,
   onStartEdit, onFinishEdit, onCancelEdit, onDelete, onEditTags,
 }: ExerciseItemProps) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   return (
     <View style={styles.exCard}>
       <View style={[styles.exAccentBar, { backgroundColor: accentColor }]} />
@@ -312,7 +400,7 @@ function ExerciseItem({
               onBlur={onFinishEdit}
             />
             <TouchableOpacity onPress={onFinishEdit} hitSlop={8}>
-              <Text style={styles.actionAdd}>Done</Text>
+              <Text style={[styles.actionAdd, { color: colors.accent }]}>Done</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={onCancelEdit} hitSlop={8}>
               <Text style={styles.actionCancel}>Cancel</Text>
@@ -342,237 +430,3 @@ function ExerciseItem({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  header: {
-    backgroundColor: Colors.headerBg,
-    paddingHorizontal: 22,
-    paddingBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-  },
-  wordmarkRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    marginBottom: 22,
-  },
-  wordmarkLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  accentBar: {
-    width: 3,
-    height: 50,
-    backgroundColor: Colors.accent,
-    borderRadius: 2,
-  },
-  wordmark: {
-    fontSize: 52,
-    fontWeight: '800',
-    letterSpacing: -2.5,
-    color: Colors.text.primary,
-    lineHeight: 45,
-  },
-  countLabel: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: Colors.text.tertiary,
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
-    marginTop: 6,
-  },
-  addButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    borderColor: Colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 4,
-  },
-  addButtonText: {
-    fontSize: 22,
-    fontWeight: '300',
-    color: Colors.accent,
-    lineHeight: 26,
-    marginTop: -1,
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: 'rgba(255,255,255,0.8)',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-    borderWidth: 1,
-    borderColor: Colors.borderMid,
-    marginBottom: 14,
-  },
-  searchIcon: {
-    fontSize: 16,
-    color: Colors.text.tertiary,
-    lineHeight: 18,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-    color: Colors.text.primary,
-    padding: 0,
-  },
-  searchClear: {
-    fontSize: 12,
-    color: Colors.text.tertiary,
-  },
-  pillsRow: {
-    flexDirection: 'row',
-    gap: 7,
-    paddingRight: 4,
-  },
-  pill: {
-    backgroundColor: Colors.pill.bg,
-    borderWidth: 1,
-    borderColor: Colors.pill.border,
-    borderTopLeftRadius: 4,
-    borderBottomLeftRadius: 4,
-    borderTopRightRadius: 12,
-    borderBottomRightRadius: 12,
-    paddingVertical: 6,
-    paddingLeft: 11,
-    paddingRight: 13,
-  },
-  pillActive: {
-    backgroundColor: Colors.pill.activeBg,
-    borderColor: Colors.accent,
-  },
-  pillText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: Colors.pill.text,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  pillTextActive: {
-    color: Colors.pill.activeText,
-  },
-  scroll: { flex: 1 },
-  scrollContent: { paddingTop: 14, paddingHorizontal: 14 },
-  empty: { paddingTop: 80, alignItems: 'center' },
-  addRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    backgroundColor: Colors.surfaceSolid,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    paddingHorizontal: 13,
-    paddingVertical: 12,
-    marginBottom: 16,
-  },
-  addInput: {
-    flex: 1,
-    fontSize: 14,
-    color: Colors.text.primary,
-    padding: 0,
-  },
-  actionAdd: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.accent,
-  },
-  actionCancel: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: Colors.text.tertiary,
-  },
-  group: { marginBottom: 22 },
-  groupHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 10,
-  },
-  groupDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 2,
-  },
-  groupLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 1.2,
-  },
-  groupLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: Colors.border,
-  },
-  groupCount: {
-    fontSize: 10,
-    color: Colors.text.tertiary,
-    fontWeight: '500',
-  },
-  exCard: {
-    flexDirection: 'row',
-    backgroundColor: Colors.surface,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    marginBottom: 6,
-    overflow: 'hidden',
-  },
-  exAccentBar: {
-    width: 2,
-    opacity: 0.6,
-  },
-  exBody: {
-    flex: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-  },
-  exNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  exName: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.text.primary,
-    letterSpacing: -0.2,
-  },
-  iconBtn: { padding: 4 },
-  editIcon: { fontSize: 14, color: Colors.text.secondary },
-  deleteIcon: { fontSize: 12, color: Colors.text.tertiary },
-  editRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  editInput: {
-    flex: 1,
-    fontSize: 14,
-    color: Colors.text.primary,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderMid,
-    paddingVertical: 2,
-    padding: 0,
-  },
-  exTagsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    marginTop: 6,
-    flexWrap: 'wrap',
-  },
-  editTagsLabel: {
-    fontSize: 11,
-    color: Colors.text.tertiary,
-  },
-});

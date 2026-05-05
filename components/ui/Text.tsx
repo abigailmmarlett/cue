@@ -1,5 +1,6 @@
 import { Text as RNText, TextProps, StyleSheet } from 'react-native';
-import { Colors, FontSize, FontWeight } from '@/constants/theme';
+import { FontSize, FontWeight } from '@/constants/theme';
+import { useTheme } from '@/lib/contexts/ThemeContext';
 
 type Variant = 'title' | 'heading' | 'body' | 'label' | 'caption' | 'timer';
 type Color = 'primary' | 'secondary' | 'tertiary' | 'inverse';
@@ -10,18 +11,24 @@ interface Props extends TextProps {
 }
 
 export function Text({ variant = 'body', color = 'primary', style, ...props }: Props) {
+  const { colors } = useTheme();
+  const colorStyle = {
+    primary: { color: colors.text.primary },
+    secondary: { color: colors.text.secondary },
+    tertiary: { color: colors.text.tertiary },
+    inverse: { color: colors.text.inverse },
+  }[color];
+
   return (
     <RNText
-      style={[styles.base, styles[variant], colorStyles[color], style]}
+      style={[styles.base, styles[variant], colorStyle, style]}
       {...props}
     />
   );
 }
 
 const styles = StyleSheet.create({
-  base: {
-    color: Colors.text.primary,
-  },
+  base: {},
   title: {
     fontSize: FontSize['2xl'],
     fontWeight: FontWeight.bold,
@@ -50,11 +57,4 @@ const styles = StyleSheet.create({
     letterSpacing: -4,
     fontVariant: ['tabular-nums'],
   },
-});
-
-const colorStyles = StyleSheet.create({
-  primary: { color: Colors.text.primary },
-  secondary: { color: Colors.text.secondary },
-  tertiary: { color: Colors.text.tertiary },
-  inverse: { color: Colors.text.inverse },
 });

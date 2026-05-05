@@ -1,6 +1,7 @@
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Text } from '../ui/Text';
 import { Colors, Spacing, Radius } from '@/constants/theme';
+import { useTheme } from '@/lib/contexts/ThemeContext';
 import type { TimerStatus, TimerControls } from '@/lib/hooks/useTimer';
 
 interface Props {
@@ -8,14 +9,71 @@ interface Props {
   controls: TimerControls;
 }
 
+function makeStyles(c: typeof Colors) {
+  return StyleSheet.create({
+    container: {
+      paddingHorizontal: Spacing.xl,
+      paddingBottom: Spacing.lg,
+      gap: Spacing.lg,
+    },
+    primaryRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: Spacing.lg,
+    },
+    secondaryRow: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: Spacing.xl,
+    },
+    controlBtn: {
+      alignItems: 'center',
+      gap: Spacing.xs,
+      paddingVertical: Spacing.sm,
+      paddingHorizontal: Spacing.md,
+      borderRadius: Radius.md,
+      minWidth: 64,
+    },
+    controlBtnLg: {
+      minWidth: 80,
+      paddingVertical: Spacing.md,
+    },
+    controlBtnDisabled: {
+      opacity: 0.3,
+    },
+    controlIcon: {
+      fontSize: 22,
+      color: c.text.primary,
+    },
+    controlIconLg: {
+      fontSize: 26,
+    },
+    controlIconPrimary: {
+      color: c.text.inverse,
+    },
+    controlIconDisabled: {
+      color: c.text.tertiary,
+    },
+    controlLabel: {
+      textAlign: 'center',
+    },
+    textButton: {
+      paddingVertical: Spacing.xs,
+      paddingHorizontal: Spacing.md,
+    },
+  });
+}
+
 export function TimerControls({ status, controls }: Props) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const isIdle = status === 'idle';
   const isRunning = status === 'running';
   const isPaused = status === 'paused';
 
   return (
     <View style={styles.container}>
-      {/* Primary controls */}
       <View style={styles.primaryRow}>
         <ControlButton
           icon="←"
@@ -23,6 +81,7 @@ export function TimerControls({ status, controls }: Props) {
           onPress={controls.goBack}
           disabled={isIdle}
           size="md"
+          styles={styles}
         />
 
         <ControlButton
@@ -31,6 +90,8 @@ export function TimerControls({ status, controls }: Props) {
           onPress={isRunning ? controls.pause : isPaused ? controls.resume : controls.start}
           size="lg"
           primary
+          accentColor={colors.accent}
+          styles={styles}
         />
 
         <ControlButton
@@ -39,10 +100,10 @@ export function TimerControls({ status, controls }: Props) {
           onPress={controls.skip}
           disabled={isIdle}
           size="md"
+          styles={styles}
         />
       </View>
 
-      {/* Secondary controls */}
       <View style={styles.secondaryRow}>
         <TouchableOpacity onPress={controls.reset} style={styles.textButton} hitSlop={8}>
           <Text variant="label" color="tertiary">
@@ -61,9 +122,11 @@ interface ControlButtonProps {
   disabled?: boolean;
   size: 'md' | 'lg';
   primary?: boolean;
+  accentColor?: string;
+  styles: ReturnType<typeof makeStyles>;
 }
 
-function ControlButton({ icon, label, onPress, disabled, size, primary }: ControlButtonProps) {
+function ControlButton({ icon, label, onPress, disabled, size, primary, accentColor, styles }: ControlButtonProps) {
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -72,7 +135,7 @@ function ControlButton({ icon, label, onPress, disabled, size, primary }: Contro
       style={[
         styles.controlBtn,
         size === 'lg' && styles.controlBtnLg,
-        primary && styles.controlBtnPrimary,
+        primary && { backgroundColor: accentColor },
         disabled && styles.controlBtnDisabled,
       ]}
     >
@@ -96,61 +159,3 @@ function ControlButton({ icon, label, onPress, disabled, size, primary }: Contro
     </TouchableOpacity>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    paddingHorizontal: Spacing.xl,
-    paddingBottom: Spacing.lg,
-    gap: Spacing.lg,
-  },
-  primaryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.lg,
-  },
-  secondaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: Spacing.xl,
-  },
-  controlBtn: {
-    alignItems: 'center',
-    gap: Spacing.xs,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    borderRadius: Radius.md,
-    minWidth: 64,
-  },
-  controlBtnLg: {
-    backgroundColor: Colors.fill.primary,
-    minWidth: 80,
-    paddingVertical: Spacing.md,
-  },
-  controlBtnPrimary: {
-    backgroundColor: Colors.fill.primary,
-  },
-  controlBtnDisabled: {
-    opacity: 0.3,
-  },
-  controlIcon: {
-    fontSize: 22,
-    color: Colors.text.primary,
-  },
-  controlIconLg: {
-    fontSize: 26,
-  },
-  controlIconPrimary: {
-    color: Colors.text.inverse,
-  },
-  controlIconDisabled: {
-    color: Colors.text.tertiary,
-  },
-  controlLabel: {
-    textAlign: 'center',
-  },
-  textButton: {
-    paddingVertical: Spacing.xs,
-    paddingHorizontal: Spacing.md,
-  },
-});

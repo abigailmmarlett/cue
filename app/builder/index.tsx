@@ -18,6 +18,7 @@ import { TagPicker } from '@/components/TagPicker';
 import { ExerciseSearchSheet } from '@/components/ExerciseSearchSheet';
 import { Divider } from '@/components/ui/Divider';
 import { Colors, Spacing, Radius, FontSize, FontWeight } from '@/constants/theme';
+import { useTheme } from '@/lib/contexts/ThemeContext';
 import { TagChips } from '@/components/TagChips';
 import { createSequence } from '@/lib/db/sequences';
 import { createExercise } from '@/lib/db/exercises';
@@ -40,6 +41,8 @@ interface LocalSection {
 
 export default function NewSequenceScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const [name, setName] = useState('');
   const [sections, setSections] = useState<LocalSection[]>([
     { id: generateId(), name: 'Main', exercises: [] },
@@ -182,7 +185,7 @@ export default function NewSequenceScreen() {
           value={name}
           onChangeText={setName}
           placeholder="Sequence name"
-          placeholderTextColor={Colors.text.tertiary}
+          placeholderTextColor={colors.text.tertiary}
           returnKeyType="done"
           maxLength={80}
           autoFocus
@@ -239,7 +242,7 @@ export default function NewSequenceScreen() {
           onPress={save}
           disabled={!canSave}
           activeOpacity={0.8}
-          style={[styles.saveButton, !canSave && styles.saveButtonDisabled]}
+          style={[styles.saveButton, { backgroundColor: colors.fill.primary }, !canSave && styles.saveButtonDisabled]}
         >
           <Text variant="label" color="inverse">Save Sequence</Text>
         </TouchableOpacity>
@@ -292,53 +295,54 @@ export default function NewSequenceScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  content: { paddingBottom: Spacing.xl },
-  nameInput: {
-    fontSize: FontSize['2xl'],
-    fontWeight: FontWeight.bold,
-    color: Colors.text.primary,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
-    letterSpacing: -0.5,
-  },
-  sequenceTagsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    gap: Spacing.sm,
-  },
-  sequenceTagChips: { flex: 1 },
-  divider: { marginBottom: Spacing.xs },
-  addSectionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.border,
-    marginTop: Spacing.sm,
-  },
-  addIcon: {
-    fontSize: 20,
-    color: Colors.text.tertiary,
-    lineHeight: 24,
-  },
-  footer: {
-    padding: Spacing.md,
-    paddingBottom: Spacing.lg,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.border,
-    backgroundColor: Colors.background,
-  },
-  saveButton: {
-    backgroundColor: Colors.fill.primary,
-    borderRadius: Radius.md,
-    paddingVertical: Spacing.sm + 2,
-    alignItems: 'center',
-  },
-  saveButtonDisabled: { opacity: 0.35 },
-});
+function makeStyles(c: typeof Colors) {
+  return StyleSheet.create({
+    flex: { flex: 1 },
+    content: { paddingBottom: Spacing.xl },
+    nameInput: {
+      fontSize: FontSize['2xl'],
+      fontWeight: FontWeight.bold,
+      color: c.text.primary,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.md,
+      letterSpacing: -0.5,
+    },
+    sequenceTagsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.sm,
+      gap: Spacing.sm,
+    },
+    sequenceTagChips: { flex: 1 },
+    divider: { marginBottom: Spacing.xs },
+    addSectionRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.md,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: c.border,
+      marginTop: Spacing.sm,
+    },
+    addIcon: {
+      fontSize: 20,
+      color: c.text.tertiary,
+      lineHeight: 24,
+    },
+    footer: {
+      padding: Spacing.md,
+      paddingBottom: Spacing.lg,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: c.border,
+      backgroundColor: c.background,
+    },
+    saveButton: {
+      borderRadius: Radius.md,
+      paddingVertical: Spacing.sm + 2,
+      alignItems: 'center',
+    },
+    saveButtonDisabled: { opacity: 0.35 },
+  });
+}
