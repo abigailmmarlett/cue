@@ -3,15 +3,24 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
+import * as SplashScreen from 'expo-splash-screen';
+import { useState, useEffect } from 'react';
 
 import { runMigrations } from '@/lib/db/schema';
 import { ThemeProvider, useTheme } from '@/lib/contexts/ThemeContext';
+import { WelcomeScreen } from '@/components/WelcomeScreen';
 
 // Run synchronously before any screen renders
 runMigrations();
+SplashScreen.preventAutoHideAsync();
 
 function AppShell() {
   const { colors, isDark } = useTheme();
+  const [showWelcome, setShowWelcome] = useState(false);
+
+  useEffect(() => {
+    SplashScreen.hideAsync().then(() => setShowWelcome(true));
+  }, []);
 
   const navTheme = {
     ...(isDark ? DarkTheme : DefaultTheme),
@@ -63,6 +72,7 @@ function AppShell() {
         />
       </Stack>
       <StatusBar style={isDark ? 'light' : 'dark'} />
+      {showWelcome && <WelcomeScreen onComplete={() => setShowWelcome(false)} />}
     </NavThemeProvider>
   );
 }
