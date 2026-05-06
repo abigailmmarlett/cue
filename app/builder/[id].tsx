@@ -10,7 +10,8 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router';
+import { usePreventRemove } from '@react-navigation/native';
 import { Text } from '@/components/ui/Text';
 import { DraggableList } from '@/components/DraggableList';
 import { ExerciseRow, type LocalExercise } from '@/components/ExerciseRow';
@@ -47,8 +48,10 @@ interface LocalSection {
 export default function EditSequenceScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const navigation = useNavigation();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
+  const [isDirty, setIsDirty] = useState(false);
   const [name, setName] = useState('');
   const [sections, setSections] = useState<LocalSection[]>([]);
   const [scrollEnabled, setScrollEnabled] = useState(true);
@@ -63,6 +66,17 @@ export default function EditSequenceScreen() {
   const activeExercise = tagPickerExerciseId
     ? sections.flatMap((s) => s.exercises).find((e) => e.id === tagPickerExerciseId) ?? null
     : null;
+
+  usePreventRemove(isDirty, ({ data }) => {
+    Alert.alert(
+      'Discard changes?',
+      'You have unsaved changes. Are you sure you want to leave?',
+      [
+        { text: 'Keep editing', style: 'cancel' },
+        { text: 'Discard', style: 'destructive', onPress: () => navigation.dispatch(data.action) },
+      ]
+    );
+  });
 
   useEffect(() => {
     const seq = getSequenceById(id);
@@ -93,19 +107,23 @@ export default function EditSequenceScreen() {
     );
     setSequenceTags(getTagsForSequence(id));
     setLoading(false);
+    setIsDirty(false);
   }, [id, router]);
 
   const addSection = useCallback(() => {
+    setIsDirty(true);
     setSections((prev) => [...prev, { id: generateId(), name: '', exercises: [] }]);
   }, []);
 
   const renameSection = useCallback((sectionId: string, newName: string) => {
+    setIsDirty(true);
     setSections((prev) =>
       prev.map((s) => (s.id === sectionId ? { ...s, name: newName } : s))
     );
   }, []);
 
   const removeSection = useCallback((sectionId: string) => {
+    setIsDirty(true);
     setSections((prev) => prev.filter((s) => s.id !== sectionId));
   }, []);
 
@@ -118,6 +136,7 @@ export default function EditSequenceScreen() {
     loadBase: string[] | null = null,
     loadAmplified: string[] | null = null,
   ) => {
+    setIsDirty(true);
     setSections((prev) =>
       prev.map((s) =>
         s.id === sectionId
@@ -134,6 +153,7 @@ export default function EditSequenceScreen() {
   }, []);
 
   const updateExercise = useCallback((sectionId: string, exId: string, fields: Partial<LocalExercise>) => {
+    setIsDirty(true);
     setSections((prev) =>
       prev.map((s) =>
         s.id === sectionId
@@ -144,6 +164,7 @@ export default function EditSequenceScreen() {
   }, []);
 
   const removeExercise = useCallback((sectionId: string, exId: string) => {
+    setIsDirty(true);
     setSections((prev) =>
       prev.map((s) =>
         s.id === sectionId ? { ...s, exercises: s.exercises.filter((ex) => ex.id !== exId) } : s
@@ -152,6 +173,7 @@ export default function EditSequenceScreen() {
   }, []);
 
   const reorderExercises = useCallback((sectionId: string, from: number, to: number) => {
+    setIsDirty(true);
     setSections((prev) =>
       prev.map((s) => {
         if (s.id !== sectionId) return s;
@@ -194,6 +216,7 @@ export default function EditSequenceScreen() {
     }
 
     emitSequenceChange();
+    setIsDirty(false);
     router.back();
   }, [id, name, sequenceTags, router]);
 
@@ -269,7 +292,7 @@ export default function EditSequenceScreen() {
         <TextInput
           style={styles.nameInput}
           value={name}
-          onChangeText={setName}
+          onChangeText={(v) => { setIsDirty(true); setName(v); }}
           placeholder="Sequence name"
           placeholderTextColor={colors.text.tertiary}
           returnKeyType="done"
@@ -354,6 +377,7 @@ export default function EditSequenceScreen() {
           onConfirm={(ids) => {
             const all = getAllTagValuesWithCategory();
             const map = new Map(all.map((t) => [t.id, t]));
+            setIsDirty(true);
             setSequenceTags(ids.flatMap((id) => {
               const t = map.get(id);
               return t ? [{ tagValueId: t.id, categoryName: t.categoryName, label: t.label }] : [];

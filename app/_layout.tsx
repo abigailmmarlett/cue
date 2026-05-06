@@ -39,11 +39,11 @@ function AppShell() {
         <Stack.Screen name="preferences" options={{ headerShown: false, animation: 'none' }} />
         <Stack.Screen
           name="builder/index"
-          options={{ title: 'New Sequence', presentation: 'modal' }}
+          options={{ title: 'New Sequence', presentation: 'modal', headerBackButtonMenuEnabled: false }}
         />
         <Stack.Screen
           name="builder/[id]"
-          options={{ title: 'Edit Sequence', presentation: 'modal' }}
+          options={{ title: 'Edit Sequence', presentation: 'modal', headerBackButtonMenuEnabled: false }}
         />
         <Stack.Screen
           name="sequence/[id]/index"
