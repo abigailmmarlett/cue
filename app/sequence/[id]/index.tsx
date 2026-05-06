@@ -1,8 +1,10 @@
-import { View, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity, Share } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { useNavigation } from '@react-navigation/native';
 import { useCallback, useEffect } from 'react';
+import { SymbolView } from 'expo-symbols';
+import { serializeSequence, buildShareUrl } from '@/lib/utils/shareSequence';
 import { Text } from '@/components/ui/Text';
 import { Button } from '@/components/ui/Button';
 import { Divider } from '@/components/ui/Divider';
@@ -28,9 +30,24 @@ export default function SequenceDetailScreen() {
 
   useEffect(() => {
     if (sequence) {
-      navigation.setOptions({ title: sequence.name });
+      navigation.setOptions({
+        title: sequence.name,
+        headerRight: () => (
+          <TouchableOpacity
+            onPress={() => {
+              const payload = serializeSequence(id);
+              const url = buildShareUrl(payload);
+              Share.share({ message: url });
+            }}
+            hitSlop={12}
+            style={{ marginRight: 4 }}
+          >
+            <SymbolView name="square.and.arrow.up" size={22} tintColor={colors.accent} />
+          </TouchableOpacity>
+        ),
+      });
     }
-  }, [navigation, sequence]);
+  }, [navigation, sequence, id, colors.accent]);
 
   if (loading) {
     return (

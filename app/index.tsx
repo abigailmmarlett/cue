@@ -1,4 +1,5 @@
-import { View, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, FlatList, TouchableOpacity, StyleSheet, Share, Alert } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { Text } from '@/components/ui/Text';
 import { SequenceCard } from '@/components/SequenceCard';
 import { ScreenHeader } from '@/components/ScreenHeader';
@@ -7,6 +8,7 @@ import { Colors, Spacing } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
 import { useSequences } from '@/lib/hooks/useSequences';
 import { deleteSequence, duplicateSequence, updateSequenceFavorite } from '@/lib/db/sequences';
+import { serializeSequence, buildShareUrl, decodeShareData } from '@/lib/utils/shareSequence';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { useState, useCallback, useMemo, useRef } from 'react';
@@ -84,6 +86,16 @@ export default function SequencesScreen() {
     );
   };
 
+  const handleClipboardImport = async () => {
+    const text = await Clipboard.getStringAsync();
+    const payload = decodeShareData(text.trim());
+    if (!payload) {
+      Alert.alert('Nothing to Import', 'Copy a shared sequence link first, then tap Import.');
+      return;
+    }
+    router.push(`/import?data=${encodeURIComponent(JSON.stringify(payload))}`);
+  };
+
   return (
     <View style={styles.container}>
       <ScreenHeader
@@ -91,6 +103,7 @@ export default function SequencesScreen() {
         countLabel={`${sequences.length} sequence${sequences.length !== 1 ? 's' : ''}`}
         safeTop={top}
         onAdd={() => router.push('/builder')}
+        onImport={handleClipboardImport}
         search={search}
         onSearchChange={setSearch}
         tagPills={allTagPills}
@@ -129,6 +142,11 @@ export default function SequencesScreen() {
                 onDuplicate={() => { duplicateSequence(item.id); refresh(); }}
                 onDelete={() => { deleteSequence(item.id); refresh(); }}
                 onFavorite={() => { updateSequenceFavorite(item.id, !item.is_favorited); refresh(); }}
+                onShare={() => {
+                  const payload = serializeSequence(item.id);
+                  const url = buildShareUrl(payload);
+                  Share.share({ message: url });
+                }}
               />
             )}
           />

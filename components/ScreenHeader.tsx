@@ -1,5 +1,6 @@
 import { View, ScrollView, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { SymbolView } from 'expo-symbols';
 import { Text } from '@/components/ui/Text';
 import { Colors, Spacing } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
@@ -10,6 +11,7 @@ interface Props {
   countLabel?: string;
   safeTop: number;
   onAdd?: () => void;
+  onImport?: () => void;
   search?: string;
   onSearchChange?: (v: string) => void;
   tagPills?: ExerciseTag[];
@@ -59,6 +61,11 @@ function makeStyles(c: typeof Colors) {
       letterSpacing: 1.5,
       marginTop: 8,
     },
+    headerActions: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 8,
+    },
     addButton: {
       width: 38,
       height: 38,
@@ -74,6 +81,16 @@ function makeStyles(c: typeof Colors) {
       fontWeight: '300',
       lineHeight: 26,
       marginTop: -1,
+    },
+    importButton: {
+      width: 38,
+      height: 38,
+      borderRadius: 10,
+      borderWidth: 1.5,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 6,
+      flexShrink: 0,
     },
     searchBar: {
       flexDirection: 'row',
@@ -131,6 +148,7 @@ export function ScreenHeader({
   countLabel,
   safeTop,
   onAdd,
+  onImport,
   search = '',
   onSearchChange,
   tagPills = [],
@@ -155,14 +173,27 @@ export function ScreenHeader({
             ) : null}
           </View>
         </View>
-        {onAdd && (
-          <TouchableOpacity
-            style={[styles.addButton, { borderColor: colors.accent }]}
-            onPress={onAdd}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.addButtonText, { color: colors.accent }]}>+</Text>
-          </TouchableOpacity>
+        {(onImport || onAdd) && (
+          <View style={styles.headerActions}>
+            {onImport && (
+              <TouchableOpacity
+                style={[styles.importButton, { borderColor: colors.border }]}
+                onPress={onImport}
+                activeOpacity={0.7}
+              >
+                <SymbolView name="square.and.arrow.down" size={18} tintColor={colors.text.secondary} />
+              </TouchableOpacity>
+            )}
+            {onAdd && (
+              <TouchableOpacity
+                style={[styles.addButton, { borderColor: colors.accent }]}
+                onPress={onAdd}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.addButtonText, { color: colors.accent }]}>+</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         )}
       </View>
 
