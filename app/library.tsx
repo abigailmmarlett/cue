@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '@/components/ui/Text';
 import { TagChips } from '@/components/TagChips';
 import { TagPicker } from '@/components/TagPicker';
+import { LoadEditor } from '@/components/LoadEditor';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { TabBar } from '@/components/TabBar';
 import { Colors, Spacing } from '@/constants/theme';
@@ -21,11 +22,13 @@ import {
   getAllLibraryExercises,
   createLibraryExercise,
   updateLibraryExercise,
+  updateLibraryExerciseLoad,
   deleteLibraryExercise,
   setLibraryExerciseTags,
   getLinkedCount,
   type LibraryExerciseWithTags,
 } from '@/lib/db/libraryExercises';
+import { getAllLoadIcons, parseLoad, serializeLoad, type LoadIcon } from '@/lib/db/loadIcons';
 import type { ExerciseTag } from '@/lib/db/tags';
 
 function buildCatColors(accent: string, deep: string): string[] {
@@ -138,8 +141,8 @@ function makeStyles(c: typeof Colors) {
       letterSpacing: -0.2,
     },
     iconBtn: { padding: 4 },
-    editIcon: { fontSize: 14, color: c.text.secondary },
-    deleteIcon: { fontSize: 12, color: c.text.tertiary },
+    editIcon: { fontSize: 17, color: c.text.secondary },
+    deleteIcon: { fontSize: 14, color: c.text.tertiary },
     editRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -184,6 +187,8 @@ export default function LibraryScreen() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editNameText, setEditNameText] = useState('');
   const [tagPickerExerciseId, setTagPickerExerciseId] = useState<string | null>(null);
+  const [editLoadExerciseId, setEditLoadExerciseId] = useState<string | null>(null);
+  const [allLoadIcons] = useState<LoadIcon[]>(() => getAllLoadIcons());
 
   const load = useCallback(() => {
     setExercises(getAllLibraryExercises());
@@ -266,6 +271,10 @@ export default function LibraryScreen() {
     ? exercises.find((e) => e.id === tagPickerExerciseId) ?? null
     : null;
 
+  const editLoadTarget = editLoadExerciseId
+    ? exercises.find((e) => e.id === editLoadExerciseId) ?? null
+    : null;
+
   return (
     <View style={styles.container}>
       <KeyboardAvoidingView
@@ -346,6 +355,7 @@ export default function LibraryScreen() {
                     onCancelEdit={() => setEditingId(null)}
                     onDelete={() => handleDelete(ex)}
                     onEditTags={() => setTagPickerExerciseId(ex.id)}
+                    onEditLoad={allLoadIcons.length > 0 ? () => setEditLoadExerciseId(ex.id) : undefined}
                   />
                 ))}
               </View>
@@ -369,6 +379,27 @@ export default function LibraryScreen() {
           onClose={() => setTagPickerExerciseId(null)}
         />
       )}
+
+      {editLoadTarget && (
+        <LoadEditor
+          visible
+          loadModified={parseLoad(editLoadTarget.load_modified) ?? []}
+          loadBase={parseLoad(editLoadTarget.load_base) ?? []}
+          loadAmplified={parseLoad(editLoadTarget.load_amplified) ?? []}
+          allIcons={allLoadIcons}
+          onSave={(modified, base, amplified) => {
+            updateLibraryExerciseLoad(
+              editLoadTarget.id,
+              serializeLoad(modified.length > 0 ? modified : null),
+              serializeLoad(base.length > 0 ? base : null),
+              serializeLoad(amplified.length > 0 ? amplified : null),
+            );
+            setEditLoadExerciseId(null);
+            load();
+          }}
+          onClose={() => setEditLoadExerciseId(null)}
+        />
+      )}
     </View>
   );
 }
@@ -384,14 +415,16 @@ interface ExerciseItemProps {
   onCancelEdit: () => void;
   onDelete: () => void;
   onEditTags: () => void;
+  onEditLoad?: () => void;
 }
 
 function ExerciseItem({
   ex, accentColor, isEditing, editText, onEditText,
-  onStartEdit, onFinishEdit, onCancelEdit, onDelete, onEditTags,
+  onStartEdit, onFinishEdit, onCancelEdit, onDelete, onEditTags, onEditLoad,
 }: ExerciseItemProps) {
   const { colors } = useTheme();
   const styles = makeStyles(colors);
+  const hasLoad = !!(ex.load_modified || ex.load_base || ex.load_amplified);
   return (
     <View style={styles.exCard}>
       <View style={[styles.exAccentBar, { backgroundColor: accentColor }]} />
@@ -417,6 +450,11 @@ function ExerciseItem({
         ) : (
           <View style={styles.exNameRow}>
             <Text style={styles.exName}>{ex.name}</Text>
+            {onEditLoad && (
+              <TouchableOpacity onPress={onEditLoad} hitSlop={8} style={styles.iconBtn}>
+                <Text style={[styles.editIcon, { color: hasLoad ? colors.text.secondary : colors.text.tertiary }]}>⊙</Text>
+              </TouchableOpacity>
+            )}
             <TouchableOpacity onPress={onStartEdit} hitSlop={8} style={styles.iconBtn}>
               <Text style={styles.editIcon}>✎</Text>
             </TouchableOpacity>

@@ -70,6 +70,18 @@ export function createLibraryExercise(name: string): LibraryExercise {
   return { id, name, created_at: now, updated_at: now, load_modified: null, load_base: null, load_amplified: null };
 }
 
+export function updateLibraryExerciseLoad(
+  id: string,
+  loadModified: string | null,
+  loadBase: string | null,
+  loadAmplified: string | null,
+): void {
+  db.runSync(
+    `UPDATE library_exercises SET load_modified = ?, load_base = ?, load_amplified = ?, updated_at = ? WHERE id = ?;`,
+    [loadModified, loadBase, loadAmplified, Date.now(), id],
+  );
+}
+
 export function updateLibraryExercise(id: string, name: string): void {
   const now = Date.now();
   db.runSync(`UPDATE library_exercises SET name = ?, updated_at = ? WHERE id = ?;`, [name, now, id]);
