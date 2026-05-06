@@ -12,6 +12,7 @@ interface Props {
   onPlay: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
+  onFavorite: () => void;
 }
 
 function makeStyles(c: typeof Colors) {
@@ -59,12 +60,21 @@ function makeStyles(c: typeof Colors) {
       flex: 1,
       minWidth: 0,
     },
+    nameRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      marginBottom: 4,
+    },
     name: {
       fontSize: 17,
       fontWeight: '700',
       color: c.text.primary,
       letterSpacing: -0.5,
-      marginBottom: 4,
+      flex: 1,
+    },
+    star: {
+      fontSize: 14,
     },
     meta: {
       flexDirection: 'row',
@@ -105,7 +115,7 @@ function makeStyles(c: typeof Colors) {
   });
 }
 
-export function SequenceCard({ sequence, onPress, onPlay, onDuplicate, onDelete }: Props) {
+export function SequenceCard({ sequence, onPress, onPlay, onDuplicate, onDelete, onFavorite }: Props) {
   const { colors } = useTheme();
   const styles = makeStyles(colors);
 
@@ -153,7 +163,12 @@ export function SequenceCard({ sequence, onPress, onPlay, onDuplicate, onDelete 
         </TouchableOpacity>
 
         <View style={styles.body}>
-          <Text style={styles.name} numberOfLines={1}>{sequence.name}</Text>
+          <View style={styles.nameRow}>
+            <TouchableOpacity onPress={onFavorite} hitSlop={8} activeOpacity={0.7}>
+              <Text style={[styles.star, { color: sequence.is_favorited ? '#f59e0b' : colors.text.tertiary }]}>★</Text>
+            </TouchableOpacity>
+            <Text style={styles.name} numberOfLines={1}>{sequence.name}</Text>
+          </View>
           <View style={styles.meta}>
             <Text style={[styles.metaTime, { color: colors.accent }]}>{totalTime}</Text>
             <Text style={styles.metaDot}>·</Text>
