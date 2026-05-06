@@ -57,6 +57,10 @@ function AppShell() {
           name="tags/index"
           options={{ title: 'Tags' }}
         />
+        <Stack.Screen
+          name="import"
+          options={{ title: 'Shared Sequence', presentation: 'modal', headerBackButtonMenuEnabled: false }}
+        />
       </Stack>
       <StatusBar style={isDark ? 'light' : 'dark'} />
     </NavThemeProvider>

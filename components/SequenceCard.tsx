@@ -13,6 +13,7 @@ interface Props {
   onDuplicate: () => void;
   onDelete: () => void;
   onFavorite: () => void;
+  onShare: () => void;
 }
 
 function makeStyles(c: typeof Colors) {
@@ -115,7 +116,7 @@ function makeStyles(c: typeof Colors) {
   });
 }
 
-export function SequenceCard({ sequence, onPress, onPlay, onDuplicate, onDelete, onFavorite }: Props) {
+export function SequenceCard({ sequence, onPress, onPlay, onDuplicate, onDelete, onFavorite, onShare }: Props) {
   const { colors } = useTheme();
   const styles = makeStyles(colors);
 
@@ -123,14 +124,15 @@ export function SequenceCard({ sequence, onPress, onPlay, onDuplicate, onDelete,
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
         {
-          options: ['Cancel', 'Edit', 'Duplicate', 'Delete'],
+          options: ['Cancel', 'Edit', 'Duplicate', 'Share', 'Delete'],
           cancelButtonIndex: 0,
-          destructiveButtonIndex: 3,
+          destructiveButtonIndex: 4,
         },
         (index) => {
           if (index === 1) onPress();
           if (index === 2) onDuplicate();
-          if (index === 3) confirmDelete();
+          if (index === 3) onShare();
+          if (index === 4) confirmDelete();
         }
       );
     }
