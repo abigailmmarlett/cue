@@ -131,6 +131,7 @@ export function runMigrations(): void {
   try { db.execSync(`ALTER TABLE exercises ADD COLUMN load_modified TEXT;`); } catch {}
   try { db.execSync(`ALTER TABLE exercises ADD COLUMN load_base TEXT;`); } catch {}
   try { db.execSync(`ALTER TABLE exercises ADD COLUMN load_amplified TEXT;`); } catch {}
+  try { db.execSync(`ALTER TABLE exercises ADD COLUMN variation TEXT;`); } catch {}
 
   // Data migration: assign existing exercises (section_id IS NULL) to a default "Main" section
   const unmigrated = db.getAllSync<{ sequence_id: string }>(

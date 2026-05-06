@@ -32,6 +32,7 @@ export default function TimerScreen() {
     loadModified: parseLoad(e.load_modified),
     loadBase: parseLoad(e.load_base),
     loadAmplified: parseLoad(e.load_amplified),
+    variation: e.variation,
   }));
 
   const timerSections: TimerSection[] = sections.map((s) => ({
@@ -66,6 +67,8 @@ export default function TimerScreen() {
     (currentExercise?.loadModified?.length ?? 0) > 0 ||
     (currentExercise?.loadBase?.length ?? 0) > 0 ||
     (currentExercise?.loadAmplified?.length ?? 0) > 0;
+  const hasVariation = !!currentExercise?.variation;
+
 
   const exerciseProgress = currentExercise ? timeRemaining / currentExercise.duration : 1;
   const sectionProgress = currentSection && currentSection.duration > 0
@@ -191,6 +194,15 @@ export default function TimerScreen() {
         </View>
       </View>
 
+      {hasVariation && currentExercise && (
+        <View style={styles.variationIndicator}>
+          <Text style={[styles.variationIcon, { color: colors.accent }]}>◈</Text>
+          <Text variant="caption" color="secondary" style={styles.variationText}>
+            {currentExercise.variation}
+          </Text>
+        </View>
+      )}
+
       <TimerControls status={status} controls={controls} />
     </SafeAreaView>
   );
@@ -281,6 +293,18 @@ function makeStyles(c: typeof Colors) {
       gap: 4,
       alignItems: 'flex-start',
       marginTop: 6,
+    },
+    variationIndicator: {
+      alignItems: 'center',
+      gap: 6,
+      paddingHorizontal: Spacing.xl,
+      paddingBottom: Spacing.md,
+    },
+    variationIcon: {
+      fontSize: 14,
+    },
+    variationText: {
+      textAlign: 'center',
     },
     nextContainer: {
       alignItems: 'center',

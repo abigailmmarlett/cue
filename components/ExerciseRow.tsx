@@ -15,6 +15,7 @@ export interface LocalExercise {
   loadModified: string[] | null;
   loadBase: string[] | null;
   loadAmplified: string[] | null;
+  variation: string | null;
 }
 
 interface Props {
@@ -24,6 +25,7 @@ interface Props {
   onDelete: () => void;
   onEditTags: () => void;
   onEditLoad?: () => void;
+  onEditVariation?: () => void;
 }
 
 function makeStyles(c: typeof Colors) {
@@ -91,7 +93,7 @@ function makeStyles(c: typeof Colors) {
   });
 }
 
-export function ExerciseRow({ exercise, onNameChange, onDurationChange, onDelete, onEditTags, onEditLoad }: Props) {
+export function ExerciseRow({ exercise, onNameChange, onDurationChange, onDelete, onEditTags, onEditLoad, onEditVariation }: Props) {
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const hasLoad =
@@ -140,6 +142,12 @@ export function ExerciseRow({ exercise, onNameChange, onDurationChange, onDelete
       {onEditLoad && (
         <TouchableOpacity onPress={onEditLoad} hitSlop={8} style={styles.tagButton}>
           <Text style={[styles.tagIcon, hasLoad && styles.tagIconActive]}>⊙</Text>
+        </TouchableOpacity>
+      )}
+
+      {onEditVariation && (
+        <TouchableOpacity onPress={onEditVariation} hitSlop={8} style={styles.tagButton}>
+          <Text style={[styles.tagIcon, !!exercise.variation && styles.tagIconActive]}>◈</Text>
         </TouchableOpacity>
       )}
 

@@ -93,7 +93,7 @@ export default function NewSequenceScreen() {
     setSections((prev) =>
       prev.map((s) =>
         s.id === sectionId
-          ? { ...s, exercises: [...s.exercises, { id: generateId(), name, duration: 30, notes: null, tagValueIds, libraryExerciseId, loadModified: null, loadBase: null, loadAmplified: null }] }
+          ? { ...s, exercises: [...s.exercises, { id: generateId(), name, duration: 30, notes: null, tagValueIds, libraryExerciseId, loadModified: null, loadBase: null, loadAmplified: null, variation: null }] }
           : s
       )
     );

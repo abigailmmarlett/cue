@@ -102,6 +102,7 @@ export default function EditSequenceScreen() {
             loadModified: parseLoad(e.load_modified),
             loadBase: parseLoad(e.load_base),
             loadAmplified: parseLoad(e.load_amplified),
+            variation: e.variation,
           })),
       }))
     );
@@ -144,7 +145,7 @@ export default function EditSequenceScreen() {
               ...s,
               exercises: [
                 ...s.exercises,
-                { id: generateId(), name, duration: 30, notes: null, tagValueIds, libraryExerciseId, loadModified, loadBase, loadAmplified },
+                { id: generateId(), name, duration: 30, notes: null, tagValueIds, libraryExerciseId, loadModified, loadBase, loadAmplified, variation: null },
               ],
             }
           : s
@@ -224,7 +225,7 @@ export default function EditSequenceScreen() {
         const libId = ex.libraryExerciseId ?? null;
         upsertExercise(
           ex.id, id, section.id, ex.name.trim() || 'Exercise', ex.duration, eIdx, ex.notes ?? null, libId,
-          serializeLoad(ex.loadModified), serializeLoad(ex.loadBase), serializeLoad(ex.loadAmplified)
+          serializeLoad(ex.loadModified), serializeLoad(ex.loadBase), serializeLoad(ex.loadAmplified), ex.variation ?? null
         );
         setExerciseTags(ex.id, ex.tagValueIds);
       }
@@ -347,6 +348,15 @@ export default function EditSequenceScreen() {
                     onDelete={() => removeExercise(section.id, item.id)}
                     onEditTags={() => setTagPickerExerciseId(item.id)}
                     onEditLoad={allLoadIcons.length > 0 ? () => setEditLoadExerciseId(item.id) : undefined}
+                    onEditVariation={() => {
+                      Alert.prompt(
+                        'Variation',
+                        'Add a coaching instruction (e.g. "Hold at top")',
+                        (text) => updateExercise(section.id, item.id, { variation: text.trim() || null }),
+                        'plain-text',
+                        item.variation ?? ''
+                      );
+                    }}
                   />
                 )}
                 onReorder={(from, to) => reorderExercises(section.id, from, to)}

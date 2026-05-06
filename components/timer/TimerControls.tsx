@@ -85,7 +85,7 @@ export function TimerControls({ status, controls }: Props) {
         />
 
         <ControlButton
-          icon={isRunning ? '⏸' : '▶'}
+          icon={isRunning ? '❙❙' : '▶'}
           label={isRunning ? 'Pause' : isPaused ? 'Resume' : 'Start'}
           onPress={isRunning ? controls.pause : isPaused ? controls.resume : controls.start}
           size="lg"

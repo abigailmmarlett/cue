@@ -10,6 +10,7 @@ export interface TimerExercise {
   loadModified: string[] | null;
   loadBase: string[] | null;
   loadAmplified: string[] | null;
+  variation: string | null;
 }
 
 export interface TimerSection {
