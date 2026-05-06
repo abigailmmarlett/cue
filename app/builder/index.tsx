@@ -88,12 +88,12 @@ export default function NewSequenceScreen() {
     setSections((prev) => prev.filter((s) => s.id !== sectionId));
   }, []);
 
-  const addExercise = useCallback((sectionId: string, name = '', libraryExerciseId: string | null = null, tagValueIds: string[] = [], isBilateral = false) => {
+  const addExercise = useCallback((sectionId: string, name = '', libraryExerciseId: string | null = null, tagValueIds: string[] = [], isBilateral = false, tags: ExerciseTag[] = []) => {
     setIsDirty(true);
     setSections((prev) =>
       prev.map((s) =>
         s.id === sectionId
-          ? { ...s, exercises: [...s.exercises, { id: generateId(), name, duration: 30, notes: null, tagValueIds, libraryExerciseId, loadModified: null, loadBase: null, loadAmplified: null, variation: null, isBilateral, side: null }] }
+          ? { ...s, exercises: [...s.exercises, { id: generateId(), name, duration: 30, notes: null, tagValueIds, tags, libraryExerciseId, loadModified: null, loadBase: null, loadAmplified: null, variation: null, isBilateral, side: null }] }
           : s
       )
     );
@@ -295,7 +295,15 @@ export default function NewSequenceScreen() {
             const sectionId = sections.find((s) =>
               s.exercises.some((e) => e.id === tagPickerExerciseId)
             )?.id;
-            if (sectionId) updateExercise(sectionId, tagPickerExerciseId, { tagValueIds: ids });
+            if (sectionId) {
+              const all = getAllTagValuesWithCategory();
+              const map = new Map(all.map((t) => [t.id, t]));
+              const tags = ids.flatMap((id) => {
+                const t = map.get(id);
+                return t ? [{ tagValueId: t.id, categoryName: t.categoryName, label: t.label }] : [];
+              });
+              updateExercise(sectionId, tagPickerExerciseId, { tagValueIds: ids, tags });
+            }
             setTagPickerExerciseId(null);
           }}
           onClose={() => setTagPickerExerciseId(null)}
@@ -305,7 +313,7 @@ export default function NewSequenceScreen() {
       {exerciseSheetSectionId && (
         <ExerciseSearchSheet
           onSelect={(libEx) => {
-            addExercise(exerciseSheetSectionId, libEx.name, libEx.id, [], !!libEx.is_bilateral);
+            addExercise(exerciseSheetSectionId, libEx.name, libEx.id, [], !!libEx.is_bilateral, libEx.tags);
             setExerciseSheetSectionId(null);
           }}
           onCreateNew={(name) => {

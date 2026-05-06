@@ -9,7 +9,7 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 
-export const DRAG_ITEM_HEIGHT = 72;
+export const DRAG_ITEM_HEIGHT = 88;
 
 const SPRING = { damping: 20, stiffness: 200, mass: 0.5 };
 
