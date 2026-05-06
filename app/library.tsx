@@ -5,6 +5,8 @@ import {
   TextInput,
   StyleSheet,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -266,23 +268,28 @@ export default function LibraryScreen() {
 
   return (
     <View style={styles.container}>
-      <ScreenHeader
-        title="library"
-        countLabel={`${exercises.length} exercise${exercises.length !== 1 ? 's' : ''}`}
-        safeTop={top}
-        onAdd={() => setAddingNew(true)}
-        search={search}
-        onSearchChange={setSearch}
-        tagPills={allTagPills}
-        activeTagIds={activeFilterTags.map((t) => t.tagValueId)}
-        onTagToggle={toggleTag}
-      />
-
-      <ScrollView
-        style={styles.scroll}
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={styles.scrollContent}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={0}
       >
+        <ScreenHeader
+          title="library"
+          countLabel={`${exercises.length} exercise${exercises.length !== 1 ? 's' : ''}`}
+          safeTop={top}
+          onAdd={() => setAddingNew(true)}
+          search={search}
+          onSearchChange={setSearch}
+          tagPills={allTagPills}
+          activeTagIds={activeFilterTags.map((t) => t.tagValueId)}
+          onTagToggle={toggleTag}
+        />
+
+        <ScrollView
+          style={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={styles.scrollContent}
+        >
         {addingNew && (
           <View style={styles.addRow}>
             <TextInput
@@ -345,8 +352,9 @@ export default function LibraryScreen() {
             );
           })
         )}
-        <View style={{ height: Spacing.xl }} />
-      </ScrollView>
+          <View style={{ height: Spacing.xl }} />
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       <TabBar />
 
