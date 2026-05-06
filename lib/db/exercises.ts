@@ -11,11 +11,19 @@ export interface Exercise {
   notes: string | null;
   created_at: number;
   library_exercise_id: string | null;
+  load_modified: string | null;
+  load_base: string | null;
+  load_amplified: string | null;
 }
 
 export function getExercisesBySequenceId(sequenceId: string): Exercise[] {
   return db.getAllSync<Exercise>(
-    `SELECT e.* FROM exercises e
+    `SELECT e.id, e.sequence_id, e.section_id, e.name, e.duration, e.order_index, e.notes, e.created_at, e.library_exercise_id,
+      COALESCE(e.load_modified, le.load_modified) AS load_modified,
+      COALESCE(e.load_base, le.load_base) AS load_base,
+      COALESCE(e.load_amplified, le.load_amplified) AS load_amplified
+     FROM exercises e
+     LEFT JOIN library_exercises le ON le.id = e.library_exercise_id
      LEFT JOIN sections s ON s.id = e.section_id
      WHERE e.sequence_id = ?
      ORDER BY COALESCE(s.order_index, 0), e.order_index;`,
@@ -29,7 +37,14 @@ export function deleteExercisesBySequenceId(sequenceId: string): void {
 
 export function getExercisesBySectionId(sectionId: string): Exercise[] {
   return db.getAllSync<Exercise>(
-    `SELECT * FROM exercises WHERE section_id = ? ORDER BY order_index;`,
+    `SELECT e.id, e.sequence_id, e.section_id, e.name, e.duration, e.order_index, e.notes, e.created_at, e.library_exercise_id,
+      COALESCE(e.load_modified, le.load_modified) AS load_modified,
+      COALESCE(e.load_base, le.load_base) AS load_base,
+      COALESCE(e.load_amplified, le.load_amplified) AS load_amplified
+     FROM exercises e
+     LEFT JOIN library_exercises le ON le.id = e.library_exercise_id
+     WHERE e.section_id = ?
+     ORDER BY e.order_index;`,
     [sectionId]
   );
 }
@@ -56,7 +71,7 @@ export function createExercise(
     [id, sequenceId, sectionId, name, duration, orderIndex, notes ?? null, now, libraryExerciseId ?? null]
   );
 
-  return { id, sequence_id: sequenceId, section_id: sectionId, name, duration, order_index: orderIndex, notes: notes ?? null, created_at: now, library_exercise_id: libraryExerciseId ?? null };
+  return { id, sequence_id: sequenceId, section_id: sectionId, name, duration, order_index: orderIndex, notes: notes ?? null, created_at: now, library_exercise_id: libraryExerciseId ?? null, load_modified: null, load_base: null, load_amplified: null };
 }
 
 export function upsertExercise(
@@ -67,19 +82,25 @@ export function upsertExercise(
   duration: number,
   orderIndex: number,
   notes: string | null,
-  libraryExerciseId: string | null = null
+  libraryExerciseId: string | null = null,
+  loadModified: string | null = null,
+  loadBase: string | null = null,
+  loadAmplified: string | null = null
 ): void {
   db.runSync(
-    `INSERT INTO exercises (id, sequence_id, section_id, name, duration, order_index, notes, created_at, library_exercise_id)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `INSERT INTO exercises (id, sequence_id, section_id, name, duration, order_index, notes, created_at, library_exercise_id, load_modified, load_base, load_amplified)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(id) DO UPDATE SET
        name = excluded.name,
        duration = excluded.duration,
        section_id = excluded.section_id,
        order_index = excluded.order_index,
        notes = excluded.notes,
-       library_exercise_id = excluded.library_exercise_id;`,
-    [id, sequenceId, sectionId, name, duration, orderIndex, notes, Date.now(), libraryExerciseId]
+       library_exercise_id = excluded.library_exercise_id,
+       load_modified = excluded.load_modified,
+       load_base = excluded.load_base,
+       load_amplified = excluded.load_amplified;`,
+    [id, sequenceId, sectionId, name, duration, orderIndex, notes, Date.now(), libraryExerciseId, loadModified, loadBase, loadAmplified]
   );
 }
 

@@ -75,7 +75,7 @@ export default function NewSequenceScreen() {
     setSections((prev) =>
       prev.map((s) =>
         s.id === sectionId
-          ? { ...s, exercises: [...s.exercises, { id: generateId(), name, duration: 30, notes: null, tagValueIds, libraryExerciseId }] }
+          ? { ...s, exercises: [...s.exercises, { id: generateId(), name, duration: 30, notes: null, tagValueIds, libraryExerciseId, loadModified: null, loadBase: null, loadAmplified: null }] }
           : s
       )
     );
@@ -265,7 +265,7 @@ export default function NewSequenceScreen() {
       {exerciseSheetSectionId && (
         <ExerciseSearchSheet
           onSelect={(libEx) => {
-            addExercise(exerciseSheetSectionId, libEx.name, libEx.id, libEx.tags.map((t) => t.tagValueId));
+            addExercise(exerciseSheetSectionId, libEx.name, libEx.id, []);
             setExerciseSheetSectionId(null);
           }}
           onCreateNew={(name) => {

@@ -115,6 +115,23 @@ export function runMigrations(): void {
     );
   `);
 
+  db.execSync(`
+    CREATE TABLE IF NOT EXISTS load_icons (
+      id         TEXT    PRIMARY KEY NOT NULL,
+      color      TEXT    NOT NULL,
+      size       TEXT,
+      label      TEXT    NOT NULL,
+      created_at INTEGER NOT NULL
+    );
+  `);
+
+  try { db.execSync(`ALTER TABLE library_exercises ADD COLUMN load_modified TEXT;`); } catch {}
+  try { db.execSync(`ALTER TABLE library_exercises ADD COLUMN load_base TEXT;`); } catch {}
+  try { db.execSync(`ALTER TABLE library_exercises ADD COLUMN load_amplified TEXT;`); } catch {}
+  try { db.execSync(`ALTER TABLE exercises ADD COLUMN load_modified TEXT;`); } catch {}
+  try { db.execSync(`ALTER TABLE exercises ADD COLUMN load_base TEXT;`); } catch {}
+  try { db.execSync(`ALTER TABLE exercises ADD COLUMN load_amplified TEXT;`); } catch {}
+
   // Data migration: assign existing exercises (section_id IS NULL) to a default "Main" section
   const unmigrated = db.getAllSync<{ sequence_id: string }>(
     `SELECT DISTINCT sequence_id FROM exercises WHERE section_id IS NULL;`

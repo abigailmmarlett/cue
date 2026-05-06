@@ -12,6 +12,9 @@ export interface LocalExercise {
   notes?: string | null;
   tagValueIds: string[];
   libraryExerciseId?: string | null;
+  loadModified: string[] | null;
+  loadBase: string[] | null;
+  loadAmplified: string[] | null;
 }
 
 interface Props {
@@ -20,6 +23,7 @@ interface Props {
   onDurationChange: (duration: number) => void;
   onDelete: () => void;
   onEditTags: () => void;
+  onEditLoad?: () => void;
 }
 
 function makeStyles(c: typeof Colors) {
@@ -53,19 +57,13 @@ function makeStyles(c: typeof Colors) {
     nameInputLinked: {
       color: c.text.secondary,
     },
-    linkedIcon: {
-      fontSize: 14,
-      color: c.text.tertiary,
-      paddingHorizontal: Spacing.xs,
-      marginRight: Spacing.xs,
-    },
     tagButton: {
       paddingHorizontal: Spacing.xs,
       paddingVertical: Spacing.xs,
       marginRight: Spacing.xs,
     },
     tagIcon: {
-      fontSize: 13,
+      fontSize: 17,
       color: c.text.tertiary,
     },
     tagIconActive: {
@@ -93,10 +91,13 @@ function makeStyles(c: typeof Colors) {
   });
 }
 
-export function ExerciseRow({ exercise, onNameChange, onDurationChange, onDelete, onEditTags }: Props) {
+export function ExerciseRow({ exercise, onNameChange, onDurationChange, onDelete, onEditTags, onEditLoad }: Props) {
   const { colors } = useTheme();
   const styles = makeStyles(colors);
-  const isLinked = !!exercise.libraryExerciseId;
+  const hasLoad =
+    (exercise.loadModified?.length ?? 0) > 0 ||
+    (exercise.loadBase?.length ?? 0) > 0 ||
+    (exercise.loadAmplified?.length ?? 0) > 0;
 
   const editDuration = () => {
     if (Platform.OS === 'ios') {
@@ -120,23 +121,25 @@ export function ExerciseRow({ exercise, onNameChange, onDurationChange, onDelete
       </View>
 
       <TextInput
-        style={[styles.nameInput, isLinked && styles.nameInputLinked]}
+        style={[styles.nameInput, !!exercise.libraryExerciseId && styles.nameInputLinked]}
         value={exercise.name}
         onChangeText={onNameChange}
         placeholder="Exercise name"
         placeholderTextColor={colors.text.tertiary}
         returnKeyType="done"
         maxLength={60}
-        editable={!isLinked}
+        editable={!exercise.libraryExerciseId}
       />
 
-      {isLinked ? (
-        <Text style={styles.linkedIcon}>⊞</Text>
-      ) : (
-        <TouchableOpacity onPress={onEditTags} hitSlop={8} style={styles.tagButton}>
-          <Text style={[styles.tagIcon, exercise.tagValueIds.length > 0 && styles.tagIconActive]}>
-            {exercise.tagValueIds.length > 0 ? `🏷 ${exercise.tagValueIds.length}` : '🏷'}
-          </Text>
+      <TouchableOpacity onPress={onEditTags} hitSlop={8} style={styles.tagButton}>
+        <Text style={[styles.tagIcon, exercise.tagValueIds.length > 0 && styles.tagIconActive]}>
+          {exercise.tagValueIds.length > 0 ? `🏷 ${exercise.tagValueIds.length}` : '🏷'}
+        </Text>
+      </TouchableOpacity>
+
+      {onEditLoad && (
+        <TouchableOpacity onPress={onEditLoad} hitSlop={8} style={styles.tagButton}>
+          <Text style={[styles.tagIcon, hasLoad && styles.tagIconActive]}>⊙</Text>
         </TouchableOpacity>
       )}
 

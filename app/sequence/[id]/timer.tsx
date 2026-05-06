@@ -1,14 +1,16 @@
 import { View, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import * as Haptics from 'expo-haptics';
 import { StatusBar } from 'expo-status-bar';
 import { Text } from '@/components/ui/Text';
 import { TagChips } from '@/components/TagChips';
+import { LoadDotRow } from '@/components/LoadDotRow';
 import { TimerControls } from '@/components/timer/TimerControls';
 import { TripleRing } from '@/components/timer/TripleRing';
 import { Colors, Spacing, Radius, FontSize } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
+import { getAllLoadIcons, parseLoad, type LoadIcon } from '@/lib/db/loadIcons';
 import { useSequence } from '@/lib/hooks/useSequence';
 import { useTimer, type TimerExercise, type TimerSection } from '@/lib/hooks/useTimer';
 import { formatSeconds } from '@/lib/utils/time';
@@ -18,6 +20,7 @@ export default function TimerScreen() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
   const { sequence, sections, exercises } = useSequence(id);
+  const [allLoadIcons] = useState<LoadIcon[]>(() => getAllLoadIcons());
 
   const timerExercises: TimerExercise[] = exercises.map((e) => ({
     id: e.id,
@@ -26,6 +29,9 @@ export default function TimerScreen() {
     sectionId: e.section_id,
     notes: e.notes,
     tags: e.tags,
+    loadModified: parseLoad(e.load_modified),
+    loadBase: parseLoad(e.load_base),
+    loadAmplified: parseLoad(e.load_amplified),
   }));
 
   const timerSections: TimerSection[] = sections.map((s) => ({
@@ -55,6 +61,11 @@ export default function TimerScreen() {
     .slice(0, exerciseIndex)
     .reduce((sum, e) => sum + e.duration, 0) + ((currentExercise?.duration ?? 0) - timeRemaining);
   const totalTimeRemaining = Math.max(0, totalDuration - totalElapsed);
+
+  const hasLoadData =
+    (currentExercise?.loadModified?.length ?? 0) > 0 ||
+    (currentExercise?.loadBase?.length ?? 0) > 0 ||
+    (currentExercise?.loadAmplified?.length ?? 0) > 0;
 
   const exerciseProgress = currentExercise ? timeRemaining / currentExercise.duration : 1;
   const sectionProgress = currentSection && currentSection.duration > 0
@@ -155,6 +166,13 @@ export default function TimerScreen() {
                 {formatSeconds(timeRemaining)}
               </Text>
               <TagChips tags={currentExercise.tags} style={styles.timerTagChips} />
+              {allLoadIcons.length > 0 && hasLoadData && (
+                <View style={styles.loadRows}>
+                  <LoadDotRow label="MOD" iconIds={currentExercise.loadModified ?? []} allIcons={allLoadIcons} dotDiameter={12} />
+                  <LoadDotRow label="BASE" iconIds={currentExercise.loadBase ?? []} allIcons={allLoadIcons} dotDiameter={12} />
+                  <LoadDotRow label="AMP" iconIds={currentExercise.loadAmplified ?? []} allIcons={allLoadIcons} dotDiameter={12} />
+                </View>
+              )}
             </View>
           )}
         </TripleRing>
@@ -257,6 +275,11 @@ function makeStyles(c: typeof Colors) {
     },
     timerTagChips: {
       justifyContent: 'center',
+      marginTop: 6,
+    },
+    loadRows: {
+      gap: 4,
+      alignItems: 'flex-start',
       marginTop: 6,
     },
     nextContainer: {

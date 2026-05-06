@@ -7,6 +7,9 @@ export interface LibraryExercise {
   name: string;
   created_at: number;
   updated_at: number;
+  load_modified: string | null;
+  load_base: string | null;
+  load_amplified: string | null;
 }
 
 export interface LibraryExerciseWithTags extends LibraryExercise {
@@ -64,7 +67,7 @@ export function createLibraryExercise(name: string): LibraryExercise {
     `INSERT INTO library_exercises (id, name, created_at, updated_at) VALUES (?, ?, ?, ?);`,
     [id, name, now, now]
   );
-  return { id, name, created_at: now, updated_at: now };
+  return { id, name, created_at: now, updated_at: now, load_modified: null, load_base: null, load_amplified: null };
 }
 
 export function updateLibraryExercise(id: string, name: string): void {

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   View,
   TextInput,
@@ -25,7 +25,7 @@ import { getSequenceById, updateSequence } from '@/lib/db/sequences';
 import { getExercisesBySequenceId, upsertExercise, deleteExercise } from '@/lib/db/exercises';
 import { getSectionsBySequenceId, upsertSection, deleteSection } from '@/lib/db/sections';
 import {
-  getTagsForExercise,
+  getOwnTagsForExercise,
   setExerciseTags,
   getTagsForSequence,
   setSequenceTags as saveSequenceTags,
@@ -33,6 +33,8 @@ import {
   type ExerciseTag,
 } from '@/lib/db/tags';
 import { createLibraryExercise, setLibraryExerciseTags } from '@/lib/db/libraryExercises';
+import { getAllLoadIcons, parseLoad, serializeLoad, type LoadIcon } from '@/lib/db/loadIcons';
+import { LoadEditor } from '@/components/LoadEditor';
 import { generateId } from '@/lib/utils/id';
 import { emitSequenceChange } from '@/lib/sequenceEvents';
 
@@ -55,6 +57,8 @@ export default function EditSequenceScreen() {
   const [sequenceTags, setSequenceTags] = useState<ExerciseTag[]>([]);
   const [showSequenceTagPicker, setShowSequenceTagPicker] = useState(false);
   const [exerciseSheetSectionId, setExerciseSheetSectionId] = useState<string | null>(null);
+  const [editLoadExerciseId, setEditLoadExerciseId] = useState<string | null>(null);
+  const [allLoadIcons] = useState<LoadIcon[]>(() => getAllLoadIcons());
 
   const activeExercise = tagPickerExerciseId
     ? sections.flatMap((s) => s.exercises).find((e) => e.id === tagPickerExerciseId) ?? null
@@ -79,8 +83,11 @@ export default function EditSequenceScreen() {
             name: e.name,
             duration: e.duration,
             notes: e.notes,
-            tagValueIds: getTagsForExercise(e.id).map((t) => t.tagValueId),
+            tagValueIds: getOwnTagsForExercise(e.id).map((t) => t.tagValueId),
             libraryExerciseId: e.library_exercise_id,
+            loadModified: parseLoad(e.load_modified),
+            loadBase: parseLoad(e.load_base),
+            loadAmplified: parseLoad(e.load_amplified),
           })),
       }))
     );
@@ -102,11 +109,25 @@ export default function EditSequenceScreen() {
     setSections((prev) => prev.filter((s) => s.id !== sectionId));
   }, []);
 
-  const addExercise = useCallback((sectionId: string, name = '', libraryExerciseId: string | null = null, tagValueIds: string[] = []) => {
+  const addExercise = useCallback((
+    sectionId: string,
+    name = '',
+    libraryExerciseId: string | null = null,
+    tagValueIds: string[] = [],
+    loadModified: string[] | null = null,
+    loadBase: string[] | null = null,
+    loadAmplified: string[] | null = null,
+  ) => {
     setSections((prev) =>
       prev.map((s) =>
         s.id === sectionId
-          ? { ...s, exercises: [...s.exercises, { id: generateId(), name, duration: 30, notes: null, tagValueIds, libraryExerciseId }] }
+          ? {
+              ...s,
+              exercises: [
+                ...s.exercises,
+                { id: generateId(), name, duration: 30, notes: null, tagValueIds, libraryExerciseId, loadModified, loadBase, loadAmplified },
+              ],
+            }
           : s
       )
     );
@@ -164,8 +185,11 @@ export default function EditSequenceScreen() {
       for (let eIdx = 0; eIdx < section.exercises.length; eIdx++) {
         const ex = section.exercises[eIdx];
         const libId = ex.libraryExerciseId ?? null;
-        upsertExercise(ex.id, id, section.id, ex.name.trim() || 'Exercise', ex.duration, eIdx, ex.notes ?? null, libId);
-        if (!libId) setExerciseTags(ex.id, ex.tagValueIds);
+        upsertExercise(
+          ex.id, id, section.id, ex.name.trim() || 'Exercise', ex.duration, eIdx, ex.notes ?? null, libId,
+          serializeLoad(ex.loadModified), serializeLoad(ex.loadBase), serializeLoad(ex.loadAmplified)
+        );
+        setExerciseTags(ex.id, ex.tagValueIds);
       }
     }
 
@@ -210,6 +234,14 @@ export default function EditSequenceScreen() {
       doSave(sections);
     }
   }, [sections, doSave]);
+
+  const editLoadTarget = useMemo(() => {
+    if (!editLoadExerciseId) return null;
+    const ex = sections.flatMap((s) => s.exercises).find((e) => e.id === editLoadExerciseId);
+    const section = sections.find((s) => s.exercises.some((e) => e.id === editLoadExerciseId));
+    if (!ex || !section) return null;
+    return { ex, sectionId: section.id };
+  }, [editLoadExerciseId, sections]);
 
   if (loading) {
     return (
@@ -274,6 +306,7 @@ export default function EditSequenceScreen() {
                     onDurationChange={(d) => updateExercise(section.id, item.id, { duration: d })}
                     onDelete={() => removeExercise(section.id, item.id)}
                     onEditTags={() => setTagPickerExerciseId(item.id)}
+                    onEditLoad={allLoadIcons.length > 0 ? () => setEditLoadExerciseId(item.id) : undefined}
                   />
                 )}
                 onReorder={(from, to) => reorderExercises(section.id, from, to)}
@@ -331,10 +364,37 @@ export default function EditSequenceScreen() {
         />
       )}
 
+      {editLoadTarget && (
+        <LoadEditor
+          visible
+          loadModified={editLoadTarget.ex.loadModified ?? []}
+          loadBase={editLoadTarget.ex.loadBase ?? []}
+          loadAmplified={editLoadTarget.ex.loadAmplified ?? []}
+          allIcons={allLoadIcons}
+          onSave={(modified, base, amplified) => {
+            updateExercise(editLoadTarget.sectionId, editLoadTarget.ex.id, {
+              loadModified: modified.length > 0 ? modified : null,
+              loadBase: base.length > 0 ? base : null,
+              loadAmplified: amplified.length > 0 ? amplified : null,
+            });
+            setEditLoadExerciseId(null);
+          }}
+          onClose={() => setEditLoadExerciseId(null)}
+        />
+      )}
+
       {exerciseSheetSectionId && (
         <ExerciseSearchSheet
           onSelect={(libEx) => {
-            addExercise(exerciseSheetSectionId, libEx.name, libEx.id, libEx.tags.map((t) => t.tagValueId));
+            addExercise(
+              exerciseSheetSectionId,
+              libEx.name,
+              libEx.id,
+              [],
+              parseLoad(libEx.load_modified),
+              parseLoad(libEx.load_base),
+              parseLoad(libEx.load_amplified),
+            );
             setExerciseSheetSectionId(null);
           }}
           onCreateNew={(name) => {

@@ -79,6 +79,19 @@ export function deleteTagValue(id: string): void {
 }
 
 export function getTagsForExercise(exerciseId: string): ExerciseTag[] {
+  // Always prefer exercise-level tags if any exist (allows per-sequence overrides).
+  // Fall back to library tags only for linked exercises that have never been overridden.
+  const ownTags = db.getAllSync<ExerciseTag>(
+    `SELECT tv.id AS tagValueId, tc.name AS categoryName, tv.label
+     FROM exercise_tags et
+     JOIN tag_values tv ON tv.id = et.tag_value_id
+     JOIN tag_categories tc ON tc.id = tv.category_id
+     WHERE et.exercise_id = ?
+     ORDER BY tc.name, tv.label;`,
+    [exerciseId]
+  );
+  if (ownTags.length > 0) return ownTags;
+
   const row = db.getFirstSync<{ library_exercise_id: string | null }>(
     `SELECT library_exercise_id FROM exercises WHERE id = ?;`,
     [exerciseId]
@@ -94,6 +107,10 @@ export function getTagsForExercise(exerciseId: string): ExerciseTag[] {
       [row.library_exercise_id]
     );
   }
+  return [];
+}
+
+export function getOwnTagsForExercise(exerciseId: string): ExerciseTag[] {
   return db.getAllSync<ExerciseTag>(
     `SELECT tv.id AS tagValueId, tc.name AS categoryName, tv.label
      FROM exercise_tags et

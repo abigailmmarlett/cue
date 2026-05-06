@@ -7,6 +7,9 @@ export interface TimerExercise {
   sectionId: string;
   notes?: string | null;
   tags: { tagValueId: string; categoryName: string; label: string }[];
+  loadModified: string[] | null;
+  loadBase: string[] | null;
+  loadAmplified: string[] | null;
 }
 
 export interface TimerSection {
