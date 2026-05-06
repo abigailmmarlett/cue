@@ -10,6 +10,9 @@ export interface TimerExercise {
   loadModified: string[] | null;
   loadBase: string[] | null;
   loadAmplified: string[] | null;
+  variation: string | null;
+  side: 'left' | 'right' | null;
+  libraryExerciseId?: string | null;
 }
 
 export interface TimerSection {

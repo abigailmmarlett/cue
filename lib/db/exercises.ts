@@ -14,6 +14,9 @@ export interface Exercise {
   load_modified: string | null;
   load_base: string | null;
   load_amplified: string | null;
+  variation: string | null;
+  side: 'left' | 'right' | null;
+  is_bilateral: number; // 0 | 1 from library join
 }
 
 export function getExercisesBySequenceId(sequenceId: string): Exercise[] {
@@ -21,7 +24,9 @@ export function getExercisesBySequenceId(sequenceId: string): Exercise[] {
     `SELECT e.id, e.sequence_id, e.section_id, e.name, e.duration, e.order_index, e.notes, e.created_at, e.library_exercise_id,
       COALESCE(e.load_modified, le.load_modified) AS load_modified,
       COALESCE(e.load_base, le.load_base) AS load_base,
-      COALESCE(e.load_amplified, le.load_amplified) AS load_amplified
+      COALESCE(e.load_amplified, le.load_amplified) AS load_amplified,
+      e.variation, e.side,
+      COALESCE(le.is_bilateral, 0) AS is_bilateral
      FROM exercises e
      LEFT JOIN library_exercises le ON le.id = e.library_exercise_id
      LEFT JOIN sections s ON s.id = e.section_id
@@ -40,7 +45,9 @@ export function getExercisesBySectionId(sectionId: string): Exercise[] {
     `SELECT e.id, e.sequence_id, e.section_id, e.name, e.duration, e.order_index, e.notes, e.created_at, e.library_exercise_id,
       COALESCE(e.load_modified, le.load_modified) AS load_modified,
       COALESCE(e.load_base, le.load_base) AS load_base,
-      COALESCE(e.load_amplified, le.load_amplified) AS load_amplified
+      COALESCE(e.load_amplified, le.load_amplified) AS load_amplified,
+      e.variation, e.side,
+      COALESCE(le.is_bilateral, 0) AS is_bilateral
      FROM exercises e
      LEFT JOIN library_exercises le ON le.id = e.library_exercise_id
      WHERE e.section_id = ?
@@ -55,7 +62,9 @@ export function createExercise(
   name: string,
   duration: number,
   notes?: string,
-  libraryExerciseId?: string | null
+  libraryExerciseId?: string | null,
+  variation?: string | null,
+  side?: 'left' | 'right' | null
 ): Exercise {
   const id = generateId();
   const now = Date.now();
@@ -66,12 +75,12 @@ export function createExercise(
   const orderIndex = (maxIndex?.max_index ?? -1) + 1;
 
   db.runSync(
-    `INSERT INTO exercises (id, sequence_id, section_id, name, duration, order_index, notes, created_at, library_exercise_id)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`,
-    [id, sequenceId, sectionId, name, duration, orderIndex, notes ?? null, now, libraryExerciseId ?? null]
+    `INSERT INTO exercises (id, sequence_id, section_id, name, duration, order_index, notes, created_at, library_exercise_id, variation, side)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+    [id, sequenceId, sectionId, name, duration, orderIndex, notes ?? null, now, libraryExerciseId ?? null, variation ?? null, side ?? null]
   );
 
-  return { id, sequence_id: sequenceId, section_id: sectionId, name, duration, order_index: orderIndex, notes: notes ?? null, created_at: now, library_exercise_id: libraryExerciseId ?? null, load_modified: null, load_base: null, load_amplified: null };
+  return { id, sequence_id: sequenceId, section_id: sectionId, name, duration, order_index: orderIndex, notes: notes ?? null, created_at: now, library_exercise_id: libraryExerciseId ?? null, load_modified: null, load_base: null, load_amplified: null, variation: variation ?? null, side: side ?? null, is_bilateral: 0 };
 }
 
 export function upsertExercise(
@@ -85,11 +94,13 @@ export function upsertExercise(
   libraryExerciseId: string | null = null,
   loadModified: string | null = null,
   loadBase: string | null = null,
-  loadAmplified: string | null = null
+  loadAmplified: string | null = null,
+  variation: string | null = null,
+  side: 'left' | 'right' | null = null
 ): void {
   db.runSync(
-    `INSERT INTO exercises (id, sequence_id, section_id, name, duration, order_index, notes, created_at, library_exercise_id, load_modified, load_base, load_amplified)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `INSERT INTO exercises (id, sequence_id, section_id, name, duration, order_index, notes, created_at, library_exercise_id, load_modified, load_base, load_amplified, variation, side)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(id) DO UPDATE SET
        name = excluded.name,
        duration = excluded.duration,
@@ -99,8 +110,10 @@ export function upsertExercise(
        library_exercise_id = excluded.library_exercise_id,
        load_modified = excluded.load_modified,
        load_base = excluded.load_base,
-       load_amplified = excluded.load_amplified;`,
-    [id, sequenceId, sectionId, name, duration, orderIndex, notes, Date.now(), libraryExerciseId, loadModified, loadBase, loadAmplified]
+       load_amplified = excluded.load_amplified,
+       variation = excluded.variation,
+       side = excluded.side;`,
+    [id, sequenceId, sectionId, name, duration, orderIndex, notes, Date.now(), libraryExerciseId, loadModified, loadBase, loadAmplified, variation, side]
   );
 }
 

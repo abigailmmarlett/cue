@@ -92,17 +92,24 @@ export default function EditSequenceScreen() {
         name: s.name,
         exercises: allExercises
           .filter((e) => e.section_id === s.id)
-          .map((e) => ({
-            id: e.id,
-            name: e.name,
-            duration: e.duration,
-            notes: e.notes,
-            tagValueIds: getOwnTagsForExercise(e.id).map((t) => t.tagValueId),
-            libraryExerciseId: e.library_exercise_id,
-            loadModified: parseLoad(e.load_modified),
-            loadBase: parseLoad(e.load_base),
-            loadAmplified: parseLoad(e.load_amplified),
-          })),
+          .map((e) => {
+            const ownTags = getOwnTagsForExercise(e.id);
+            return {
+              id: e.id,
+              name: e.name,
+              duration: e.duration,
+              notes: e.notes,
+              tagValueIds: ownTags.map((t) => t.tagValueId),
+              tags: ownTags,
+              libraryExerciseId: e.library_exercise_id,
+              loadModified: parseLoad(e.load_modified),
+              loadBase: parseLoad(e.load_base),
+              loadAmplified: parseLoad(e.load_amplified),
+              variation: e.variation,
+              isBilateral: !!e.is_bilateral,
+              side: e.side,
+            };
+          }),
       }))
     );
     setSequenceTags(getTagsForSequence(id));
@@ -135,6 +142,8 @@ export default function EditSequenceScreen() {
     loadModified: string[] | null = null,
     loadBase: string[] | null = null,
     loadAmplified: string[] | null = null,
+    isBilateral = false,
+    tags: ExerciseTag[] = [],
   ) => {
     setIsDirty(true);
     setSections((prev) =>
@@ -144,7 +153,7 @@ export default function EditSequenceScreen() {
               ...s,
               exercises: [
                 ...s.exercises,
-                { id: generateId(), name, duration: 30, notes: null, tagValueIds, libraryExerciseId, loadModified, loadBase, loadAmplified },
+                { id: generateId(), name, duration: 30, notes: null, tagValueIds, tags, libraryExerciseId, loadModified, loadBase, loadAmplified, variation: null, isBilateral, side: null },
               ],
             }
           : s
@@ -224,7 +233,7 @@ export default function EditSequenceScreen() {
         const libId = ex.libraryExerciseId ?? null;
         upsertExercise(
           ex.id, id, section.id, ex.name.trim() || 'Exercise', ex.duration, eIdx, ex.notes ?? null, libId,
-          serializeLoad(ex.loadModified), serializeLoad(ex.loadBase), serializeLoad(ex.loadAmplified)
+          serializeLoad(ex.loadModified), serializeLoad(ex.loadBase), serializeLoad(ex.loadAmplified), ex.variation ?? null, ex.side ?? null
         );
         setExerciseTags(ex.id, ex.tagValueIds);
       }
@@ -347,6 +356,16 @@ export default function EditSequenceScreen() {
                     onDelete={() => removeExercise(section.id, item.id)}
                     onEditTags={() => setTagPickerExerciseId(item.id)}
                     onEditLoad={allLoadIcons.length > 0 ? () => setEditLoadExerciseId(item.id) : undefined}
+                    onEditVariation={() => {
+                      Alert.prompt(
+                        'Variation',
+                        'Add a coaching instruction (e.g. "Hold at top")',
+                        (text) => updateExercise(section.id, item.id, { variation: text.trim() || null }),
+                        'plain-text',
+                        item.variation ?? ''
+                      );
+                    }}
+                    onSideChange={(side) => updateExercise(section.id, item.id, { side })}
                   />
                 )}
                 onReorder={(from, to) => reorderExercises(section.id, from, to)}
@@ -381,7 +400,15 @@ export default function EditSequenceScreen() {
             const sectionId = sections.find((s) =>
               s.exercises.some((e) => e.id === tagPickerExerciseId)
             )?.id;
-            if (sectionId) updateExercise(sectionId, tagPickerExerciseId, { tagValueIds: ids });
+            if (sectionId) {
+              const all = getAllTagValuesWithCategory();
+              const map = new Map(all.map((t) => [t.id, t]));
+              const tags = ids.flatMap((id) => {
+                const t = map.get(id);
+                return t ? [{ tagValueId: t.id, categoryName: t.categoryName, label: t.label }] : [];
+              });
+              updateExercise(sectionId, tagPickerExerciseId, { tagValueIds: ids, tags });
+            }
             setTagPickerExerciseId(null);
           }}
           onClose={() => setTagPickerExerciseId(null)}
@@ -435,6 +462,8 @@ export default function EditSequenceScreen() {
               parseLoad(libEx.load_modified),
               parseLoad(libEx.load_base),
               parseLoad(libEx.load_amplified),
+              !!libEx.is_bilateral,
+              libEx.tags,
             );
             setExerciseSheetSectionId(null);
           }}

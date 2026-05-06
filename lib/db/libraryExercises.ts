@@ -10,6 +10,7 @@ export interface LibraryExercise {
   load_modified: string | null;
   load_base: string | null;
   load_amplified: string | null;
+  is_bilateral: number; // 0 | 1 (SQLite boolean)
 }
 
 export interface LibraryExerciseWithTags extends LibraryExercise {
@@ -38,14 +39,14 @@ function attachTags(exercises: LibraryExercise[]): LibraryExerciseWithTags[] {
 
 export function getAllLibraryExercises(): LibraryExerciseWithTags[] {
   const rows = db.getAllSync<LibraryExercise>(
-    `SELECT * FROM library_exercises ORDER BY name COLLATE NOCASE;`
+    `SELECT id, name, created_at, updated_at, load_modified, load_base, load_amplified, is_bilateral FROM library_exercises ORDER BY name COLLATE NOCASE;`
   );
   return attachTags(rows);
 }
 
 export function searchLibraryExercises(query: string): LibraryExerciseWithTags[] {
   const rows = db.getAllSync<LibraryExercise>(
-    `SELECT * FROM library_exercises WHERE name LIKE ? COLLATE NOCASE ORDER BY name COLLATE NOCASE;`,
+    `SELECT id, name, created_at, updated_at, load_modified, load_base, load_amplified, is_bilateral FROM library_exercises WHERE name LIKE ? COLLATE NOCASE ORDER BY name COLLATE NOCASE;`,
     [`%${query}%`]
   );
   return attachTags(rows);
@@ -53,7 +54,7 @@ export function searchLibraryExercises(query: string): LibraryExerciseWithTags[]
 
 export function getLibraryExercise(id: string): LibraryExerciseWithTags | null {
   const row = db.getFirstSync<LibraryExercise>(
-    `SELECT * FROM library_exercises WHERE id = ?;`,
+    `SELECT id, name, created_at, updated_at, load_modified, load_base, load_amplified, is_bilateral FROM library_exercises WHERE id = ?;`,
     [id]
   );
   if (!row) return null;
@@ -64,10 +65,17 @@ export function createLibraryExercise(name: string): LibraryExercise {
   const id = generateId();
   const now = Date.now();
   db.runSync(
-    `INSERT INTO library_exercises (id, name, created_at, updated_at) VALUES (?, ?, ?, ?);`,
+    `INSERT INTO library_exercises (id, name, created_at, updated_at, is_bilateral) VALUES (?, ?, ?, ?, 0);`,
     [id, name, now, now]
   );
-  return { id, name, created_at: now, updated_at: now, load_modified: null, load_base: null, load_amplified: null };
+  return { id, name, created_at: now, updated_at: now, load_modified: null, load_base: null, load_amplified: null, is_bilateral: 0 };
+}
+
+export function updateLibraryExerciseBilateral(id: string, isBilateral: boolean): void {
+  db.runSync(
+    `UPDATE library_exercises SET is_bilateral = ?, updated_at = ? WHERE id = ?;`,
+    [isBilateral ? 1 : 0, Date.now(), id]
+  );
 }
 
 export function updateLibraryExerciseLoad(
