@@ -7,6 +7,7 @@ import type { TimerStatus, TimerControls } from '@/lib/hooks/useTimer';
 interface Props {
   status: TimerStatus;
   controls: TimerControls;
+  onMark?: () => void;
 }
 
 function makeStyles(c: typeof Colors) {
@@ -20,7 +21,7 @@ function makeStyles(c: typeof Colors) {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: Spacing.lg,
+      gap: Spacing.md,
     },
     secondaryRow: {
       flexDirection: 'row',
@@ -65,7 +66,7 @@ function makeStyles(c: typeof Colors) {
   });
 }
 
-export function TimerControls({ status, controls }: Props) {
+export function TimerControls({ status, controls, onMark }: Props) {
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const isIdle = status === 'idle';
@@ -83,6 +84,17 @@ export function TimerControls({ status, controls }: Props) {
           size="md"
           styles={styles}
         />
+
+        {onMark && (
+          <ControlButton
+            icon="●"
+            label="Mark"
+            onPress={onMark}
+            disabled={!isRunning}
+            size="md"
+            styles={styles}
+          />
+        )}
 
         <ControlButton
           icon={isRunning ? '❙❙' : '▶'}

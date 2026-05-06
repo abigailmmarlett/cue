@@ -23,6 +23,7 @@ import {
   createLibraryExercise,
   updateLibraryExercise,
   updateLibraryExerciseLoad,
+  updateLibraryExerciseBilateral,
   deleteLibraryExercise,
   setLibraryExerciseTags,
   getLinkedCount,
@@ -249,6 +250,11 @@ export default function LibraryScreen() {
     load();
   };
 
+  const handleToggleBilateral = (ex: LibraryExerciseWithTags) => {
+    updateLibraryExerciseBilateral(ex.id, !ex.is_bilateral);
+    load();
+  };
+
   const handleRename = (ex: LibraryExerciseWithTags) => {
     const name = editNameText.trim();
     if (name && name !== ex.name) updateLibraryExercise(ex.id, name);
@@ -356,6 +362,7 @@ export default function LibraryScreen() {
                     onDelete={() => handleDelete(ex)}
                     onEditTags={() => setTagPickerExerciseId(ex.id)}
                     onEditLoad={allLoadIcons.length > 0 ? () => setEditLoadExerciseId(ex.id) : undefined}
+                    onToggleBilateral={() => handleToggleBilateral(ex)}
                   />
                 ))}
               </View>
@@ -416,15 +423,17 @@ interface ExerciseItemProps {
   onDelete: () => void;
   onEditTags: () => void;
   onEditLoad?: () => void;
+  onToggleBilateral: () => void;
 }
 
 function ExerciseItem({
   ex, accentColor, isEditing, editText, onEditText,
-  onStartEdit, onFinishEdit, onCancelEdit, onDelete, onEditTags, onEditLoad,
+  onStartEdit, onFinishEdit, onCancelEdit, onDelete, onEditTags, onEditLoad, onToggleBilateral,
 }: ExerciseItemProps) {
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const hasLoad = !!(ex.load_modified || ex.load_base || ex.load_amplified);
+  const isBilateral = !!ex.is_bilateral;
   return (
     <View style={styles.exCard}>
       <View style={[styles.exAccentBar, { backgroundColor: accentColor }]} />
@@ -450,6 +459,9 @@ function ExerciseItem({
         ) : (
           <View style={styles.exNameRow}>
             <Text style={styles.exName}>{ex.name}</Text>
+            <TouchableOpacity onPress={onToggleBilateral} hitSlop={8} style={styles.iconBtn}>
+              <Text style={[styles.editIcon, { color: isBilateral ? colors.accent : colors.text.tertiary }]}>⇌</Text>
+            </TouchableOpacity>
             {onEditLoad && (
               <TouchableOpacity onPress={onEditLoad} hitSlop={8} style={styles.iconBtn}>
                 <Text style={[styles.editIcon, { color: hasLoad ? colors.text.secondary : colors.text.tertiary }]}>⊙</Text>

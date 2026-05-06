@@ -103,6 +103,8 @@ export default function EditSequenceScreen() {
             loadBase: parseLoad(e.load_base),
             loadAmplified: parseLoad(e.load_amplified),
             variation: e.variation,
+            isBilateral: !!e.is_bilateral,
+            side: e.side,
           })),
       }))
     );
@@ -136,6 +138,7 @@ export default function EditSequenceScreen() {
     loadModified: string[] | null = null,
     loadBase: string[] | null = null,
     loadAmplified: string[] | null = null,
+    isBilateral = false,
   ) => {
     setIsDirty(true);
     setSections((prev) =>
@@ -145,7 +148,7 @@ export default function EditSequenceScreen() {
               ...s,
               exercises: [
                 ...s.exercises,
-                { id: generateId(), name, duration: 30, notes: null, tagValueIds, libraryExerciseId, loadModified, loadBase, loadAmplified, variation: null },
+                { id: generateId(), name, duration: 30, notes: null, tagValueIds, libraryExerciseId, loadModified, loadBase, loadAmplified, variation: null, isBilateral, side: null },
               ],
             }
           : s
@@ -225,7 +228,7 @@ export default function EditSequenceScreen() {
         const libId = ex.libraryExerciseId ?? null;
         upsertExercise(
           ex.id, id, section.id, ex.name.trim() || 'Exercise', ex.duration, eIdx, ex.notes ?? null, libId,
-          serializeLoad(ex.loadModified), serializeLoad(ex.loadBase), serializeLoad(ex.loadAmplified), ex.variation ?? null
+          serializeLoad(ex.loadModified), serializeLoad(ex.loadBase), serializeLoad(ex.loadAmplified), ex.variation ?? null, ex.side ?? null
         );
         setExerciseTags(ex.id, ex.tagValueIds);
       }
@@ -357,6 +360,7 @@ export default function EditSequenceScreen() {
                         item.variation ?? ''
                       );
                     }}
+                    onSideChange={(side) => updateExercise(section.id, item.id, { side })}
                   />
                 )}
                 onReorder={(from, to) => reorderExercises(section.id, from, to)}
@@ -445,6 +449,7 @@ export default function EditSequenceScreen() {
               parseLoad(libEx.load_modified),
               parseLoad(libEx.load_base),
               parseLoad(libEx.load_amplified),
+              !!libEx.is_bilateral,
             );
             setExerciseSheetSectionId(null);
           }}

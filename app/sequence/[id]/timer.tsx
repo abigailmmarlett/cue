@@ -1,6 +1,6 @@
 import { View, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import * as Haptics from 'expo-haptics';
 import { StatusBar } from 'expo-status-bar';
 import { Text } from '@/components/ui/Text';
@@ -21,6 +21,10 @@ export default function TimerScreen() {
   const { colors, isDark } = useTheme();
   const { sequence, sections, exercises } = useSequence(id);
   const [allLoadIcons] = useState<LoadIcon[]>(() => getAllLoadIcons());
+  const [currentRunMarks, setCurrentRunMarks] = useState<Map<string, number[]>>(new Map());
+  const [prevRunMarks, setPrevRunMarks] = useState<Map<string, number[]>>(new Map());
+  const prevExerciseKeyRef = useRef<string | null>(null);
+  const currentRunMarksRef = useRef<Map<string, number[]>>(new Map());
 
   const timerExercises: TimerExercise[] = exercises.map((e) => ({
     id: e.id,
@@ -33,6 +37,8 @@ export default function TimerScreen() {
     loadBase: parseLoad(e.load_base),
     loadAmplified: parseLoad(e.load_amplified),
     variation: e.variation,
+    side: e.side,
+    libraryExerciseId: e.library_exercise_id,
   }));
 
   const timerSections: TimerSection[] = sections.map((s) => ({
@@ -57,6 +63,38 @@ export default function TimerScreen() {
   } = useTimer(timerExercises, timerSections);
   const styles = makeStyles(colors);
 
+  useEffect(() => { currentRunMarksRef.current = currentRunMarks; }, [currentRunMarks]);
+
+  useEffect(() => {
+    const prevKey = prevExerciseKeyRef.current;
+    if (prevKey) {
+      const marks = currentRunMarksRef.current.get(prevKey) ?? [];
+      setPrevRunMarks((prev) => {
+        const next = new Map(prev);
+        next.set(prevKey, [...marks]);
+        return next;
+      });
+      setCurrentRunMarks((prev) => {
+        const next = new Map(prev);
+        next.delete(prevKey);
+        return next;
+      });
+    }
+    prevExerciseKeyRef.current = currentExercise?.libraryExerciseId ?? currentExercise?.name ?? null;
+  }, [exerciseIndex]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const addMark = useCallback(() => {
+    if (!currentExercise || status !== 'running') return;
+    const key = currentExercise.libraryExerciseId ?? currentExercise.name;
+    const fraction = 1 - timeRemaining / currentExercise.duration;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setCurrentRunMarks((prev) => {
+      const next = new Map(prev);
+      next.set(key, [...(next.get(key) ?? []), fraction]);
+      return next;
+    });
+  }, [currentExercise, timeRemaining, status]);
+
   // Track total time elapsed for the outer ring
   const totalElapsed = timerExercises
     .slice(0, exerciseIndex)
@@ -68,7 +106,14 @@ export default function TimerScreen() {
     (currentExercise?.loadBase?.length ?? 0) > 0 ||
     (currentExercise?.loadAmplified?.length ?? 0) > 0;
   const hasVariation = !!currentExercise?.variation;
+  const hasSide = !!currentExercise?.side;
+  const sideLabel = currentExercise?.side === 'left' ? 'Left' : currentExercise?.side === 'right' ? 'Right' : null;
 
+
+  const currentKey = currentExercise?.libraryExerciseId ?? currentExercise?.name ?? null;
+  const ringMarks = currentKey
+    ? [...(prevRunMarks.get(currentKey) ?? []), ...(currentRunMarks.get(currentKey) ?? [])]
+    : [];
 
   const exerciseProgress = currentExercise ? timeRemaining / currentExercise.duration : 1;
   const sectionProgress = currentSection && currentSection.duration > 0
@@ -156,6 +201,8 @@ export default function TimerScreen() {
           exerciseProgress={exerciseProgress}
           sectionProgress={sectionProgress}
           totalProgress={totalProgress}
+          exerciseMarks={ringMarks}
+          markColor={colors.text.inverse}
         >
           {currentExercise && (
             <View style={styles.ringContent}>
@@ -194,16 +241,29 @@ export default function TimerScreen() {
         </View>
       </View>
 
-      {hasVariation && currentExercise && (
+      {(hasSide || hasVariation) && currentExercise && (
         <View style={styles.variationIndicator}>
-          <Text style={[styles.variationIcon, { color: colors.accent }]}>◈</Text>
-          <Text variant="caption" color="secondary" style={styles.variationText}>
-            {currentExercise.variation}
-          </Text>
+          {hasSide && sideLabel && (
+            <>
+              <Text style={[styles.variationIcon, { color: colors.accent }]}>⇌</Text>
+              <Text variant="caption" color="secondary" style={styles.variationText}>
+                {sideLabel}
+              </Text>
+            </>
+          )}
+          {hasVariation && (
+            <>
+              {hasSide && <Text variant="caption" color="tertiary" style={styles.variationText}>·</Text>}
+              <Text style={[styles.variationIcon, { color: colors.accent }]}>◈</Text>
+              <Text variant="caption" color="secondary" style={styles.variationText}>
+                {currentExercise.variation}
+              </Text>
+            </>
+          )}
         </View>
       )}
 
-      <TimerControls status={status} controls={controls} />
+      <TimerControls status={status} controls={controls} onMark={addMark} />
     </SafeAreaView>
   );
 }

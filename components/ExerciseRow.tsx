@@ -16,6 +16,8 @@ export interface LocalExercise {
   loadBase: string[] | null;
   loadAmplified: string[] | null;
   variation: string | null;
+  isBilateral: boolean;
+  side: 'left' | 'right' | null;
 }
 
 interface Props {
@@ -26,6 +28,7 @@ interface Props {
   onEditTags: () => void;
   onEditLoad?: () => void;
   onEditVariation?: () => void;
+  onSideChange?: (side: 'left' | 'right' | null) => void;
 }
 
 function makeStyles(c: typeof Colors) {
@@ -90,10 +93,33 @@ function makeStyles(c: typeof Colors) {
     deleteIcon: {
       fontSize: 14,
     },
+    sidePill: {
+      flexDirection: 'row',
+      borderRadius: 6,
+      borderWidth: 1,
+      borderColor: c.border,
+      overflow: 'hidden',
+      marginRight: Spacing.xs,
+    },
+    sideBtn: {
+      paddingHorizontal: 7,
+      paddingVertical: 3,
+    },
+    sideBtnActive: {
+      backgroundColor: c.accent,
+    },
+    sideBtnText: {
+      fontSize: 11,
+      fontWeight: '600' as const,
+      color: c.text.tertiary,
+    },
+    sideBtnTextActive: {
+      color: c.text.inverse,
+    },
   });
 }
 
-export function ExerciseRow({ exercise, onNameChange, onDurationChange, onDelete, onEditTags, onEditLoad, onEditVariation }: Props) {
+export function ExerciseRow({ exercise, onNameChange, onDurationChange, onDelete, onEditTags, onEditLoad, onEditVariation, onSideChange }: Props) {
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const hasLoad =
@@ -149,6 +175,25 @@ export function ExerciseRow({ exercise, onNameChange, onDurationChange, onDelete
         <TouchableOpacity onPress={onEditVariation} hitSlop={8} style={styles.tagButton}>
           <Text style={[styles.tagIcon, !!exercise.variation && styles.tagIconActive]}>◈</Text>
         </TouchableOpacity>
+      )}
+
+      {exercise.isBilateral && onSideChange && (
+        <View style={styles.sidePill}>
+          <TouchableOpacity
+            onPress={() => onSideChange(exercise.side === 'left' ? null : 'left')}
+            style={[styles.sideBtn, exercise.side === 'left' && styles.sideBtnActive]}
+            hitSlop={4}
+          >
+            <Text style={[styles.sideBtnText, exercise.side === 'left' && styles.sideBtnTextActive]}>L</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => onSideChange(exercise.side === 'right' ? null : 'right')}
+            style={[styles.sideBtn, exercise.side === 'right' && styles.sideBtnActive]}
+            hitSlop={4}
+          >
+            <Text style={[styles.sideBtnText, exercise.side === 'right' && styles.sideBtnTextActive]}>R</Text>
+          </TouchableOpacity>
+        </View>
       )}
 
       <TouchableOpacity onPress={editDuration} style={styles.durationButton} hitSlop={8}>

@@ -88,12 +88,12 @@ export default function NewSequenceScreen() {
     setSections((prev) => prev.filter((s) => s.id !== sectionId));
   }, []);
 
-  const addExercise = useCallback((sectionId: string, name = '', libraryExerciseId: string | null = null, tagValueIds: string[] = []) => {
+  const addExercise = useCallback((sectionId: string, name = '', libraryExerciseId: string | null = null, tagValueIds: string[] = [], isBilateral = false) => {
     setIsDirty(true);
     setSections((prev) =>
       prev.map((s) =>
         s.id === sectionId
-          ? { ...s, exercises: [...s.exercises, { id: generateId(), name, duration: 30, notes: null, tagValueIds, libraryExerciseId, loadModified: null, loadBase: null, loadAmplified: null, variation: null }] }
+          ? { ...s, exercises: [...s.exercises, { id: generateId(), name, duration: 30, notes: null, tagValueIds, libraryExerciseId, loadModified: null, loadBase: null, loadAmplified: null, variation: null, isBilateral, side: null }] }
           : s
       )
     );
@@ -155,7 +155,7 @@ export default function NewSequenceScreen() {
       const dbSection = createSection(seq.id, section.name.trim() || 'Section');
       for (const ex of section.exercises) {
         const libId = ex.libraryExerciseId ?? null;
-        createExercise(seq.id, dbSection.id, ex.name.trim() || 'Exercise', ex.duration, ex.notes ?? undefined, libId);
+        createExercise(seq.id, dbSection.id, ex.name.trim() || 'Exercise', ex.duration, ex.notes ?? undefined, libId, ex.variation ?? null, ex.side ?? null);
         if (!libId && ex.tagValueIds.length > 0) setExerciseTags(ex.id, ex.tagValueIds);
       }
     }
@@ -260,6 +260,7 @@ export default function NewSequenceScreen() {
                     onDurationChange={(d) => updateExercise(section.id, item.id, { duration: d })}
                     onDelete={() => removeExercise(section.id, item.id)}
                     onEditTags={() => setTagPickerExerciseId(item.id)}
+                    onSideChange={(side) => updateExercise(section.id, item.id, { side })}
                   />
                 )}
                 onReorder={(from, to) => reorderExercises(section.id, from, to)}
@@ -304,7 +305,7 @@ export default function NewSequenceScreen() {
       {exerciseSheetSectionId && (
         <ExerciseSearchSheet
           onSelect={(libEx) => {
-            addExercise(exerciseSheetSectionId, libEx.name, libEx.id, []);
+            addExercise(exerciseSheetSectionId, libEx.name, libEx.id, [], !!libEx.is_bilateral);
             setExerciseSheetSectionId(null);
           }}
           onCreateNew={(name) => {
