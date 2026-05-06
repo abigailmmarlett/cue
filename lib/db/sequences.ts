@@ -7,6 +7,7 @@ export interface Sequence {
   name: string;
   created_at: number;
   updated_at: number;
+  is_favorited: number; // 0 | 1
 }
 
 export interface SequenceWithMeta extends Sequence {
@@ -52,6 +53,13 @@ export function updateSequence(id: string, name: string): void {
   db.runSync(
     `UPDATE sequences SET name = ?, updated_at = ? WHERE id = ?;`,
     [name, Date.now(), id]
+  );
+}
+
+export function updateSequenceFavorite(id: string, isFavorited: boolean): void {
+  db.runSync(
+    `UPDATE sequences SET is_favorited = ? WHERE id = ?;`,
+    [isFavorited ? 1 : 0, id]
   );
 }
 

@@ -6,7 +6,7 @@ import { TabBar } from '@/components/TabBar';
 import { Colors, Spacing } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
 import { useSequences } from '@/lib/hooks/useSequences';
-import { deleteSequence, duplicateSequence } from '@/lib/db/sequences';
+import { deleteSequence, duplicateSequence, updateSequenceFavorite } from '@/lib/db/sequences';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { useState, useCallback, useMemo, useRef } from 'react';
@@ -128,6 +128,7 @@ export default function SequencesScreen() {
                 onPlay={() => router.push(`/sequence/${item.id}/timer`)}
                 onDuplicate={() => { duplicateSequence(item.id); refresh(); }}
                 onDelete={() => { deleteSequence(item.id); refresh(); }}
+                onFavorite={() => { updateSequenceFavorite(item.id, !item.is_favorited); refresh(); }}
               />
             )}
           />
