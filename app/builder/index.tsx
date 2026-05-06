@@ -132,6 +132,21 @@ export default function NewSequenceScreen() {
     );
   }, []);
 
+  const setTotalSectionDuration = useCallback((sectionId: string, total: number) => {
+    setIsDirty(true);
+    setSections((prev) => prev.map((s) => {
+      if (s.id !== sectionId || s.exercises.length === 0) return s;
+      const perEx = Math.floor(total / s.exercises.length);
+      return {
+        ...s,
+        exercises: s.exercises.map((ex, i) => ({
+          ...ex,
+          duration: i === s.exercises.length - 1 ? total - perEx * (s.exercises.length - 1) : perEx,
+        })),
+      };
+    }));
+  }, []);
+
   const doSave = useCallback((sectionsToSave: typeof sections) => {
     const trimmedName = name.trim() || 'Untitled Sequence';
     const seq = createSequence(trimmedName);
@@ -232,6 +247,8 @@ export default function NewSequenceScreen() {
             onRename={(n) => renameSection(section.id, n)}
             onDelete={() => removeSection(section.id)}
             onAddExercise={() => setExerciseSheetSectionId(section.id)}
+            totalDuration={section.exercises.reduce((sum, e) => sum + e.duration, 0)}
+            onSetTotalDuration={(t) => setTotalSectionDuration(section.id, t)}
           >
             {section.exercises.length > 0 && (
               <DraggableList
