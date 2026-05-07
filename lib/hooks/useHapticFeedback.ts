@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import * as Haptics from 'expo-haptics';
 import type { TimerExercise, TimerStatus } from './useTimer';
 import type { HapticSettings, HapticStyle } from './usePreferences';
+import { computeVariationFractions } from '@/lib/db/exercises';
 
 interface HapticTimerState {
   status: TimerStatus;
@@ -56,11 +57,20 @@ export function useHapticFeedback(state: HapticTimerState, settings: HapticSetti
     firedThisExerciseRef.current = new Set();
 
     const duration = currentExercise?.duration ?? 0;
+    const variationMarkKeys: string[] = [];
+    if (currentExercise?.variationSets?.length) {
+      const fractions = computeVariationFractions(currentExercise.variationSets, duration);
+      fractions.forEach((f, i) => {
+        const threshold = (1 - f) * duration;
+        if (threshold > 0) variationMarkKeys.push(`variationMark_${i}_${threshold}`);
+      });
+    }
     armedCountdownsRef.current = new Set([
       ...settings.countdownWarnings.filter((w) => duration > w.seconds).map((w) => `countdown_${w.seconds}`),
       ...(settings.onLoadChange.enabled && settings.onLoadChange.timing === 'countdown' && duration > settings.onLoadChange.secondsBefore ? ['loadChange'] : []),
       ...(settings.onSideChange.enabled && settings.onSideChange.timing === 'countdown' && duration > settings.onSideChange.secondsBefore ? ['sideChange'] : []),
       ...(settings.onVariationChange.enabled && settings.onVariationChange.timing === 'countdown' && duration > settings.onVariationChange.secondsBefore ? ['variationChange'] : []),
+      ...variationMarkKeys,
     ]);
 
     if (exerciseIndex > 0 && settings.enabled) {
@@ -141,6 +151,19 @@ export function useHapticFeedback(state: HapticTimerState, settings: HapticSetti
     ) {
       fired.add('variationChange');
       fireHaptic(settings.onVariationChange.style);
+    }
+
+    if (currentExercise?.variationSets?.length) {
+      const duration = currentExercise.duration;
+      const fractions = computeVariationFractions(currentExercise.variationSets, duration);
+      fractions.forEach((f, i) => {
+        const threshold = (1 - f) * duration;
+        const key = `variationMark_${i}_${threshold}`;
+        if (timeRemaining <= threshold && armed.has(key) && !fired.has(key)) {
+          fired.add(key);
+          fireHaptic(settings.onVariationChange.style);
+        }
+      });
     }
   }, [timeRemaining, status]); // eslint-disable-line react-hooks/exhaustive-deps
 }

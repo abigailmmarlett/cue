@@ -6,6 +6,7 @@ import { useTheme } from '@/lib/contexts/ThemeContext';
 import { formatSeconds } from '@/lib/utils/time';
 import { DRAG_ITEM_HEIGHT } from './DraggableList';
 import type { ExerciseTag } from '@/lib/db/tags';
+import type { VariationItem } from '@/lib/db/exercises';
 
 export interface LocalExercise {
   id: string;
@@ -19,6 +20,7 @@ export interface LocalExercise {
   loadBase: string[] | null;
   loadAmplified: string[] | null;
   variation: string | null;
+  variationSets: VariationItem[] | null;
   isBilateral: boolean;
   side: 'left' | 'right' | null;
 }
@@ -188,7 +190,7 @@ export function ExerciseRow({ exercise, onNameChange, onDurationChange, onDelete
 
         {onEditVariation && (
           <TouchableOpacity onPress={onEditVariation} hitSlop={8} style={styles.tagButton}>
-            <Text style={[styles.tagIcon, !!exercise.variation && styles.tagIconActive]}>◈</Text>
+            <Text style={[styles.tagIcon, !!(exercise.variationSets?.length || exercise.variation) && styles.tagIconActive]}>◈</Text>
           </TouchableOpacity>
         )}
 

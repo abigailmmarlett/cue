@@ -1,8 +1,10 @@
 import { View, TouchableOpacity, StyleSheet, Alert, ActionSheetIOS, Platform } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { Text } from './ui/Text';
 import { TagChips } from './TagChips';
 import { Colors } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
+import { usePreferences } from '@/lib/hooks/usePreferences';
 import { formatSeconds } from '@/lib/utils/time';
 import type { SequenceWithTags } from '@/lib/db/sequences';
 
@@ -118,6 +120,7 @@ function makeStyles(c: typeof Colors) {
 
 export function SequenceCard({ sequence, onPress, onPlay, onDuplicate, onDelete, onFavorite, onShare }: Props) {
   const { colors } = useTheme();
+  const { hapticsEnabled } = usePreferences();
   const styles = makeStyles(colors);
 
   const showMenu = () => {
@@ -166,7 +169,7 @@ export function SequenceCard({ sequence, onPress, onPlay, onDuplicate, onDelete,
 
         <View style={styles.body}>
           <View style={styles.nameRow}>
-            <TouchableOpacity onPress={onFavorite} hitSlop={8} activeOpacity={0.7}>
+            <TouchableOpacity onPress={() => { if (hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onFavorite(); }} hitSlop={8} activeOpacity={0.7}>
               <Text style={[styles.star, { color: sequence.is_favorited ? '#f59e0b' : colors.text.tertiary }]}>★</Text>
             </TouchableOpacity>
             <Text style={styles.name} numberOfLines={1}>{sequence.name}</Text>
