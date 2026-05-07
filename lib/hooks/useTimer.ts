@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import type { VariationItem } from '@/lib/db/exercises';
 
 export interface TimerExercise {
   id: string;
@@ -11,6 +12,7 @@ export interface TimerExercise {
   loadBase: string[] | null;
   loadAmplified: string[] | null;
   variation: string | null;
+  variationSets: VariationItem[] | null;
   side: 'left' | 'right' | null;
   libraryExerciseId?: string | null;
 }

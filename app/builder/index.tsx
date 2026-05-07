@@ -93,7 +93,7 @@ export default function NewSequenceScreen() {
     setSections((prev) =>
       prev.map((s) =>
         s.id === sectionId
-          ? { ...s, exercises: [...s.exercises, { id: generateId(), name, duration: 30, notes: null, tagValueIds, tags, libraryExerciseId, loadModified: null, loadBase: null, loadAmplified: null, variation: null, isBilateral, side: null }] }
+          ? { ...s, exercises: [...s.exercises, { id: generateId(), name, duration: 30, notes: null, tagValueIds, tags, libraryExerciseId, loadModified: null, loadBase: null, loadAmplified: null, variation: null, variationSets: null, isBilateral, side: null }] }
           : s
       )
     );
@@ -155,7 +155,7 @@ export default function NewSequenceScreen() {
       const dbSection = createSection(seq.id, section.name.trim() || 'Section');
       for (const ex of section.exercises) {
         const libId = ex.libraryExerciseId ?? null;
-        createExercise(seq.id, dbSection.id, ex.name.trim() || 'Exercise', ex.duration, ex.notes ?? undefined, libId, ex.variation ?? null, ex.side ?? null);
+        createExercise(seq.id, dbSection.id, ex.name.trim() || 'Exercise', ex.duration, ex.notes ?? undefined, libId, ex.variation ?? null, ex.side ?? null, ex.variationSets ?? null);
         if (!libId && ex.tagValueIds.length > 0) setExerciseTags(ex.id, ex.tagValueIds);
       }
     }

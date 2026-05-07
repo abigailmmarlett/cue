@@ -1,6 +1,19 @@
 import db from './client';
 import { generateId } from '../utils/id';
 
+export interface VariationItem {
+  instruction: string;
+  atSeconds: number | null;
+}
+
+export function computeVariationFractions(items: VariationItem[], duration: number): number[] {
+  return items.map((v, i) =>
+    v.atSeconds != null
+      ? v.atSeconds / duration
+      : (i + 1) / (items.length + 1)
+  );
+}
+
 export interface Exercise {
   id: string;
   sequence_id: string;
@@ -15,6 +28,7 @@ export interface Exercise {
   load_base: string | null;
   load_amplified: string | null;
   variation: string | null;
+  variation_sets: string | null; // JSON-encoded VariationItem[]
   side: 'left' | 'right' | null;
   is_bilateral: number; // 0 | 1 from library join
 }
@@ -25,7 +39,7 @@ export function getExercisesBySequenceId(sequenceId: string): Exercise[] {
       COALESCE(e.load_modified, le.load_modified) AS load_modified,
       COALESCE(e.load_base, le.load_base) AS load_base,
       COALESCE(e.load_amplified, le.load_amplified) AS load_amplified,
-      e.variation, e.side,
+      e.variation, e.variation_sets, e.side,
       COALESCE(le.is_bilateral, 0) AS is_bilateral
      FROM exercises e
      LEFT JOIN library_exercises le ON le.id = e.library_exercise_id
@@ -46,7 +60,7 @@ export function getExercisesBySectionId(sectionId: string): Exercise[] {
       COALESCE(e.load_modified, le.load_modified) AS load_modified,
       COALESCE(e.load_base, le.load_base) AS load_base,
       COALESCE(e.load_amplified, le.load_amplified) AS load_amplified,
-      e.variation, e.side,
+      e.variation, e.variation_sets, e.side,
       COALESCE(le.is_bilateral, 0) AS is_bilateral
      FROM exercises e
      LEFT JOIN library_exercises le ON le.id = e.library_exercise_id
@@ -64,7 +78,8 @@ export function createExercise(
   notes?: string,
   libraryExerciseId?: string | null,
   variation?: string | null,
-  side?: 'left' | 'right' | null
+  side?: 'left' | 'right' | null,
+  variationSets?: VariationItem[] | null
 ): Exercise {
   const id = generateId();
   const now = Date.now();
@@ -73,14 +88,15 @@ export function createExercise(
     [sectionId]
   );
   const orderIndex = (maxIndex?.max_index ?? -1) + 1;
+  const variationSetsJson = variationSets?.length ? JSON.stringify(variationSets) : null;
 
   db.runSync(
-    `INSERT INTO exercises (id, sequence_id, section_id, name, duration, order_index, notes, created_at, library_exercise_id, variation, side)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
-    [id, sequenceId, sectionId, name, duration, orderIndex, notes ?? null, now, libraryExerciseId ?? null, variation ?? null, side ?? null]
+    `INSERT INTO exercises (id, sequence_id, section_id, name, duration, order_index, notes, created_at, library_exercise_id, variation, variation_sets, side)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+    [id, sequenceId, sectionId, name, duration, orderIndex, notes ?? null, now, libraryExerciseId ?? null, variation ?? null, variationSetsJson, side ?? null]
   );
 
-  return { id, sequence_id: sequenceId, section_id: sectionId, name, duration, order_index: orderIndex, notes: notes ?? null, created_at: now, library_exercise_id: libraryExerciseId ?? null, load_modified: null, load_base: null, load_amplified: null, variation: variation ?? null, side: side ?? null, is_bilateral: 0 };
+  return { id, sequence_id: sequenceId, section_id: sectionId, name, duration, order_index: orderIndex, notes: notes ?? null, created_at: now, library_exercise_id: libraryExerciseId ?? null, load_modified: null, load_base: null, load_amplified: null, variation: variation ?? null, variation_sets: variationSetsJson, side: side ?? null, is_bilateral: 0 };
 }
 
 export function upsertExercise(
@@ -96,11 +112,13 @@ export function upsertExercise(
   loadBase: string | null = null,
   loadAmplified: string | null = null,
   variation: string | null = null,
-  side: 'left' | 'right' | null = null
+  side: 'left' | 'right' | null = null,
+  variationSets: VariationItem[] | null = null
 ): void {
+  const variationSetsJson = variationSets?.length ? JSON.stringify(variationSets) : null;
   db.runSync(
-    `INSERT INTO exercises (id, sequence_id, section_id, name, duration, order_index, notes, created_at, library_exercise_id, load_modified, load_base, load_amplified, variation, side)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `INSERT INTO exercises (id, sequence_id, section_id, name, duration, order_index, notes, created_at, library_exercise_id, load_modified, load_base, load_amplified, variation, variation_sets, side)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(id) DO UPDATE SET
        name = excluded.name,
        duration = excluded.duration,
@@ -112,8 +130,9 @@ export function upsertExercise(
        load_base = excluded.load_base,
        load_amplified = excluded.load_amplified,
        variation = excluded.variation,
+       variation_sets = excluded.variation_sets,
        side = excluded.side;`,
-    [id, sequenceId, sectionId, name, duration, orderIndex, notes, Date.now(), libraryExerciseId, loadModified, loadBase, loadAmplified, variation, side]
+    [id, sequenceId, sectionId, name, duration, orderIndex, notes, Date.now(), libraryExerciseId, loadModified, loadBase, loadAmplified, variation, variationSetsJson, side]
   );
 }
 

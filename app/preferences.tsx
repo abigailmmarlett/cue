@@ -619,7 +619,7 @@ export default function PreferencesScreen() {
 
             <View style={styles.card}>
               {hapticSettings.countdownWarnings.map((warning, idx) => (
-                <View key={warning.seconds} style={[styles.countdownTag, idx > 0 && styles.rowBorder]}>
+                <View key={String(warning.seconds)} style={[styles.countdownTag, idx > 0 && styles.rowBorder]}>
                   <Text style={styles.countdownTagText}>{warning.seconds}s before end</Text>
                   <TouchableOpacity
                     onPress={() => pickStyle((s) => updateCountdownWarningStyle(warning.seconds, s), warning.style)}

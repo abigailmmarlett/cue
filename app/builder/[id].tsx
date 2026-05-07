@@ -35,7 +35,9 @@ import {
 } from '@/lib/db/tags';
 import { createLibraryExercise, setLibraryExerciseTags } from '@/lib/db/libraryExercises';
 import { getAllLoadIcons, parseLoad, serializeLoad, type LoadIcon } from '@/lib/db/loadIcons';
+import type { VariationItem } from '@/lib/db/exercises';
 import { LoadEditor } from '@/components/LoadEditor';
+import { VariationEditor } from '@/components/VariationEditor';
 import { generateId } from '@/lib/utils/id';
 import { emitSequenceChange } from '@/lib/sequenceEvents';
 
@@ -61,6 +63,7 @@ export default function EditSequenceScreen() {
   const [showSequenceTagPicker, setShowSequenceTagPicker] = useState(false);
   const [exerciseSheetSectionId, setExerciseSheetSectionId] = useState<string | null>(null);
   const [editLoadExerciseId, setEditLoadExerciseId] = useState<string | null>(null);
+  const [editVariationExerciseId, setEditVariationExerciseId] = useState<string | null>(null);
   const [allLoadIcons] = useState<LoadIcon[]>(() => getAllLoadIcons());
 
   const activeExercise = tagPickerExerciseId
@@ -106,6 +109,7 @@ export default function EditSequenceScreen() {
               loadBase: parseLoad(e.load_base),
               loadAmplified: parseLoad(e.load_amplified),
               variation: e.variation,
+              variationSets: e.variation_sets ? JSON.parse(e.variation_sets) as VariationItem[] : null,
               isBilateral: !!e.is_bilateral,
               side: e.side,
             };
@@ -153,7 +157,7 @@ export default function EditSequenceScreen() {
               ...s,
               exercises: [
                 ...s.exercises,
-                { id: generateId(), name, duration: 30, notes: null, tagValueIds, tags, libraryExerciseId, loadModified, loadBase, loadAmplified, variation: null, isBilateral, side: null },
+                { id: generateId(), name, duration: 30, notes: null, tagValueIds, tags, libraryExerciseId, loadModified, loadBase, loadAmplified, variation: null, variationSets: null, isBilateral, side: null },
               ],
             }
           : s
@@ -233,7 +237,7 @@ export default function EditSequenceScreen() {
         const libId = ex.libraryExerciseId ?? null;
         upsertExercise(
           ex.id, id, section.id, ex.name.trim() || 'Exercise', ex.duration, eIdx, ex.notes ?? null, libId,
-          serializeLoad(ex.loadModified), serializeLoad(ex.loadBase), serializeLoad(ex.loadAmplified), ex.variation ?? null, ex.side ?? null
+          serializeLoad(ex.loadModified), serializeLoad(ex.loadBase), serializeLoad(ex.loadAmplified), ex.variation ?? null, ex.side ?? null, ex.variationSets?.length ? ex.variationSets : null
         );
         setExerciseTags(ex.id, ex.tagValueIds);
       }
@@ -289,6 +293,14 @@ export default function EditSequenceScreen() {
     if (!ex || !section) return null;
     return { ex, sectionId: section.id };
   }, [editLoadExerciseId, sections]);
+
+  const editVariationTarget = useMemo(() => {
+    if (!editVariationExerciseId) return null;
+    const ex = sections.flatMap((s) => s.exercises).find((e) => e.id === editVariationExerciseId);
+    const section = sections.find((s) => s.exercises.some((e) => e.id === editVariationExerciseId));
+    if (!ex || !section) return null;
+    return { ex, sectionId: section.id };
+  }, [editVariationExerciseId, sections]);
 
   if (loading) {
     return (
@@ -356,15 +368,7 @@ export default function EditSequenceScreen() {
                     onDelete={() => removeExercise(section.id, item.id)}
                     onEditTags={() => setTagPickerExerciseId(item.id)}
                     onEditLoad={allLoadIcons.length > 0 ? () => setEditLoadExerciseId(item.id) : undefined}
-                    onEditVariation={() => {
-                      Alert.prompt(
-                        'Variation',
-                        'Add a coaching instruction (e.g. "Hold at top")',
-                        (text) => updateExercise(section.id, item.id, { variation: text.trim() || null }),
-                        'plain-text',
-                        item.variation ?? ''
-                      );
-                    }}
+                    onEditVariation={() => setEditVariationExerciseId(item.id)}
                     onSideChange={(side) => updateExercise(section.id, item.id, { side })}
                   />
                 )}
@@ -448,6 +452,21 @@ export default function EditSequenceScreen() {
             setEditLoadExerciseId(null);
           }}
           onClose={() => setEditLoadExerciseId(null)}
+        />
+      )}
+
+      {editVariationTarget && (
+        <VariationEditor
+          visible
+          variationSets={editVariationTarget.ex.variationSets ?? []}
+          exerciseDuration={editVariationTarget.ex.duration}
+          onSave={(items) => {
+            updateExercise(editVariationTarget.sectionId, editVariationTarget.ex.id, {
+              variationSets: items.length > 0 ? items : null,
+            });
+            setEditVariationExerciseId(null);
+          }}
+          onClose={() => setEditVariationExerciseId(null)}
         />
       )}
 

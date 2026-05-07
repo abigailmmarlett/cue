@@ -132,6 +132,7 @@ export function runMigrations(): void {
   try { db.execSync(`ALTER TABLE exercises ADD COLUMN load_base TEXT;`); } catch {}
   try { db.execSync(`ALTER TABLE exercises ADD COLUMN load_amplified TEXT;`); } catch {}
   try { db.execSync(`ALTER TABLE exercises ADD COLUMN variation TEXT;`); } catch {}
+  try { db.execSync(`ALTER TABLE exercises ADD COLUMN variation_sets TEXT;`); } catch {}
   try { db.execSync(`ALTER TABLE library_exercises ADD COLUMN is_bilateral INTEGER NOT NULL DEFAULT 0;`); } catch {}
   try { db.execSync(`ALTER TABLE exercises ADD COLUMN side TEXT;`); } catch {}
   try { db.execSync(`ALTER TABLE sequences ADD COLUMN is_favorited INTEGER NOT NULL DEFAULT 0;`); } catch {}

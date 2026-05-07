@@ -10,6 +10,7 @@ import { TripleRing } from '@/components/timer/TripleRing';
 import { Colors, Spacing, Radius, FontSize } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
 import { getAllLoadIcons, parseLoad, type LoadIcon } from '@/lib/db/loadIcons';
+import { computeVariationFractions, type VariationItem } from '@/lib/db/exercises';
 import { useSequence } from '@/lib/hooks/useSequence';
 import { useTimer, type TimerExercise, type TimerSection } from '@/lib/hooks/useTimer';
 import { useHapticFeedback, fireHaptic } from '@/lib/hooks/useHapticFeedback';
@@ -38,6 +39,7 @@ export default function TimerScreen() {
     loadBase: parseLoad(e.load_base),
     loadAmplified: parseLoad(e.load_amplified),
     variation: e.variation,
+    variationSets: e.variation_sets ? JSON.parse(e.variation_sets) as VariationItem[] : null,
     side: e.side,
     libraryExerciseId: e.library_exercise_id,
   }));
@@ -114,9 +116,25 @@ export default function TimerScreen() {
     (currentExercise?.loadModified?.length ?? 0) > 0 ||
     (currentExercise?.loadBase?.length ?? 0) > 0 ||
     (currentExercise?.loadAmplified?.length ?? 0) > 0;
-  const hasVariation = !!currentExercise?.variation;
+  const hasVariation = !!(currentExercise?.variationSets?.length || currentExercise?.variation);
   const hasSide = !!currentExercise?.side;
   const sideLabel = currentExercise?.side === 'left' ? 'Left' : currentExercise?.side === 'right' ? 'Right' : null;
+
+  const variationFractions = currentExercise?.variationSets?.length
+    ? computeVariationFractions(currentExercise.variationSets, currentExercise.duration)
+    : [];
+
+  const elapsed = currentExercise ? currentExercise.duration - timeRemaining : 0;
+  const activeVariationIndex = currentExercise?.variationSets?.length
+    ? variationFractions.reduce<number>(
+        (last, f, i) => (elapsed / currentExercise!.duration >= f ? i : last),
+        -1
+      )
+    : -1;
+  const activeVariationLabel =
+    activeVariationIndex >= 0
+      ? (currentExercise?.variationSets?.[activeVariationIndex]?.instruction ?? null)
+      : (currentExercise?.variation ?? null);
 
 
   const currentKey = currentExercise?.libraryExerciseId ?? currentExercise?.name ?? null;
@@ -195,6 +213,7 @@ export default function TimerScreen() {
           totalProgress={totalProgress}
           exerciseMarks={ringMarks}
           markColor={colors.text.inverse}
+          variationMarks={variationFractions}
         >
           {currentExercise && (
             <View style={styles.ringContent}>
@@ -243,12 +262,12 @@ export default function TimerScreen() {
               </Text>
             </>
           )}
-          {hasVariation && (
+          {hasVariation && activeVariationLabel && (
             <>
               {hasSide && <Text variant="caption" color="tertiary" style={styles.variationText}>·</Text>}
               <Text style={[styles.variationIcon, { color: colors.accent }]}>◈</Text>
               <Text variant="caption" color="secondary" style={styles.variationText}>
-                {currentExercise.variation}
+                {activeVariationLabel}
               </Text>
             </>
           )}

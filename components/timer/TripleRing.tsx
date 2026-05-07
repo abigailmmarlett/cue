@@ -31,10 +31,11 @@ interface Props {
   totalProgress: number;
   exerciseMarks?: number[];
   markColor?: string;
+  variationMarks?: number[];
   children?: React.ReactNode;
 }
 
-export function TripleRing({ exerciseProgress, sectionProgress, totalProgress, exerciseMarks, markColor, children }: Props) {
+export function TripleRing({ exerciseProgress, sectionProgress, totalProgress, exerciseMarks, markColor, variationMarks, children }: Props) {
   const { colors } = useTheme();
   const innerVal = useSharedValue(exerciseProgress);
   const midVal = useSharedValue(sectionProgress);
@@ -115,6 +116,13 @@ export function TripleRing({ exerciseProgress, sectionProgress, totalProgress, e
           const x = CENTER + R_INNER * Math.sin(theta);
           const y = CENTER - R_INNER * Math.cos(theta);
           return <Circle key={i} cx={x} cy={y} r={4.5} fill={markColor ?? '#ffffff'} opacity={0.9} />;
+        })}
+
+        {variationMarks?.map((fraction, i) => {
+          const theta = (1 - fraction) * 2 * Math.PI;
+          const x = CENTER + R_INNER * Math.sin(theta);
+          const y = CENTER - R_INNER * Math.cos(theta);
+          return <Circle key={`v${i}`} cx={x} cy={y} r={5} fill={colors.accent} opacity={0.85} />;
         })}
       </Svg>
 
