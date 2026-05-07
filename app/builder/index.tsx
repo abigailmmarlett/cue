@@ -17,6 +17,7 @@ import { ExerciseRow, type LocalExercise } from '@/components/ExerciseRow';
 import { SectionGroup } from '@/components/SectionGroup';
 import { TagPicker } from '@/components/TagPicker';
 import { ExerciseSearchSheet } from '@/components/ExerciseSearchSheet';
+import { SectionImportSheet } from '@/components/SectionImportSheet';
 import { Divider } from '@/components/ui/Divider';
 import { Colors, Spacing, Radius, FontSize, FontWeight } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
@@ -55,6 +56,7 @@ export default function NewSequenceScreen() {
   const [sequenceTags, setSequenceTags] = useState<ExerciseTag[]>([]);
   const [showSequenceTagPicker, setShowSequenceTagPicker] = useState(false);
   const [exerciseSheetSectionId, setExerciseSheetSectionId] = useState<string | null>(null);
+  const [showSectionImport, setShowSectionImport] = useState(false);
 
   usePreventRemove(isDirty, ({ data }) => {
     Alert.alert(
@@ -70,6 +72,11 @@ export default function NewSequenceScreen() {
   const activeExercise = tagPickerExerciseId
     ? sections.flatMap((s) => s.exercises).find((e) => e.id === tagPickerExerciseId) ?? null
     : null;
+
+  const importSection = useCallback((section: LocalSection) => {
+    setIsDirty(true);
+    setSections((prev) => [...prev, section]);
+  }, []);
 
   const addSection = useCallback(() => {
     setIsDirty(true);
@@ -275,6 +282,11 @@ export default function NewSequenceScreen() {
           <Text style={styles.addIcon}>+</Text>
           <Text variant="body" color="tertiary">Add section</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => setShowSectionImport(true)} style={styles.addSectionRow} activeOpacity={0.7}>
+          <Text style={styles.addIcon}>↓</Text>
+          <Text variant="body" color="tertiary">Import section from another sequence</Text>
+        </TouchableOpacity>
       </ScrollView>
 
       <View style={styles.footer}>
@@ -321,6 +333,13 @@ export default function NewSequenceScreen() {
             setExerciseSheetSectionId(null);
           }}
           onClose={() => setExerciseSheetSectionId(null)}
+        />
+      )}
+
+      {showSectionImport && (
+        <SectionImportSheet
+          onImport={(s) => { importSection(s); setShowSectionImport(false); }}
+          onClose={() => setShowSectionImport(false)}
         />
       )}
 

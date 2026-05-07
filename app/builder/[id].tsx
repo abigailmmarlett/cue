@@ -22,6 +22,7 @@ import { useTheme } from '@/lib/contexts/ThemeContext';
 import { TagPicker } from '@/components/TagPicker';
 import { TagChips } from '@/components/TagChips';
 import { ExerciseSearchSheet } from '@/components/ExerciseSearchSheet';
+import { SectionImportSheet } from '@/components/SectionImportSheet';
 import { getSequenceById, updateSequence } from '@/lib/db/sequences';
 import { getExercisesBySequenceId, upsertExercise, deleteExercise } from '@/lib/db/exercises';
 import { getSectionsBySequenceId, upsertSection, deleteSection } from '@/lib/db/sections';
@@ -62,6 +63,7 @@ export default function EditSequenceScreen() {
   const [sequenceTags, setSequenceTags] = useState<ExerciseTag[]>([]);
   const [showSequenceTagPicker, setShowSequenceTagPicker] = useState(false);
   const [exerciseSheetSectionId, setExerciseSheetSectionId] = useState<string | null>(null);
+  const [showSectionImport, setShowSectionImport] = useState(false);
   const [editLoadExerciseId, setEditLoadExerciseId] = useState<string | null>(null);
   const [editVariationExerciseId, setEditVariationExerciseId] = useState<string | null>(null);
   const [allLoadIcons] = useState<LoadIcon[]>(() => getAllLoadIcons());
@@ -120,6 +122,11 @@ export default function EditSequenceScreen() {
     setLoading(false);
     setIsDirty(false);
   }, [id, router]);
+
+  const importSection = useCallback((section: LocalSection) => {
+    setIsDirty(true);
+    setSections((prev) => [...prev, section]);
+  }, []);
 
   const addSection = useCallback(() => {
     setIsDirty(true);
@@ -384,6 +391,11 @@ export default function EditSequenceScreen() {
           <Text style={styles.addIcon}>+</Text>
           <Text variant="body" color="tertiary">Add section</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => setShowSectionImport(true)} style={styles.addSectionRow} activeOpacity={0.7}>
+          <Text style={styles.addIcon}>↓</Text>
+          <Text variant="body" color="tertiary">Import section from another sequence</Text>
+        </TouchableOpacity>
       </ScrollView>
 
       <View style={styles.footer}>
@@ -416,6 +428,14 @@ export default function EditSequenceScreen() {
             setTagPickerExerciseId(null);
           }}
           onClose={() => setTagPickerExerciseId(null)}
+        />
+      )}
+
+      {showSectionImport && (
+        <SectionImportSheet
+          currentSequenceId={id}
+          onImport={(s) => { importSection(s); setShowSectionImport(false); }}
+          onClose={() => setShowSectionImport(false)}
         />
       )}
 
