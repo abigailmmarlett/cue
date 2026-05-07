@@ -1,7 +1,6 @@
 import { View, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState, useRef, useCallback } from 'react';
-import * as Haptics from 'expo-haptics';
 import { StatusBar } from 'expo-status-bar';
 import { Text } from '@/components/ui/Text';
 import { TagChips } from '@/components/TagChips';
@@ -13,6 +12,8 @@ import { useTheme } from '@/lib/contexts/ThemeContext';
 import { getAllLoadIcons, parseLoad, type LoadIcon } from '@/lib/db/loadIcons';
 import { useSequence } from '@/lib/hooks/useSequence';
 import { useTimer, type TimerExercise, type TimerSection } from '@/lib/hooks/useTimer';
+import { useHapticFeedback, fireHaptic } from '@/lib/hooks/useHapticFeedback';
+import { usePreferences } from '@/lib/hooks/usePreferences';
 import { formatSeconds } from '@/lib/utils/time';
 
 export default function TimerScreen() {
@@ -63,6 +64,12 @@ export default function TimerScreen() {
   } = useTimer(timerExercises, timerSections);
   const styles = makeStyles(colors);
 
+  const { hapticSettings } = usePreferences();
+  useHapticFeedback(
+    { status, exerciseIndex, timeRemaining, currentExercise, nextExercise, currentSectionIndex },
+    hapticSettings,
+  );
+
   useEffect(() => { currentRunMarksRef.current = currentRunMarks; }, [currentRunMarks]);
 
   useEffect(() => {
@@ -87,13 +94,15 @@ export default function TimerScreen() {
     if (!currentExercise || status !== 'running') return;
     const key = currentExercise.libraryExerciseId ?? currentExercise.name;
     const fraction = 1 - timeRemaining / currentExercise.duration;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (hapticSettings.enabled && hapticSettings.onMark.enabled) {
+      fireHaptic(hapticSettings.onMark.style);
+    }
     setCurrentRunMarks((prev) => {
       const next = new Map(prev);
       next.set(key, [...(next.get(key) ?? []), fraction]);
       return next;
     });
-  }, [currentExercise, timeRemaining, status]);
+  }, [currentExercise, timeRemaining, status, hapticSettings]);
 
   // Track total time elapsed for the outer ring
   const totalElapsed = timerExercises
@@ -121,23 +130,6 @@ export default function TimerScreen() {
     : 1;
   const totalProgress = totalDuration > 0 ? totalTimeRemaining / totalDuration : 1;
 
-  useEffect(() => {
-    if (status === 'running' && exerciseIndex > 0) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    }
-  }, [exerciseIndex, status]);
-
-  useEffect(() => {
-    if (status === 'running' && currentSectionIndex > 0) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    }
-  }, [currentSectionIndex, status]);
-
-  useEffect(() => {
-    if (status === 'finished') {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    }
-  }, [status]);
 
   if (!sequence) return null;
 
