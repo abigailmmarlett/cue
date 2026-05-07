@@ -7,6 +7,7 @@ import { TagChips } from '@/components/TagChips';
 import { LoadDotRow } from '@/components/LoadDotRow';
 import { TimerControls } from '@/components/timer/TimerControls';
 import { TripleRing } from '@/components/timer/TripleRing';
+import { FireworkAnimation } from '@/components/timer/FireworkAnimation';
 import { Colors, Spacing, Radius, FontSize } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
 import { getAllLoadIcons, parseLoad, type LoadIcon } from '@/lib/db/loadIcons';
@@ -156,7 +157,7 @@ export default function TimerScreen() {
       <SafeAreaView style={styles.container}>
         <StatusBar style={isDark ? 'light' : 'dark'} />
         <View style={styles.completionContainer}>
-          <Text style={[styles.checkmark, { color: colors.accent }]}>✦</Text>
+          <FireworkAnimation accentColor={colors.accent} />
           <Text variant="title" style={styles.completeTitle}>
             Done.
           </Text>
@@ -391,10 +392,6 @@ function makeStyles(c: typeof Colors) {
       justifyContent: 'center',
       padding: Spacing.xl,
       gap: Spacing.sm,
-    },
-    checkmark: {
-      fontSize: 52,
-      marginBottom: Spacing.md,
     },
     completeTitle: { letterSpacing: -0.5 },
     completeSubtitle: {},
