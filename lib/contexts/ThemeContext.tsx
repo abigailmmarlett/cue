@@ -4,7 +4,8 @@ import { Colors as BaseColors, DarkBaseColors } from '@/constants/theme';
 import { getPreference, setPreference } from '@/lib/db/preferences';
 
 export type ThemeId = 'forest' | 'ocean' | 'dusk' | 'ember' | 'stone'
-  | 'bloom' | 'reverie' | 'tidal' | 'electric';
+  | 'bloom' | 'reverie' | 'tidal' | 'electric'
+  | 'haze' | 'canopy' | 'dune' | 'wildfire' | 'verdigris';
 
 export type Mode = 'light' | 'dark' | 'system';
 
@@ -134,6 +135,71 @@ export const THEME_PRESETS: ThemePreset[] = [
     pillBg: 'rgba(112,105,147,0.1)',
     pillBorder: 'rgba(112,105,147,0.25)',
     pillAccent: '#706993',
+  },
+  {
+    id: 'haze',
+    name: 'Haze',
+    accent: '#C26D82',
+    accentDeep: '#8B7DB8',
+    accentDim: 'rgba(194,109,130,0.1)',
+    accentBorder: 'rgba(194,109,130,0.27)',
+    headerBg: '#F9EFF3',
+    headerBgDark: '#EDD5DE',
+    pillBg: 'rgba(139,125,184,0.1)',
+    pillBorder: 'rgba(139,125,184,0.25)',
+    pillAccent: '#8B7DB8',
+  },
+  {
+    id: 'canopy',
+    name: 'Canopy',
+    accent: '#0F766E',
+    accentDeep: '#B45309',
+    accentDim: 'rgba(15,118,110,0.1)',
+    accentBorder: 'rgba(15,118,110,0.27)',
+    headerBg: '#F0FDFA',
+    headerBgDark: '#C2EDE9',
+    pillBg: 'rgba(180,83,9,0.08)',
+    pillBorder: 'rgba(180,83,9,0.2)',
+    pillAccent: '#B45309',
+  },
+  {
+    id: 'dune',
+    name: 'Dune',
+    accent: '#C2851A',
+    accentDeep: '#4D7C6D',
+    accentDim: 'rgba(194,133,26,0.1)',
+    accentBorder: 'rgba(194,133,26,0.27)',
+    headerBg: '#FEFCE8',
+    headerBgDark: '#F7EAAA',
+    pillBg: 'rgba(77,124,109,0.1)',
+    pillBorder: 'rgba(77,124,109,0.25)',
+    pillAccent: '#4D7C6D',
+  },
+  {
+    id: 'wildfire',
+    name: 'Wildfire',
+    accent: '#DC2626',
+    accentDeep: '#BE185D',
+    accentDim: 'rgba(220,38,38,0.1)',
+    accentBorder: 'rgba(220,38,38,0.27)',
+    headerBg: '#FFF1F2',
+    headerBgDark: '#FFD0D6',
+    pillBg: 'rgba(190,24,93,0.08)',
+    pillBorder: 'rgba(190,24,93,0.2)',
+    pillAccent: '#BE185D',
+  },
+  {
+    id: 'verdigris',
+    name: 'Verdigris',
+    accent: '#0D9488',
+    accentDeep: '#C2410C',
+    accentDim: 'rgba(13,148,136,0.1)',
+    accentBorder: 'rgba(13,148,136,0.27)',
+    headerBg: '#F0FDFC',
+    headerBgDark: '#C7EBE9',
+    pillBg: 'rgba(194,65,12,0.08)',
+    pillBorder: 'rgba(194,65,12,0.2)',
+    pillAccent: '#C2410C',
   },
 ];
 
