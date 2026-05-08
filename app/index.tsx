@@ -11,9 +11,10 @@ import { deleteSequence, duplicateSequence, updateSequenceFavorite } from '@/lib
 import { serializeSequence, buildShareUrl, decodeShareData } from '@/lib/utils/shareSequence';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
-import { useState, useCallback, useMemo, useRef } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ExerciseTag } from '@/lib/db/tags';
+import { useTour } from '@/lib/contexts/TourContext';
 
 function makeStyles(c: typeof Colors) {
   return StyleSheet.create({
@@ -53,6 +54,25 @@ export default function SequencesScreen() {
   const [activeFilterTags, setActiveFilterTags] = useState<ExerciseTag[]>([]);
   const listRef = useRef<FlatList>(null);
   const styles = makeStyles(colors);
+
+  const { registerTarget, unregisterTarget } = useTour();
+  const sequencesListRef = useRef<View>(null);
+  const addButtonRef = useRef<View>(null);
+  const filterAreaRef = useRef<View>(null);
+  const firstCardRef = useRef<View>(null);
+
+  useEffect(() => {
+    registerTarget('sequences-list', sequencesListRef);
+    registerTarget('add-button', addButtonRef);
+    registerTarget('tag-filter', filterAreaRef);
+    registerTarget('first-sequence-card', firstCardRef);
+    return () => {
+      unregisterTarget('sequences-list');
+      unregisterTarget('add-button');
+      unregisterTarget('tag-filter');
+      unregisterTarget('first-sequence-card');
+    };
+  }, [registerTarget, unregisterTarget]);
 
   useFocusEffect(useCallback(() => { refresh(); }, [refresh]));
 
@@ -109,9 +129,11 @@ export default function SequencesScreen() {
         tagPills={allTagPills}
         activeTagIds={activeFilterTags.map((t) => t.tagValueId)}
         onTagToggle={toggleTag}
+        addButtonRef={addButtonRef}
+        filterAreaRef={filterAreaRef}
       />
 
-      <View style={styles.listWrapper}>
+      <View ref={sequencesListRef} style={styles.listWrapper}>
         {loading ? null : filteredSequences.length === 0 ? (
           <View style={styles.empty}>
             <Text variant="body" color="tertiary">
@@ -134,20 +156,22 @@ export default function SequencesScreen() {
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.list}
             keyboardShouldPersistTaps="handled"
-            renderItem={({ item }) => (
-              <SequenceCard
-                sequence={item}
-                onPress={() => router.push(`/sequence/${item.id}`)}
-                onPlay={() => router.push(`/sequence/${item.id}/timer`)}
-                onDuplicate={() => { duplicateSequence(item.id); refresh(); }}
-                onDelete={() => { deleteSequence(item.id); refresh(); }}
-                onFavorite={() => { updateSequenceFavorite(item.id, !item.is_favorited); refresh(); }}
-                onShare={() => {
-                  const payload = serializeSequence(item.id);
-                  const url = buildShareUrl(payload);
-                  Share.share({ message: url });
-                }}
-              />
+            renderItem={({ item, index }) => (
+              <View ref={index === 0 ? firstCardRef : undefined}>
+                <SequenceCard
+                  sequence={item}
+                  onPress={() => router.push(`/sequence/${item.id}`)}
+                  onPlay={() => router.push(`/sequence/${item.id}/timer`)}
+                  onDuplicate={() => { duplicateSequence(item.id); refresh(); }}
+                  onDelete={() => { deleteSequence(item.id); refresh(); }}
+                  onFavorite={() => { updateSequenceFavorite(item.id, !item.is_favorited); refresh(); }}
+                  onShare={() => {
+                    const payload = serializeSequence(item.id);
+                    const url = buildShareUrl(payload);
+                    Share.share({ message: url });
+                  }}
+                />
+              </View>
             )}
           />
         )}

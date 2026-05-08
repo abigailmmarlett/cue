@@ -4,23 +4,35 @@ import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import * as SplashScreen from 'expo-splash-screen';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 import { runMigrations } from '@/lib/db/schema';
+import { getPreference } from '@/lib/db/preferences';
 import { ThemeProvider, useTheme } from '@/lib/contexts/ThemeContext';
+import { TourProvider, useTour } from '@/lib/contexts/TourContext';
 import { WelcomeScreen } from '@/components/WelcomeScreen';
+import { TourOverlay } from '@/components/TourOverlay';
 
 // Run synchronously before any screen renders
 runMigrations();
 SplashScreen.preventAutoHideAsync();
 
-function AppShell() {
+function AppShellInner() {
   const { colors, isDark } = useTheme();
+  const { startTour } = useTour();
   const [showWelcome, setShowWelcome] = useState(false);
 
   useEffect(() => {
     SplashScreen.hideAsync().then(() => setShowWelcome(true));
   }, []);
+
+  const handleWelcomeComplete = useCallback(() => {
+    setShowWelcome(false);
+    const hasTaken = getPreference('hasTakenTour');
+    if (!hasTaken) {
+      setTimeout(() => startTour(), 400);
+    }
+  }, [startTour]);
 
   const navTheme = {
     ...(isDark ? DarkTheme : DefaultTheme),
@@ -72,8 +84,17 @@ function AppShell() {
         />
       </Stack>
       <StatusBar style={isDark ? 'light' : 'dark'} />
-      {showWelcome && <WelcomeScreen onComplete={() => setShowWelcome(false)} />}
+      {showWelcome && <WelcomeScreen onComplete={handleWelcomeComplete} />}
+      <TourOverlay />
     </NavThemeProvider>
+  );
+}
+
+function AppShell() {
+  return (
+    <TourProvider>
+      <AppShellInner />
+    </TourProvider>
   );
 }
 

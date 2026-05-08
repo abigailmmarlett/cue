@@ -8,7 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '@/components/ui/Text';
 import { TagChips } from '@/components/TagChips';
@@ -18,6 +18,7 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { TabBar } from '@/components/TabBar';
 import { Colors, Spacing } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
+import { useTour } from '@/lib/contexts/TourContext';
 import { useActionButtonSize, useTextSize, ACTION_BUTTON_SCALE, TEXT_SCALE } from '@/lib/hooks/usePreferences';
 import {
   getAllLibraryExercises,
@@ -192,6 +193,14 @@ export default function LibraryScreen() {
   const [editLoadExerciseId, setEditLoadExerciseId] = useState<string | null>(null);
   const [allLoadIcons] = useState<LoadIcon[]>(() => getAllLoadIcons());
 
+  const { registerTarget, unregisterTarget } = useTour();
+  const contentRef = useRef<View>(null);
+
+  useEffect(() => {
+    registerTarget('library-content', contentRef);
+    return () => unregisterTarget('library-content');
+  }, [registerTarget, unregisterTarget]);
+
   const load = useCallback(() => {
     setExercises(getAllLibraryExercises());
   }, []);
@@ -301,6 +310,7 @@ export default function LibraryScreen() {
           onTagToggle={toggleTag}
         />
 
+        <View ref={contentRef} style={styles.scroll}>
         <ScrollView
           style={styles.scroll}
           keyboardShouldPersistTaps="handled"
@@ -372,6 +382,7 @@ export default function LibraryScreen() {
         )}
           <View style={{ height: Spacing.xl }} />
         </ScrollView>
+        </View>
       </KeyboardAvoidingView>
 
       <TabBar />
