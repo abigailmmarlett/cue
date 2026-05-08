@@ -33,6 +33,7 @@ import {
 } from '@/lib/db/tags';
 import { createLibraryExercise, setLibraryExerciseTags } from '@/lib/db/libraryExercises';
 import { generateId } from '@/lib/utils/id';
+import { useTextSize, TEXT_SCALE } from '@/lib/hooks/usePreferences';
 import { emitSequenceChange } from '@/lib/sequenceEvents';
 
 interface LocalSection {
@@ -45,7 +46,7 @@ export default function NewSequenceScreen() {
   const router = useRouter();
   const navigation = useNavigation();
   const { colors } = useTheme();
-  const styles = makeStyles(colors);
+  const styles = makeStyles(colors, TEXT_SCALE[useTextSize()]);
   const [isDirty, setIsDirty] = useState(false);
   const [name, setName] = useState('');
   const [sections, setSections] = useState<LocalSection[]>([
@@ -363,7 +364,7 @@ export default function NewSequenceScreen() {
   );
 }
 
-function makeStyles(c: typeof Colors) {
+function makeStyles(c: typeof Colors, textScale = 1.0) {
   return StyleSheet.create({
     flex: { flex: 1 },
     content: { paddingBottom: Spacing.xl },
@@ -395,7 +396,7 @@ function makeStyles(c: typeof Colors) {
       marginTop: Spacing.sm,
     },
     addIcon: {
-      fontSize: 20,
+      fontSize: Math.round(20 * textScale),
       color: c.text.tertiary,
       lineHeight: 24,
     },

@@ -4,7 +4,7 @@ import { Text } from './ui/Text';
 import { TagChips } from './TagChips';
 import { Colors } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
-import { usePreferences } from '@/lib/hooks/usePreferences';
+import { usePreferences, useTextSize, TEXT_SCALE } from '@/lib/hooks/usePreferences';
 import { formatSeconds } from '@/lib/utils/time';
 import type { SequenceWithTags } from '@/lib/db/sequences';
 
@@ -18,7 +18,7 @@ interface Props {
   onShare: () => void;
 }
 
-function makeStyles(c: typeof Colors) {
+function makeStyles(c: typeof Colors, textScale = 1.0) {
   return StyleSheet.create({
     card: {
       backgroundColor: c.surface,
@@ -70,14 +70,14 @@ function makeStyles(c: typeof Colors) {
       marginBottom: 4,
     },
     name: {
-      fontSize: 17,
+      fontSize: Math.round(17 * textScale),
       fontWeight: '700',
       color: c.text.primary,
       letterSpacing: -0.5,
       flex: 1,
     },
     star: {
-      fontSize: 14,
+      fontSize: Math.round(14 * textScale),
     },
     meta: {
       flexDirection: 'row',
@@ -86,16 +86,16 @@ function makeStyles(c: typeof Colors) {
       marginBottom: 6,
     },
     metaTime: {
-      fontSize: 11,
+      fontSize: Math.round(11 * textScale),
       fontWeight: '500',
       fontVariant: ['tabular-nums'] as const,
     },
     metaDot: {
-      fontSize: 10,
+      fontSize: Math.round(10 * textScale),
       color: c.text.tertiary,
     },
     metaSub: {
-      fontSize: 11,
+      fontSize: Math.round(11 * textScale),
       fontWeight: '500',
       color: c.text.secondary,
     },
@@ -121,7 +121,7 @@ function makeStyles(c: typeof Colors) {
 export function SequenceCard({ sequence, onPress, onPlay, onDuplicate, onDelete, onFavorite, onShare }: Props) {
   const { colors } = useTheme();
   const { hapticsEnabled } = usePreferences();
-  const styles = makeStyles(colors);
+  const styles = makeStyles(colors, TEXT_SCALE[useTextSize()]);
 
   const showMenu = () => {
     if (Platform.OS === 'ios') {
