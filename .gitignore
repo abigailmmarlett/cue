@@ -88,6 +88,9 @@ $RECYCLE.BIN/
 .directory
 .Trash-*
 
+# Claude Code local config
+.claude/settings.local.json
+
 # Environment variables
 .env
 .env.local
