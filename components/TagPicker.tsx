@@ -11,6 +11,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Text } from './ui/Text';
 import { Colors, Spacing, Radius, FontSize } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
+import { useTextSize, TEXT_SCALE } from '@/lib/hooks/usePreferences';
 import {
   getAllTagCategories,
   getTagValuesByCategory,
@@ -32,7 +33,7 @@ interface CategoryWithValues extends TagCategory {
   newValueText: string;
 }
 
-function makeStyles(c: typeof Colors) {
+function makeStyles(c: typeof Colors, textScale = 1.0) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: c.background },
     header: {
@@ -79,7 +80,7 @@ function makeStyles(c: typeof Colors) {
       justifyContent: 'center',
     },
     checkmark: {
-      fontSize: 13,
+      fontSize: Math.round(13 * textScale),
       color: c.text.inverse,
       lineHeight: 16,
     },
@@ -103,7 +104,7 @@ function makeStyles(c: typeof Colors) {
       paddingVertical: Spacing.sm,
     },
     addIcon: {
-      fontSize: 18,
+      fontSize: Math.round(18 * textScale),
       color: c.text.tertiary,
       lineHeight: 22,
     },
@@ -134,7 +135,7 @@ function makeStyles(c: typeof Colors) {
 
 export function TagPicker({ selectedTagValueIds, onConfirm, onClose }: Props) {
   const { colors } = useTheme();
-  const styles = makeStyles(colors);
+  const styles = makeStyles(colors, TEXT_SCALE[useTextSize()]);
   const [categories, setCategories] = useState<CategoryWithValues[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set(selectedTagValueIds));
   const [addingCategory, setAddingCategory] = useState(false);

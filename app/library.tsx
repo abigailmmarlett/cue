@@ -18,6 +18,7 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { TabBar } from '@/components/TabBar';
 import { Colors, Spacing } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
+import { useActionButtonSize, useTextSize, ACTION_BUTTON_SCALE, TEXT_SCALE } from '@/lib/hooks/usePreferences';
 import {
   getAllLibraryExercises,
   createLibraryExercise,
@@ -50,7 +51,7 @@ function getCatColor(name: string, allNames: string[], catColors: string[]) {
   return catColors[Math.max(0, idx) % catColors.length];
 }
 
-function makeStyles(c: typeof Colors) {
+function makeStyles(c: typeof Colors, buttonScale = 1.0, textScale = 1.0) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: c.background },
     scroll: { flex: 1 },
@@ -70,17 +71,17 @@ function makeStyles(c: typeof Colors) {
     },
     addInput: {
       flex: 1,
-      fontSize: 14,
+      fontSize: Math.round(14 * textScale),
       color: c.text.primary,
       padding: 0,
     },
     actionBtn: {},
     actionAdd: {
-      fontSize: 13,
+      fontSize: Math.round(13 * textScale),
       fontWeight: '600',
     },
     actionCancel: {
-      fontSize: 13,
+      fontSize: Math.round(13 * textScale),
       fontWeight: '500',
       color: c.text.tertiary,
     },
@@ -97,7 +98,7 @@ function makeStyles(c: typeof Colors) {
       borderRadius: 2,
     },
     groupLabel: {
-      fontSize: 10,
+      fontSize: Math.round(10 * textScale),
       fontWeight: '800',
       letterSpacing: 1.2,
     },
@@ -107,7 +108,7 @@ function makeStyles(c: typeof Colors) {
       backgroundColor: c.border,
     },
     groupCount: {
-      fontSize: 10,
+      fontSize: Math.round(10 * textScale),
       color: c.text.tertiary,
       fontWeight: '500',
     },
@@ -136,14 +137,14 @@ function makeStyles(c: typeof Colors) {
     },
     exName: {
       flex: 1,
-      fontSize: 14,
-      fontWeight: '600',
+      fontSize: Math.round(17 * textScale),
+      fontWeight: '700',
       color: c.text.primary,
-      letterSpacing: -0.2,
+      letterSpacing: -0.5,
     },
-    iconBtn: { padding: 4 },
-    editIcon: { fontSize: 17, color: c.text.secondary },
-    deleteIcon: { fontSize: 14, color: c.text.tertiary },
+    iconBtn: { padding: Math.round(4 * buttonScale) },
+    editIcon: { fontSize: Math.round(17 * buttonScale), color: c.text.secondary },
+    deleteIcon: { fontSize: Math.round(14 * buttonScale), color: c.text.tertiary },
     editRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -151,7 +152,7 @@ function makeStyles(c: typeof Colors) {
     },
     editInput: {
       flex: 1,
-      fontSize: 14,
+      fontSize: Math.round(14 * textScale),
       color: c.text.primary,
       borderBottomWidth: 1,
       borderBottomColor: c.borderMid,
@@ -166,7 +167,7 @@ function makeStyles(c: typeof Colors) {
       flexWrap: 'wrap',
     },
     editTagsLabel: {
-      fontSize: 11,
+      fontSize: Math.round(11 * textScale),
       color: c.text.tertiary,
     },
   });
@@ -175,7 +176,7 @@ function makeStyles(c: typeof Colors) {
 export default function LibraryScreen() {
   const { top } = useSafeAreaInsets();
   const { colors } = useTheme();
-  const styles = makeStyles(colors);
+  const styles = makeStyles(colors, ACTION_BUTTON_SCALE[useActionButtonSize()], TEXT_SCALE[useTextSize()]);
   const catColors = useMemo(
     () => buildCatColors(colors.accent, colors.accentDeep),
     [colors.accent, colors.accentDeep]
@@ -431,7 +432,9 @@ function ExerciseItem({
   onStartEdit, onFinishEdit, onCancelEdit, onDelete, onEditTags, onEditLoad, onToggleBilateral,
 }: ExerciseItemProps) {
   const { colors } = useTheme();
-  const styles = makeStyles(colors);
+  const buttonScale = ACTION_BUTTON_SCALE[useActionButtonSize()];
+  const textScale = TEXT_SCALE[useTextSize()];
+  const styles = useMemo(() => makeStyles(colors, buttonScale, textScale), [colors, buttonScale, textScale]);
   const hasLoad = !!(ex.load_modified || ex.load_base || ex.load_amplified);
   const isBilateral = !!ex.is_bilateral;
   return (

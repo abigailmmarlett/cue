@@ -3,6 +3,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { Text } from '@/components/ui/Text';
 import { Colors, Spacing, FontSize } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
+import { useTextSize, TEXT_SCALE } from '@/lib/hooks/usePreferences';
 import {
   getAllTagCategories,
   getTagValuesByCategory,
@@ -26,7 +27,7 @@ interface CategoryWithValues extends TagCategory {
 
 export default function TagsScreen() {
   const { colors } = useTheme();
-  const styles = makeStyles(colors);
+  const styles = makeStyles(colors, TEXT_SCALE[useTextSize()]);
   const [categories, setCategories] = useState<CategoryWithValues[]>([]);
   const [addingCategory, setAddingCategory] = useState(false);
   const [newCategoryText, setNewCategoryText] = useState('');
@@ -269,7 +270,7 @@ export default function TagsScreen() {
   );
 }
 
-function makeStyles(c: typeof Colors) {
+function makeStyles(c: typeof Colors, textScale = 1.0) {
   return StyleSheet.create({
     container: { flex: 1 },
     content: { paddingBottom: Spacing.xl },
@@ -320,11 +321,11 @@ function makeStyles(c: typeof Colors) {
       paddingVertical: Spacing.xs,
     },
     editIcon: {
-      fontSize: 15,
+      fontSize: Math.round(15 * textScale),
       color: c.text.secondary,
     },
     deleteIcon: {
-      fontSize: 13,
+      fontSize: Math.round(13 * textScale),
       color: c.text.tertiary,
     },
     addRow: {
@@ -342,7 +343,7 @@ function makeStyles(c: typeof Colors) {
       paddingVertical: Spacing.md,
     },
     addIcon: {
-      fontSize: 18,
+      fontSize: Math.round(18 * textScale),
       color: c.text.tertiary,
       lineHeight: 22,
     },

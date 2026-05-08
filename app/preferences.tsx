@@ -5,7 +5,7 @@ import { Text } from '@/components/ui/Text';
 import { Colors, Spacing, Radius } from '@/constants/theme';
 import { THEME_PRESETS, useTheme, type ThemeId, type Mode } from '@/lib/contexts/ThemeContext';
 import { getAllLoadIcons, createLoadIcon, deleteLoadIcon, type LoadIcon } from '@/lib/db/loadIcons';
-import { usePreferences, type HapticSettings, type BasicEvent, type CountdownEvent, type CountdownWarning, type HapticStyle } from '@/lib/hooks/usePreferences';
+import { usePreferences, type HapticSettings, type BasicEvent, type CountdownEvent, type CountdownWarning, type HapticStyle, type ActionButtonSize, type TextSize } from '@/lib/hooks/usePreferences';
 import { fireHaptic } from '@/lib/hooks/useHapticFeedback';
 import { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Switch, TouchableOpacity, View } from 'react-native';
@@ -290,7 +290,7 @@ function styleLabel(style: HapticStyle): string {
 export default function PreferencesScreen() {
   const { top } = useSafeAreaInsets();
   const { themeId, setTheme, colors, mode, setMode } = useTheme();
-  const { hapticSettings, setHapticSettings, showExerciseNotes, setShowExerciseNotes } = usePreferences();
+  const { hapticSettings, setHapticSettings, showExerciseNotes, setShowExerciseNotes, actionButtonSize, setActionButtonSize, textSize, setTextSize } = usePreferences();
   const styles = makeStyles(colors);
 
   function updateHaptic(patch: Partial<HapticSettings>) {
@@ -557,6 +557,51 @@ export default function PreferencesScreen() {
               trackColor={{ false: colors.borderMid, true: colors.accent }}
               thumbColor={colors.surfaceSolid}
             />
+          </View>
+        </View>
+
+        <Text style={styles.sectionLabel}>BUILDER</Text>
+
+        <View style={styles.card}>
+          <View style={styles.row}>
+            <Text style={styles.rowLabel}>Text size</Text>
+            <View style={{ flexDirection: 'row', gap: 6 }}>
+              {(['small', 'default', 'large'] as TextSize[]).map((opt) => {
+                const active = textSize === opt;
+                return (
+                  <TouchableOpacity
+                    key={opt}
+                    style={[styles.timingChip, active && { backgroundColor: colors.fill.primary, borderColor: colors.fill.primary }]}
+                    onPress={() => setTextSize(opt)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.timingChipText, active && { color: colors.text.inverse }]}>
+                      {opt === 'small' ? 'S' : opt === 'default' ? 'M' : 'L'}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+          <View style={[styles.row, styles.rowBorder]}>
+            <Text style={styles.rowLabel}>Action button size</Text>
+            <View style={{ flexDirection: 'row', gap: 6 }}>
+              {(['small', 'default', 'large'] as ActionButtonSize[]).map((opt) => {
+                const active = actionButtonSize === opt;
+                return (
+                  <TouchableOpacity
+                    key={opt}
+                    style={[styles.timingChip, active && { backgroundColor: colors.fill.primary, borderColor: colors.fill.primary }]}
+                    onPress={() => setActionButtonSize(opt)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.timingChipText, active && { color: colors.text.inverse }]}>
+                      {opt === 'small' ? 'S' : opt === 'default' ? 'M' : 'L'}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
         </View>
 

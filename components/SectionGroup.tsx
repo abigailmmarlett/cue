@@ -2,6 +2,7 @@ import { View, TextInput, TouchableOpacity, StyleSheet, Alert, Platform } from '
 import { Text } from './ui/Text';
 import { Colors, Spacing, FontSize, FontWeight } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
+import { useTextSize, TEXT_SCALE } from '@/lib/hooks/usePreferences';
 import { formatSeconds } from '@/lib/utils/time';
 
 interface Props {
@@ -15,7 +16,7 @@ interface Props {
   children: React.ReactNode;
 }
 
-function makeStyles(c: typeof Colors) {
+function makeStyles(c: typeof Colors, textScale = 1.0) {
   return StyleSheet.create({
     container: {
       borderTopWidth: StyleSheet.hairlineWidth,
@@ -55,7 +56,7 @@ function makeStyles(c: typeof Colors) {
       paddingLeft: Spacing.sm,
     },
     deleteIcon: {
-      fontSize: 14,
+      fontSize: Math.round(14 * textScale),
     },
     addExerciseRow: {
       flexDirection: 'row',
@@ -65,7 +66,7 @@ function makeStyles(c: typeof Colors) {
       paddingVertical: Spacing.sm,
     },
     addIcon: {
-      fontSize: 20,
+      fontSize: Math.round(20 * textScale),
       color: c.text.tertiary,
       lineHeight: 24,
     },
@@ -74,7 +75,7 @@ function makeStyles(c: typeof Colors) {
 
 export function SectionGroup({ name, canDelete, onRename, onDelete, onAddExercise, totalDuration, onSetTotalDuration, children }: Props) {
   const { colors } = useTheme();
-  const styles = makeStyles(colors);
+  const styles = makeStyles(colors, TEXT_SCALE[useTextSize()]);
 
   const editTotalDuration = () => {
     if (!onSetTotalDuration || totalDuration === 0) return;

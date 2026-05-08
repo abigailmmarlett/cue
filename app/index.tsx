@@ -68,7 +68,7 @@ export default function SequencesScreen() {
     let result = sequences;
     if (activeFilterTags.length > 0) {
       result = result.filter((s) =>
-        s.tags.some((t) => activeFilterTags.some((f) => f.tagValueId === t.tagValueId))
+        activeFilterTags.every((f) => s.tags.some((t) => t.tagValueId === f.tagValueId))
       );
     }
     if (search.trim()) {

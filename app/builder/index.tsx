@@ -17,6 +17,7 @@ import { ExerciseRow, type LocalExercise } from '@/components/ExerciseRow';
 import { SectionGroup } from '@/components/SectionGroup';
 import { TagPicker } from '@/components/TagPicker';
 import { ExerciseSearchSheet } from '@/components/ExerciseSearchSheet';
+import { SectionImportSheet } from '@/components/SectionImportSheet';
 import { Divider } from '@/components/ui/Divider';
 import { Colors, Spacing, Radius, FontSize, FontWeight } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
@@ -32,6 +33,7 @@ import {
 } from '@/lib/db/tags';
 import { createLibraryExercise, setLibraryExerciseTags } from '@/lib/db/libraryExercises';
 import { generateId } from '@/lib/utils/id';
+import { useTextSize, TEXT_SCALE } from '@/lib/hooks/usePreferences';
 import { emitSequenceChange } from '@/lib/sequenceEvents';
 
 interface LocalSection {
@@ -44,7 +46,7 @@ export default function NewSequenceScreen() {
   const router = useRouter();
   const navigation = useNavigation();
   const { colors } = useTheme();
-  const styles = makeStyles(colors);
+  const styles = makeStyles(colors, TEXT_SCALE[useTextSize()]);
   const [isDirty, setIsDirty] = useState(false);
   const [name, setName] = useState('');
   const [sections, setSections] = useState<LocalSection[]>([
@@ -55,6 +57,7 @@ export default function NewSequenceScreen() {
   const [sequenceTags, setSequenceTags] = useState<ExerciseTag[]>([]);
   const [showSequenceTagPicker, setShowSequenceTagPicker] = useState(false);
   const [exerciseSheetSectionId, setExerciseSheetSectionId] = useState<string | null>(null);
+  const [showSectionImport, setShowSectionImport] = useState(false);
 
   usePreventRemove(isDirty, ({ data }) => {
     Alert.alert(
@@ -70,6 +73,11 @@ export default function NewSequenceScreen() {
   const activeExercise = tagPickerExerciseId
     ? sections.flatMap((s) => s.exercises).find((e) => e.id === tagPickerExerciseId) ?? null
     : null;
+
+  const importSection = useCallback((section: LocalSection) => {
+    setIsDirty(true);
+    setSections((prev) => [...prev, section]);
+  }, []);
 
   const addSection = useCallback(() => {
     setIsDirty(true);
@@ -275,6 +283,11 @@ export default function NewSequenceScreen() {
           <Text style={styles.addIcon}>+</Text>
           <Text variant="body" color="tertiary">Add section</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => setShowSectionImport(true)} style={styles.addSectionRow} activeOpacity={0.7}>
+          <Text style={styles.addIcon}>↓</Text>
+          <Text variant="body" color="tertiary">Import section from another sequence</Text>
+        </TouchableOpacity>
       </ScrollView>
 
       <View style={styles.footer}>
@@ -324,6 +337,13 @@ export default function NewSequenceScreen() {
         />
       )}
 
+      {showSectionImport && (
+        <SectionImportSheet
+          onImport={(s) => { importSection(s); setShowSectionImport(false); }}
+          onClose={() => setShowSectionImport(false)}
+        />
+      )}
+
       {showSequenceTagPicker && (
         <TagPicker
           selectedTagValueIds={sequenceTags.map((t) => t.tagValueId)}
@@ -344,7 +364,7 @@ export default function NewSequenceScreen() {
   );
 }
 
-function makeStyles(c: typeof Colors) {
+function makeStyles(c: typeof Colors, textScale = 1.0) {
   return StyleSheet.create({
     flex: { flex: 1 },
     content: { paddingBottom: Spacing.xl },
@@ -376,7 +396,7 @@ function makeStyles(c: typeof Colors) {
       marginTop: Spacing.sm,
     },
     addIcon: {
-      fontSize: 20,
+      fontSize: Math.round(20 * textScale),
       color: c.text.tertiary,
       lineHeight: 24,
     },

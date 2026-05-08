@@ -4,6 +4,7 @@ import { SymbolView } from 'expo-symbols';
 import { Text } from '@/components/ui/Text';
 import { Colors, Spacing } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
+import { useTextSize, TEXT_SCALE } from '@/lib/hooks/usePreferences';
 import type { ExerciseTag } from '@/lib/db/tags';
 
 interface Props {
@@ -19,7 +20,7 @@ interface Props {
   onTagToggle?: (tag: ExerciseTag) => void;
 }
 
-function makeStyles(c: typeof Colors) {
+function makeStyles(c: typeof Colors, textScale = 1.0) {
   return StyleSheet.create({
     header: {
       paddingHorizontal: 22,
@@ -46,15 +47,15 @@ function makeStyles(c: typeof Colors) {
       flexShrink: 0,
     },
     wordmark: {
-      fontSize: 78,
+      fontSize: Math.round(78 * textScale),
       fontWeight: '800',
       letterSpacing: -4,
-      lineHeight: 86,
+      lineHeight: Math.round(86 * textScale),
       paddingRight: 4,
       color: c.text.primary,
     },
     countLabel: {
-      fontSize: 10,
+      fontSize: Math.round(10 * textScale),
       fontWeight: '600',
       color: c.text.tertiary,
       textTransform: 'uppercase',
@@ -77,7 +78,7 @@ function makeStyles(c: typeof Colors) {
       flexShrink: 0,
     },
     addButtonText: {
-      fontSize: 22,
+      fontSize: Math.round(22 * textScale),
       fontWeight: '300',
       lineHeight: 26,
       marginTop: -1,
@@ -105,7 +106,7 @@ function makeStyles(c: typeof Colors) {
       borderColor: c.borderMid,
     },
     searchIcon: {
-      fontSize: 16,
+      fontSize: Math.round(16 * textScale),
       color: c.text.tertiary,
       lineHeight: 18,
     },
@@ -116,7 +117,7 @@ function makeStyles(c: typeof Colors) {
       padding: 0,
     },
     searchClear: {
-      fontSize: 12,
+      fontSize: Math.round(12 * textScale),
       color: c.text.tertiary,
     },
     pillsRow: {
@@ -135,7 +136,7 @@ function makeStyles(c: typeof Colors) {
       paddingRight: 13,
     },
     pillText: {
-      fontSize: 11,
+      fontSize: Math.round(11 * textScale),
       fontWeight: '700',
       textTransform: 'uppercase',
       letterSpacing: 0.5,
@@ -156,7 +157,7 @@ export function ScreenHeader({
   onTagToggle,
 }: Props) {
   const { colors } = useTheme();
-  const styles = makeStyles(colors);
+  const styles = makeStyles(colors, TEXT_SCALE[useTextSize()]);
 
   return (
     <LinearGradient

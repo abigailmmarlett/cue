@@ -1,8 +1,10 @@
+import { useMemo } from 'react';
 import { View, TextInput, TouchableOpacity, StyleSheet, Alert, Platform } from 'react-native';
 import { Text } from './ui/Text';
 import { TagChips } from './TagChips';
 import { Colors, Spacing, FontSize, FontWeight } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
+import { useActionButtonSize, useTextSize, ACTION_BUTTON_SCALE, TEXT_SCALE } from '@/lib/hooks/usePreferences';
 import { formatSeconds } from '@/lib/utils/time';
 import { DRAG_ITEM_HEIGHT } from './DraggableList';
 import type { ExerciseTag } from '@/lib/db/tags';
@@ -38,7 +40,8 @@ interface Props {
 
 const HANDLE_WIDTH = 32;
 
-function makeStyles(c: typeof Colors) {
+function makeStyles(c: typeof Colors, scale: number, textScale: number) {
+  const hw = Math.round(HANDLE_WIDTH * scale);
   return StyleSheet.create({
     outer: {
       height: DRAG_ITEM_HEIGHT,
@@ -56,22 +59,22 @@ function makeStyles(c: typeof Colors) {
       flexDirection: 'row',
       alignItems: 'center',
       paddingHorizontal: Spacing.md,
-      paddingLeft: Spacing.md + HANDLE_WIDTH + Spacing.sm,
+      paddingLeft: Spacing.md + hw + Spacing.sm,
       marginTop: 4,
       gap: Spacing.xs,
     },
     handle: {
-      width: HANDLE_WIDTH,
+      width: hw,
       alignItems: 'center',
       justifyContent: 'center',
     },
     handleIcon: {
-      fontSize: 18,
+      fontSize: Math.round(18 * scale),
       lineHeight: 24,
     },
     nameInput: {
       flex: 1,
-      fontSize: FontSize.base,
+      fontSize: Math.round(FontSize.base * textScale),
       fontWeight: FontWeight.regular,
       color: c.text.primary,
       paddingVertical: 0,
@@ -81,19 +84,19 @@ function makeStyles(c: typeof Colors) {
       color: c.text.secondary,
     },
     tagButton: {
-      paddingHorizontal: Spacing.xs,
-      paddingVertical: Spacing.xs,
+      paddingHorizontal: Math.round(Spacing.xs * scale),
+      paddingVertical: Math.round(Spacing.xs * scale),
       marginRight: Spacing.xs,
     },
     tagIcon: {
-      fontSize: 17,
+      fontSize: Math.round(17 * scale),
       color: c.text.tertiary,
     },
     tagIconActive: {
       color: c.text.secondary,
     },
     addTagsLabel: {
-      fontSize: 11,
+      fontSize: Math.round(11 * textScale),
       color: c.text.tertiary,
     },
     durationButton: {
@@ -108,12 +111,12 @@ function makeStyles(c: typeof Colors) {
       fontVariant: ['tabular-nums'],
     },
     deleteButton: {
-      width: 32,
+      width: Math.round(32 * scale),
       alignItems: 'center',
       justifyContent: 'center',
     },
     deleteIcon: {
-      fontSize: 14,
+      fontSize: Math.round(14 * scale),
     },
     sidePill: {
       flexDirection: 'row',
@@ -124,14 +127,14 @@ function makeStyles(c: typeof Colors) {
       marginRight: Spacing.xs,
     },
     sideBtn: {
-      paddingHorizontal: 7,
-      paddingVertical: 3,
+      paddingHorizontal: Math.round(7 * scale),
+      paddingVertical: Math.round(3 * scale),
     },
     sideBtnActive: {
       backgroundColor: c.accent,
     },
     sideBtnText: {
-      fontSize: 11,
+      fontSize: Math.round(11 * scale),
       fontWeight: '600' as const,
       color: c.text.tertiary,
     },
@@ -143,7 +146,12 @@ function makeStyles(c: typeof Colors) {
 
 export function ExerciseRow({ exercise, onNameChange, onDurationChange, onDelete, onEditTags, onEditLoad, onEditVariation, onSideChange }: Props) {
   const { colors } = useTheme();
-  const styles = makeStyles(colors);
+  const actionButtonSize = useActionButtonSize();
+  const textSize = useTextSize();
+  const styles = useMemo(
+    () => makeStyles(colors, ACTION_BUTTON_SCALE[actionButtonSize], TEXT_SCALE[textSize]),
+    [colors, actionButtonSize, textSize]
+  );
   const hasLoad =
     (exercise.loadModified?.length ?? 0) > 0 ||
     (exercise.loadBase?.length ?? 0) > 0 ||
