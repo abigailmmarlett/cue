@@ -6,6 +6,7 @@ import { Colors, Spacing } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
 import { useTextSize, TEXT_SCALE } from '@/lib/hooks/usePreferences';
 import type { ExerciseTag } from '@/lib/db/tags';
+import type { RefObject } from 'react';
 
 interface Props {
   title: string;
@@ -18,6 +19,8 @@ interface Props {
   tagPills?: ExerciseTag[];
   activeTagIds?: string[];
   onTagToggle?: (tag: ExerciseTag) => void;
+  addButtonRef?: RefObject<View | null>;
+  filterAreaRef?: RefObject<View | null>;
 }
 
 function makeStyles(c: typeof Colors, textScale = 1.0) {
@@ -155,6 +158,8 @@ export function ScreenHeader({
   tagPills = [],
   activeTagIds = [],
   onTagToggle,
+  addButtonRef,
+  filterAreaRef,
 }: Props) {
   const { colors } = useTheme();
   const styles = makeStyles(colors, TEXT_SCALE[useTextSize()]);
@@ -186,13 +191,15 @@ export function ScreenHeader({
               </TouchableOpacity>
             )}
             {onAdd && (
-              <TouchableOpacity
-                style={[styles.addButton, { borderColor: colors.accent }]}
-                onPress={onAdd}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.addButtonText, { color: colors.accent }]}>+</Text>
-              </TouchableOpacity>
+              <View ref={addButtonRef}>
+                <TouchableOpacity
+                  style={[styles.addButton, { borderColor: colors.accent }]}
+                  onPress={onAdd}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.addButtonText, { color: colors.accent }]}>+</Text>
+                </TouchableOpacity>
+              </View>
             )}
           </View>
         )}
@@ -216,6 +223,7 @@ export function ScreenHeader({
         </View>
       )}
 
+      <View ref={filterAreaRef}>
       {tagPills.length > 0 && onTagToggle && (
         <ScrollView
           horizontal
@@ -250,6 +258,7 @@ export function ScreenHeader({
           })}
         </ScrollView>
       )}
+      </View>
     </LinearGradient>
   );
 }

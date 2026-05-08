@@ -7,8 +7,9 @@ import { THEME_PRESETS, useTheme, type ThemeId, type Mode } from '@/lib/contexts
 import { getAllLoadIcons, createLoadIcon, deleteLoadIcon, type LoadIcon } from '@/lib/db/loadIcons';
 import { usePreferences, type HapticSettings, type BasicEvent, type CountdownEvent, type CountdownWarning, type HapticStyle, type ActionButtonSize, type TextSize } from '@/lib/hooks/usePreferences';
 import { fireHaptic } from '@/lib/hooks/useHapticFeedback';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Switch, TouchableOpacity, View } from 'react-native';
+import { useTour } from '@/lib/contexts/TourContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const LOAD_COLORS: { hex: string; name: string }[] = [
@@ -293,6 +294,14 @@ export default function PreferencesScreen() {
   const { hapticSettings, setHapticSettings, showExerciseNotes, setShowExerciseNotes, actionButtonSize, setActionButtonSize, textSize, setTextSize } = usePreferences();
   const styles = makeStyles(colors);
 
+  const { registerTarget, unregisterTarget, startTour } = useTour();
+  const contentRef = useRef<View>(null);
+
+  useEffect(() => {
+    registerTarget('preferences-content', contentRef);
+    return () => unregisterTarget('preferences-content');
+  }, [registerTarget, unregisterTarget]);
+
   function updateHaptic(patch: Partial<HapticSettings>) {
     setHapticSettings({ ...hapticSettings, ...patch });
   }
@@ -401,6 +410,7 @@ export default function PreferencesScreen() {
     <View style={styles.container}>
       <ScreenHeader title="settings" countLabel="set user preferences" safeTop={top} />
 
+      <View ref={contentRef} style={styles.scroll}>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <Text style={styles.sectionLabel}>APPEARANCE</Text>
 
@@ -742,6 +752,15 @@ export default function PreferencesScreen() {
           </>
         )}
 
+        <Text style={styles.sectionLabel}>TOUR</Text>
+
+        <View style={styles.card}>
+          <TouchableOpacity style={styles.row} onPress={startTour} activeOpacity={0.7}>
+            <Text style={styles.rowLabel}>View App Tour</Text>
+            <Text style={styles.rowValue}>›</Text>
+          </TouchableOpacity>
+        </View>
+
         <Text style={styles.sectionLabel}>ABOUT</Text>
 
         <View style={styles.card}>
@@ -753,6 +772,7 @@ export default function PreferencesScreen() {
 
         <View style={{ height: Spacing.xl }} />
       </ScrollView>
+      </View>
 
       <TabBar />
     </View>
