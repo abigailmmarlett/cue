@@ -8,6 +8,7 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'expo-router';
 import { Text } from './ui/Text';
 import { Colors, Spacing, Radius, FontSize } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
@@ -135,6 +136,7 @@ function makeStyles(c: typeof Colors, textScale = 1.0) {
 
 export function TagPicker({ selectedTagValueIds, onConfirm, onClose }: Props) {
   const { colors } = useTheme();
+  const router = useRouter();
   const styles = makeStyles(colors, TEXT_SCALE[useTextSize()]);
   const [categories, setCategories] = useState<CategoryWithValues[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set(selectedTagValueIds));
@@ -312,6 +314,16 @@ export function TagPicker({ selectedTagValueIds, onConfirm, onClose }: Props) {
                 <Text variant="body" color="secondary">New category</Text>
               </TouchableOpacity>
             )}
+          </View>
+
+          <View style={styles.addCategorySection}>
+            <TouchableOpacity
+              style={styles.addCategoryRow}
+              onPress={() => { onClose(); router.push('/tags'); }}
+              activeOpacity={0.7}
+            >
+              <Text variant="body" color="tertiary">Manage tags ›</Text>
+            </TouchableOpacity>
           </View>
         </ScrollView>
       </SafeAreaView>

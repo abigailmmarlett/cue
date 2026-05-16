@@ -9,6 +9,7 @@ import { usePreferences, type HapticSettings, type BasicEvent, type CountdownEve
 import { fireHaptic } from '@/lib/hooks/useHapticFeedback';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Switch, TouchableOpacity, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useTour } from '@/lib/contexts/TourContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -290,6 +291,7 @@ function styleLabel(style: HapticStyle): string {
 
 export default function PreferencesScreen() {
   const { top } = useSafeAreaInsets();
+  const router = useRouter();
   const { themeId, setTheme, colors, mode, setMode } = useTheme();
   const { hapticSettings, setHapticSettings, showExerciseNotes, setShowExerciseNotes, actionButtonSize, setActionButtonSize, textSize, setTextSize } = usePreferences();
   const styles = makeStyles(colors);
@@ -757,6 +759,15 @@ export default function PreferencesScreen() {
         <View style={styles.card}>
           <TouchableOpacity style={styles.row} onPress={startTour} activeOpacity={0.7}>
             <Text style={styles.rowLabel}>View App Tour</Text>
+            <Text style={styles.rowValue}>›</Text>
+          </TouchableOpacity>
+        </View>
+
+        <Text style={styles.sectionLabel}>TAGS</Text>
+
+        <View style={styles.card}>
+          <TouchableOpacity style={styles.row} onPress={() => router.push('/tags')} activeOpacity={0.7}>
+            <Text style={styles.rowLabel}>Manage Tags</Text>
             <Text style={styles.rowValue}>›</Text>
           </TouchableOpacity>
         </View>
