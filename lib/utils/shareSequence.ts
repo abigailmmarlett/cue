@@ -90,7 +90,7 @@ export function serializeSequence(id: string): SharePayload {
 }
 
 export function buildShareUrl(payload: SharePayload): string {
-  return `traintrack://import?data=${encodeURIComponent(JSON.stringify(payload))}`;
+  return `cue://import?data=${encodeURIComponent(JSON.stringify(payload))}`;
 }
 
 export function decodeShareData(data: string | undefined): SharePayload | null {
@@ -98,8 +98,8 @@ export function decodeShareData(data: string | undefined): SharePayload | null {
 
   let candidate = data.trim();
 
-  // Handle a full traintrack:// URL pasted from clipboard
-  if (candidate.startsWith('traintrack://')) {
+  // Handle a full cue:// (or legacy traintrack://) URL pasted from clipboard
+  if (candidate.startsWith('cue://') || candidate.startsWith('traintrack://')) {
     const match = candidate.match(/[?&]data=([^&\s]*)/);
     candidate = match ? decodeURIComponent(match[1]) : '';
     if (!candidate) return null;
