@@ -5,14 +5,18 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": ["cue", "traintrack"],
+    "scheme": [
+      "cue",
+      "traintrack"
+    ],
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.abigailmarlett.cue",
       "infoPlist": {
-        "CFBundleDisplayName": "Cue"
+        "CFBundleDisplayName": "Cue",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -48,6 +52,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "2db8cbad-8ee9-4381-90d5-b0d6e14cf6c5"
+      }
+    },
+    "owner": "abigailmarlett"
   }
 }
