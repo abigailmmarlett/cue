@@ -71,6 +71,7 @@ function loadOverride(load: string[] | null, libraryLoad: string | null | undefi
   return own === serializeLoad(parseLoad(libraryLoad ?? null)) ? null : own;
 }
 
+export { RouteErrorBoundary as ErrorBoundary } from '@/components/ErrorFallback';
 
 export default function EditSequenceScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();

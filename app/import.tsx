@@ -9,6 +9,7 @@ import { useTheme } from '@/lib/contexts/ThemeContext';
 import { decodeShareData, importSharedSequence } from '@/lib/utils/shareSequence';
 import { formatSeconds } from '@/lib/utils/time';
 
+export { RouteErrorBoundary as ErrorBoundary } from '@/components/ErrorFallback';
 
 export default function ImportScreen() {
   const { data } = useLocalSearchParams<{ data: string }>();

@@ -56,6 +56,7 @@ function addUnlinkedToLibrary(sections: LocalSection[]): LocalSection[] {
   }));
 }
 
+export { RouteErrorBoundary as ErrorBoundary } from '@/components/ErrorFallback';
 
 export default function NewSequenceScreen() {
   const router = useRouter();

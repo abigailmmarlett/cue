@@ -18,6 +18,7 @@ import { useHapticFeedback, fireHaptic } from '@/lib/hooks/useHapticFeedback';
 import { usePreferences } from '@/lib/hooks/usePreferences';
 import { formatSeconds } from '@/lib/utils/time';
 
+export { RouteErrorBoundary as ErrorBoundary } from '@/components/ErrorFallback';
 
 export default function TimerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();

@@ -13,6 +13,8 @@ import { useTheme } from '@/lib/contexts/ThemeContext';
 import { useSequence } from '@/lib/hooks/useSequence';
 import { formatSeconds, totalDuration } from '@/lib/utils/time';
 
+export { RouteErrorBoundary as ErrorBoundary } from '@/components/ErrorFallback';
+
 export default function SequenceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
