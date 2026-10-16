@@ -46,7 +46,7 @@ export function createSequence(name: string): Sequence {
     `INSERT INTO sequences (id, name, created_at, updated_at) VALUES (?, ?, ?, ?);`,
     [id, name, now, now]
   );
-  return { id, name, created_at: now, updated_at: now };
+  return { id, name, created_at: now, updated_at: now, is_favorited: 0 };
 }
 
 export function updateSequence(id: string, name: string): void {
@@ -128,5 +128,5 @@ export function duplicateSequence(id: string): Sequence {
     );
   }
 
-  return { id: newId, name: newName, created_at: now, updated_at: now };
+  return { id: newId, name: newName, created_at: now, updated_at: now, is_favorited: 0 };
 }

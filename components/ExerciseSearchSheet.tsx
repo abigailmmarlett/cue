@@ -174,7 +174,7 @@ export function ExerciseSearchSheet({ onSelect, onCreateNew, onClose }: Props) {
                 >
                   <Text style={styles.createIcon}>+</Text>
                   <Text variant="body" color="secondary">
-                    Create "{query.trim()}" as new exercise
+                    Create &ldquo;{query.trim()}&rdquo; as new exercise
                   </Text>
                 </TouchableOpacity>
               ) : null

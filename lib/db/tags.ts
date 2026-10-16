@@ -51,7 +51,7 @@ export function getTagValuesByCategory(categoryId: string): TagValue[] {
   );
 }
 
-export function getAllTagValuesWithCategory(): Array<TagValue & { categoryName: string }> {
+export function getAllTagValuesWithCategory(): (TagValue & { categoryName: string })[] {
   return db.getAllSync<TagValue & { categoryName: string }>(
     `SELECT tv.*, tc.name AS categoryName
      FROM tag_values tv

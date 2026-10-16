@@ -42,7 +42,7 @@ interface ShareExercise {
   load_base?: string;
   load_modified?: string;
   load_amplified?: string;
-  tags?: Array<{ c: string; l: string }>;
+  tags?: { c: string; l: string }[];
 }
 
 interface ShareSection {

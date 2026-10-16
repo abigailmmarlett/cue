@@ -23,7 +23,7 @@ export default function ImportScreen() {
       <View style={styles.centered}>
         <Text variant="heading" style={styles.errorTitle}>Invalid Link</Text>
         <Text variant="body" color="tertiary" style={styles.errorBody}>
-          This link doesn't contain a valid sequence.
+          This link doesn&apos;t contain a valid sequence.
         </Text>
         <Button label="Close" variant="secondary" onPress={() => router.back()} style={styles.closeButton} />
       </View>

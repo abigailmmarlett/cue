@@ -1,7 +1,6 @@
 import { View, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity, Share } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useCallback, useEffect } from 'react';
 import { SymbolView } from 'expo-symbols';
 import { serializeSequence, buildShareUrl } from '@/lib/utils/shareSequence';

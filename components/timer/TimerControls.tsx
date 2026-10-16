@@ -2,11 +2,11 @@ import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Text } from '../ui/Text';
 import { Colors, Spacing, Radius } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
-import type { TimerStatus, TimerControls } from '@/lib/hooks/useTimer';
+import type { TimerStatus, TimerControls as TimerControlsApi } from '@/lib/hooks/useTimer';
 
 interface Props {
   status: TimerStatus;
-  controls: TimerControls;
+  controls: TimerControlsApi;
   onMark?: () => void;
 }
 
