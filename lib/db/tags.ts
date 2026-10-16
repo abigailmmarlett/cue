@@ -1,4 +1,4 @@
-import db from './client';
+import db, { transaction } from './client';
 import { generateId } from '../utils/id';
 
 export interface TagCategory {
@@ -117,10 +117,12 @@ export function getOwnTagsForExercise(exerciseId: string): ExerciseTag[] {
 }
 
 export function setExerciseTags(exerciseId: string, tagValueIds: string[]): void {
-  db.runSync(`DELETE FROM exercise_tags WHERE exercise_id = ?;`, [exerciseId]);
-  for (const tagValueId of tagValueIds) {
-    db.runSync(`INSERT INTO exercise_tags (exercise_id, tag_value_id) VALUES (?, ?);`, [exerciseId, tagValueId]);
-  }
+  transaction(() => {
+    db.runSync(`DELETE FROM exercise_tags WHERE exercise_id = ?;`, [exerciseId]);
+    for (const tagValueId of tagValueIds) {
+      db.runSync(`INSERT INTO exercise_tags (exercise_id, tag_value_id) VALUES (?, ?);`, [exerciseId, tagValueId]);
+    }
+  });
 }
 
 export function getTagsForSequence(sequenceId: string): ExerciseTag[] {
@@ -136,10 +138,12 @@ export function getTagsForSequence(sequenceId: string): ExerciseTag[] {
 }
 
 export function setSequenceTags(sequenceId: string, tagValueIds: string[]): void {
-  db.runSync(`DELETE FROM sequence_tags WHERE sequence_id = ?;`, [sequenceId]);
-  for (const tagValueId of tagValueIds) {
-    db.runSync(`INSERT INTO sequence_tags (sequence_id, tag_value_id) VALUES (?, ?);`, [sequenceId, tagValueId]);
-  }
+  transaction(() => {
+    db.runSync(`DELETE FROM sequence_tags WHERE sequence_id = ?;`, [sequenceId]);
+    for (const tagValueId of tagValueIds) {
+      db.runSync(`INSERT INTO sequence_tags (sequence_id, tag_value_id) VALUES (?, ?);`, [sequenceId, tagValueId]);
+    }
+  });
 }
 
 export function getAllSequenceTags(): Map<string, ExerciseTag[]> {

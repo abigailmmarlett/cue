@@ -5,11 +5,10 @@ import { Colors, Spacing, Radius } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
 import { getAllSequences } from '@/lib/db/sequences';
 import { getSectionsBySequenceId, type Section } from '@/lib/db/sections';
-import { getExercisesBySectionId } from '@/lib/db/exercises';
+import { getExercisesBySectionId, parseVariationSets } from '@/lib/db/exercises';
 import { parseLoad } from '@/lib/db/loadIcons';
 import { generateId } from '@/lib/utils/id';
 import type { LocalExercise } from '@/components/ExerciseRow';
-import type { VariationItem } from '@/lib/db/exercises';
 
 interface LocalSection {
   id: string;
@@ -119,7 +118,7 @@ export function SectionImportSheet({ currentSequenceId, onImport, onClose }: Pro
         loadBase: parseLoad(ex.load_base),
         loadAmplified: parseLoad(ex.load_amplified),
         variation: ex.variation ?? null,
-        variationSets: ex.variation_sets ? (JSON.parse(ex.variation_sets) as VariationItem[]) : null,
+        variationSets: parseVariationSets(ex.variation_sets),
         isBilateral: ex.is_bilateral !== 0,
         side: ex.side ?? null,
       })),

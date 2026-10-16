@@ -1,4 +1,4 @@
-import db from './client';
+import db, { transaction } from './client';
 import { generateId } from '../utils/id';
 
 export function runMigrations(): void {
@@ -166,18 +166,20 @@ export function runMigrations(): void {
     `SELECT DISTINCT sequence_id FROM exercises WHERE section_id IS NULL;`
   );
   for (const { sequence_id } of unmigrated) {
-    const sectionId = generateId();
-    const now = Date.now();
-    db.runSync(`INSERT INTO sections (id, sequence_id, name, order_index, created_at) VALUES (?, ?, ?, ?, ?);`, [
-      sectionId,
-      sequence_id,
-      'Main',
-      0,
-      now,
-    ]);
-    db.runSync(`UPDATE exercises SET section_id = ? WHERE sequence_id = ? AND section_id IS NULL;`, [
-      sectionId,
-      sequence_id,
-    ]);
+    transaction(() => {
+      const sectionId = generateId();
+      const now = Date.now();
+      db.runSync(`INSERT INTO sections (id, sequence_id, name, order_index, created_at) VALUES (?, ?, ?, ?, ?);`, [
+        sectionId,
+        sequence_id,
+        'Main',
+        0,
+        now,
+      ]);
+      db.runSync(`UPDATE exercises SET section_id = ? WHERE sequence_id = ? AND section_id IS NULL;`, [
+        sectionId,
+        sequence_id,
+      ]);
+    });
   }
 }

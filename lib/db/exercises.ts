@@ -1,9 +1,25 @@
-import db from './client';
+import db, { transaction } from './client';
 import { generateId } from '../utils/id';
 
 export interface VariationItem {
   instruction: string;
   atSeconds: number | null;
+}
+
+/** Parses the JSON stored in `exercises.variation_sets`; returns null for missing or corrupt data. */
+export function parseVariationSets(json: string | null | undefined): VariationItem[] | null {
+  if (!json) return null;
+  try {
+    const parsed: unknown = JSON.parse(json);
+    if (!Array.isArray(parsed)) return null;
+    const items = parsed.filter(
+      (v): v is VariationItem =>
+        typeof v?.instruction === 'string' && (v.atSeconds === null || Number.isFinite(v.atSeconds))
+    );
+    return items.length > 0 ? items : null;
+  } catch {
+    return null;
+  }
 }
 
 export function computeVariationFractions(items: VariationItem[], duration: number): number[] {
@@ -205,7 +221,13 @@ export function deleteExercise(id: string): void {
 }
 
 export function reorderExercises(sectionId: string, orderedIds: string[]): void {
-  for (let i = 0; i < orderedIds.length; i++) {
-    db.runSync(`UPDATE exercises SET order_index = ? WHERE id = ? AND section_id = ?;`, [i, orderedIds[i], sectionId]);
-  }
+  transaction(() => {
+    for (let i = 0; i < orderedIds.length; i++) {
+      db.runSync(`UPDATE exercises SET order_index = ? WHERE id = ? AND section_id = ?;`, [
+        i,
+        orderedIds[i],
+        sectionId,
+      ]);
+    }
+  });
 }

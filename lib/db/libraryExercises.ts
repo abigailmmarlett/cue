@@ -1,4 +1,4 @@
-import db from './client';
+import db, { transaction } from './client';
 import { generateId } from '../utils/id';
 import type { ExerciseTag } from './tags';
 
@@ -106,36 +106,42 @@ export function updateLibraryExerciseLoad(
 
 export function updateLibraryExercise(id: string, name: string): void {
   const now = Date.now();
-  db.runSync(`UPDATE library_exercises SET name = ?, updated_at = ? WHERE id = ?;`, [name, now, id]);
-  // Propagate name change to all linked sequence exercises
-  db.runSync(`UPDATE exercises SET name = ? WHERE library_exercise_id = ?;`, [name, id]);
+  transaction(() => {
+    db.runSync(`UPDATE library_exercises SET name = ?, updated_at = ? WHERE id = ?;`, [name, now, id]);
+    // Propagate name change to all linked sequence exercises
+    db.runSync(`UPDATE exercises SET name = ? WHERE library_exercise_id = ?;`, [name, id]);
+  });
 }
 
 export function deleteLibraryExercise(id: string): void {
-  // Snapshot library tags into exercise_tags for all linked exercises before deleting
-  const libTags = db.getAllSync<{ tag_value_id: string }>(
-    `SELECT tag_value_id FROM library_exercise_tags WHERE library_exercise_id = ?;`,
-    [id]
-  );
-  const linked = db.getAllSync<{ id: string }>(`SELECT id FROM exercises WHERE library_exercise_id = ?;`, [id]);
-  for (const ex of linked) {
-    db.runSync(`DELETE FROM exercise_tags WHERE exercise_id = ?;`, [ex.id]);
-    for (const { tag_value_id } of libTags) {
-      db.runSync(`INSERT INTO exercise_tags (exercise_id, tag_value_id) VALUES (?, ?);`, [ex.id, tag_value_id]);
+  transaction(() => {
+    // Snapshot library tags into exercise_tags for all linked exercises before deleting
+    const libTags = db.getAllSync<{ tag_value_id: string }>(
+      `SELECT tag_value_id FROM library_exercise_tags WHERE library_exercise_id = ?;`,
+      [id]
+    );
+    const linked = db.getAllSync<{ id: string }>(`SELECT id FROM exercises WHERE library_exercise_id = ?;`, [id]);
+    for (const ex of linked) {
+      db.runSync(`DELETE FROM exercise_tags WHERE exercise_id = ?;`, [ex.id]);
+      for (const { tag_value_id } of libTags) {
+        db.runSync(`INSERT INTO exercise_tags (exercise_id, tag_value_id) VALUES (?, ?);`, [ex.id, tag_value_id]);
+      }
+      db.runSync(`UPDATE exercises SET library_exercise_id = NULL WHERE id = ?;`, [ex.id]);
     }
-    db.runSync(`UPDATE exercises SET library_exercise_id = NULL WHERE id = ?;`, [ex.id]);
-  }
-  db.runSync(`DELETE FROM library_exercises WHERE id = ?;`, [id]);
+    db.runSync(`DELETE FROM library_exercises WHERE id = ?;`, [id]);
+  });
 }
 
 export function setLibraryExerciseTags(libraryExerciseId: string, tagValueIds: string[]): void {
-  db.runSync(`DELETE FROM library_exercise_tags WHERE library_exercise_id = ?;`, [libraryExerciseId]);
-  for (const tagValueId of tagValueIds) {
-    db.runSync(`INSERT INTO library_exercise_tags (library_exercise_id, tag_value_id) VALUES (?, ?);`, [
-      libraryExerciseId,
-      tagValueId,
-    ]);
-  }
+  transaction(() => {
+    db.runSync(`DELETE FROM library_exercise_tags WHERE library_exercise_id = ?;`, [libraryExerciseId]);
+    for (const tagValueId of tagValueIds) {
+      db.runSync(`INSERT INTO library_exercise_tags (library_exercise_id, tag_value_id) VALUES (?, ?);`, [
+        libraryExerciseId,
+        tagValueId,
+      ]);
+    }
+  });
 }
 
 export function getLinkedCount(libraryExerciseId: string): number {

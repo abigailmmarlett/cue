@@ -43,7 +43,9 @@ export function deleteLoadIcon(id: string): void {
 export function parseLoad(json: string | null): string[] | null {
   if (!json) return null;
   try {
-    return JSON.parse(json);
+    const parsed: unknown = JSON.parse(json);
+    if (!Array.isArray(parsed)) return null;
+    return parsed.filter((id): id is string => typeof id === 'string');
   } catch {
     return null;
   }

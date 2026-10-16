@@ -11,12 +11,13 @@ import { FireworkAnimation } from '@/components/timer/FireworkAnimation';
 import { Colors, Spacing, Radius, FontSize } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
 import { getAllLoadIcons, parseLoad, type LoadIcon } from '@/lib/db/loadIcons';
-import { computeVariationFractions, type VariationItem } from '@/lib/db/exercises';
+import { computeVariationFractions, parseVariationSets } from '@/lib/db/exercises';
 import { useSequence } from '@/lib/hooks/useSequence';
 import { useTimer, type TimerExercise, type TimerSection } from '@/lib/hooks/useTimer';
 import { useHapticFeedback, fireHaptic } from '@/lib/hooks/useHapticFeedback';
 import { usePreferences } from '@/lib/hooks/usePreferences';
 import { formatSeconds } from '@/lib/utils/time';
+
 
 export default function TimerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -40,7 +41,7 @@ export default function TimerScreen() {
     loadBase: parseLoad(e.load_base),
     loadAmplified: parseLoad(e.load_amplified),
     variation: e.variation,
-    variationSets: e.variation_sets ? (JSON.parse(e.variation_sets) as VariationItem[]) : null,
+    variationSets: parseVariationSets(e.variation_sets),
     side: e.side,
     libraryExerciseId: e.library_exercise_id,
   }));

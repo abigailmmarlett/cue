@@ -1,4 +1,4 @@
-import db from './client';
+import db, { transaction } from './client';
 import { generateId } from '../utils/id';
 import type { ExerciseTag } from './tags';
 
@@ -67,52 +67,49 @@ export function duplicateSequence(id: string): Sequence {
   const now = Date.now();
   const newName = `${original.name} (copy)`;
 
-  db.runSync(`INSERT INTO sequences (id, name, created_at, updated_at) VALUES (?, ?, ?, ?);`, [
-    newId,
-    newName,
-    now,
-    now,
-  ]);
-
-  const sections = db.getAllSync<{
-    id: string;
-    name: string;
-    order_index: number;
-  }>(`SELECT id, name, order_index FROM sections WHERE sequence_id = ? ORDER BY order_index;`, [id]);
-
-  for (const sec of sections) {
-    const newSectionId = generateId();
-    db.runSync(`INSERT INTO sections (id, sequence_id, name, order_index, created_at) VALUES (?, ?, ?, ?, ?);`, [
-      newSectionId,
+  transaction(() => {
+    db.runSync(`INSERT INTO sequences (id, name, created_at, updated_at) VALUES (?, ?, ?, ?);`, [
       newId,
-      sec.name,
-      sec.order_index,
+      newName,
+      now,
       now,
     ]);
 
-    const exercises = db.getAllSync<{
-      name: string;
-      duration: number;
-      order_index: number;
-      notes: string | null;
-    }>(`SELECT name, duration, order_index, notes FROM exercises WHERE section_id = ? ORDER BY order_index;`, [sec.id]);
-
-    for (const ex of exercises) {
+    const sections = db.getAllSync<{ id: string }>(`SELECT id FROM sections WHERE sequence_id = ?;`, [id]);
+    for (const sec of sections) {
+      const newSectionId = generateId();
       db.runSync(
-        `INSERT INTO exercises (id, sequence_id, section_id, name, duration, order_index, notes, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
-        [generateId(), newId, newSectionId, ex.name, ex.duration, ex.order_index, ex.notes ?? null, now]
+        `INSERT INTO sections (id, sequence_id, name, order_index, created_at)
+         SELECT ?, ?, name, order_index, ? FROM sections WHERE id = ?;`,
+        [newSectionId, newId, now, sec.id]
       );
-    }
-  }
 
-  const seqTags = db.getAllSync<{ tag_value_id: string }>(
-    `SELECT tag_value_id FROM sequence_tags WHERE sequence_id = ?;`,
-    [id]
-  );
-  for (const { tag_value_id } of seqTags) {
-    db.runSync(`INSERT INTO sequence_tags (sequence_id, tag_value_id) VALUES (?, ?);`, [newId, tag_value_id]);
-  }
+      const exercises = db.getAllSync<{ id: string }>(`SELECT id FROM exercises WHERE section_id = ?;`, [sec.id]);
+      for (const ex of exercises) {
+        const newExerciseId = generateId();
+        // Copy every exercise column so the duplicate is identical apart from its ids.
+        db.runSync(
+          `INSERT INTO exercises (id, sequence_id, section_id, name, duration, order_index, notes, created_at,
+             library_exercise_id, load_modified, load_base, load_amplified, variation, variation_sets, side)
+           SELECT ?, ?, ?, name, duration, order_index, notes, ?,
+             library_exercise_id, load_modified, load_base, load_amplified, variation, variation_sets, side
+           FROM exercises WHERE id = ?;`,
+          [newExerciseId, newId, newSectionId, now, ex.id]
+        );
+        db.runSync(
+          `INSERT INTO exercise_tags (exercise_id, tag_value_id)
+           SELECT ?, tag_value_id FROM exercise_tags WHERE exercise_id = ?;`,
+          [newExerciseId, ex.id]
+        );
+      }
+    }
+
+    db.runSync(
+      `INSERT INTO sequence_tags (sequence_id, tag_value_id)
+       SELECT ?, tag_value_id FROM sequence_tags WHERE sequence_id = ?;`,
+      [newId, id]
+    );
+  });
 
   return { id: newId, name: newName, created_at: now, updated_at: now, is_favorited: 0 };
 }

@@ -1,4 +1,4 @@
-import db from './client';
+import db, { transaction } from './client';
 import { generateId } from '../utils/id';
 
 export interface Section {
@@ -53,7 +53,13 @@ export function upsertSection(id: string, sequenceId: string, name: string, orde
 }
 
 export function reorderSections(sequenceId: string, orderedIds: string[]): void {
-  for (let i = 0; i < orderedIds.length; i++) {
-    db.runSync(`UPDATE sections SET order_index = ? WHERE id = ? AND sequence_id = ?;`, [i, orderedIds[i], sequenceId]);
-  }
+  transaction(() => {
+    for (let i = 0; i < orderedIds.length; i++) {
+      db.runSync(`UPDATE sections SET order_index = ? WHERE id = ? AND sequence_id = ?;`, [
+        i,
+        orderedIds[i],
+        sequenceId,
+      ]);
+    }
+  });
 }
