@@ -1,6 +1,6 @@
 import { View, ScrollView, StyleSheet, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Text } from '@/components/ui/Text';
 import { Button } from '@/components/ui/Button';
 import { Divider } from '@/components/ui/Divider';
@@ -9,6 +9,7 @@ import { useTheme } from '@/lib/contexts/ThemeContext';
 import { decodeShareData, importSharedSequence } from '@/lib/utils/shareSequence';
 import { formatSeconds } from '@/lib/utils/time';
 
+
 export default function ImportScreen() {
   const { data } = useLocalSearchParams<{ data: string }>();
   const router = useRouter();
@@ -16,7 +17,10 @@ export default function ImportScreen() {
   const styles = makeStyles(colors);
   const [importing, setImporting] = useState(false);
 
-  const payload = decodeShareData(data);
+  const payload = useMemo(() => decodeShareData(data), [data]);
+
+  // Opened from a link while the app was closed, there may be nothing to go back to.
+  const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
 
   if (!payload) {
     return (
@@ -27,7 +31,7 @@ export default function ImportScreen() {
         <Text variant="body" color="tertiary" style={styles.errorBody}>
           This link doesn&apos;t contain a valid sequence.
         </Text>
-        <Button label="Close" variant="secondary" onPress={() => router.back()} style={styles.closeButton} />
+        <Button label="Close" variant="secondary" onPress={close} style={styles.closeButton} />
       </View>
     );
   }
@@ -107,7 +111,7 @@ export default function ImportScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <Button label="Cancel" variant="secondary" onPress={() => router.back()} style={styles.cancelButton} />
+        <Button label="Cancel" variant="secondary" onPress={close} style={styles.cancelButton} />
         <Button
           label="Add to My Sequences"
           variant="primary"

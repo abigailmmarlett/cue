@@ -3,7 +3,7 @@ import { getSectionsBySequenceId, createSection } from '../db/sections';
 import { getExercisesBySectionId } from '../db/exercises';
 import { getTagsForExercise } from '../db/tags';
 import { generateId } from './id';
-import db from '../db/client';
+import db, { transaction } from '../db/client';
 
 function findOrCreateTagValue(categoryName: string, label: string): string {
   let category = db.getFirstSync<{ id: string }>(`SELECT id FROM tag_categories WHERE name = ?;`, [categoryName]);
@@ -90,6 +90,115 @@ export function buildShareUrl(payload: SharePayload): string {
   return `cue://import?data=${encodeURIComponent(JSON.stringify(payload))}`;
 }
 
+// Limits for untrusted share payloads; generous for real sequences, small enough to reject junk.
+const MAX_NAME_LENGTH = 120;
+const MAX_TEXT_LENGTH = 2000;
+const MAX_SECTIONS = 50;
+const MAX_EXERCISES = 500;
+const MAX_TAGS_PER_EXERCISE = 30;
+const MAX_DURATION_SECONDS = 24 * 60 * 60;
+
+function cleanString(value: unknown, maxLength: number): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  return trimmed ? trimmed.slice(0, maxLength) : undefined;
+}
+
+function cleanLoad(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (Array.isArray(parsed) && parsed.length > 0 && parsed.every((id) => typeof id === 'string')) return value;
+  } catch {
+    /* invalid load; drop it */
+  }
+  return undefined;
+}
+
+function cleanExercise(raw: unknown): ShareExercise | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const ex = raw as Record<string, unknown>;
+  const name = cleanString(ex.name, MAX_NAME_LENGTH);
+  const duration = typeof ex.duration === 'number' ? Math.round(ex.duration) : NaN;
+  if (!name || !Number.isFinite(duration)) return null;
+
+  const out: ShareExercise = { name, duration: Math.min(Math.max(duration, 1), MAX_DURATION_SECONDS) };
+  const notes = cleanString(ex.notes, MAX_TEXT_LENGTH);
+  if (notes) out.notes = notes;
+  const variation = cleanString(ex.variation, MAX_TEXT_LENGTH);
+  if (variation) out.variation = variation;
+  if (ex.side === 'left' || ex.side === 'right') out.side = ex.side;
+  const loadBase = cleanLoad(ex.load_base);
+  if (loadBase) out.load_base = loadBase;
+  const loadModified = cleanLoad(ex.load_modified);
+  if (loadModified) out.load_modified = loadModified;
+  const loadAmplified = cleanLoad(ex.load_amplified);
+  if (loadAmplified) out.load_amplified = loadAmplified;
+
+  if (Array.isArray(ex.tags)) {
+    const tags = ex.tags.slice(0, MAX_TAGS_PER_EXERCISE).flatMap((t) => {
+      const c = cleanString((t as { c?: unknown } | null)?.c, MAX_NAME_LENGTH);
+      const l = cleanString((t as { l?: unknown } | null)?.l, MAX_NAME_LENGTH);
+      return c && l ? [{ c, l }] : [];
+    });
+    if (tags.length > 0) out.tags = tags;
+  }
+  return out;
+}
+
+/**
+ * Checks an untrusted, already-parsed share payload and returns a clean copy,
+ * or null if it isn't a usable sequence. Optional fields that are malformed are
+ * dropped; a missing or malformed required field rejects the whole payload.
+ */
+export function validateSharePayload(raw: unknown): SharePayload | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const payload = raw as Record<string, unknown>;
+  if (payload.v !== 1) return null;
+
+  const name = cleanString(payload.name, MAX_NAME_LENGTH);
+  if (!name || !Array.isArray(payload.sections)) return null;
+  if (payload.sections.length === 0 || payload.sections.length > MAX_SECTIONS) return null;
+
+  const sections: ShareSection[] = [];
+  let exerciseCount = 0;
+  for (const rawSection of payload.sections) {
+    if (typeof rawSection !== 'object' || rawSection === null) return null;
+    const section = rawSection as Record<string, unknown>;
+    if (!Array.isArray(section.exercises)) return null;
+
+    const exercises: ShareExercise[] = [];
+    for (const rawExercise of section.exercises) {
+      const exercise = cleanExercise(rawExercise);
+      if (!exercise) return null;
+      exercises.push(exercise);
+    }
+    exerciseCount += exercises.length;
+    if (exerciseCount > MAX_EXERCISES) return null;
+
+    sections.push({ name: cleanString(section.name, MAX_NAME_LENGTH) ?? 'Section', exercises });
+  }
+
+  return { v: 1, name, sections };
+}
+
+function safeDecodeURIComponent(value: string): string | null {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return null;
+  }
+}
+
+function parsePayload(json: string | null): SharePayload | null {
+  if (!json) return null;
+  try {
+    return validateSharePayload(JSON.parse(json));
+  } catch {
+    return null;
+  }
+}
+
 export function decodeShareData(data: string | undefined): SharePayload | null {
   if (!data) return null;
 
@@ -98,34 +207,21 @@ export function decodeShareData(data: string | undefined): SharePayload | null {
   // Handle a full cue:// (or legacy traintrack://) URL pasted from clipboard
   if (candidate.startsWith('cue://') || candidate.startsWith('traintrack://')) {
     const match = candidate.match(/[?&]data=([^&\s]*)/);
-    candidate = match ? decodeURIComponent(match[1]) : '';
-    if (!candidate) return null;
+    const decoded = match ? safeDecodeURIComponent(match[1]) : null;
+    if (!decoded) return null;
+    candidate = decoded;
   }
 
-  // Try direct JSON parse (expo-router already decoded the param, or we decoded above)
-  try {
-    const parsed = JSON.parse(candidate);
-    if (parsed?.v === 1 && typeof parsed.name === 'string' && Array.isArray(parsed.sections)) {
-      return parsed as SharePayload;
-    }
-  } catch {
-    /* fall through */
-  }
-
-  // Fallback: try decoding first in case the param arrived still-encoded
-  try {
-    const parsed = JSON.parse(decodeURIComponent(candidate));
-    if (parsed?.v === 1 && typeof parsed.name === 'string' && Array.isArray(parsed.sections)) {
-      return parsed as SharePayload;
-    }
-  } catch {
-    /* fall through */
-  }
-
-  return null;
+  // Try direct JSON parse (expo-router already decoded the param, or we decoded above),
+  // then fall back to decoding first in case the param arrived still-encoded.
+  return parsePayload(candidate) ?? parsePayload(safeDecodeURIComponent(candidate));
 }
 
 export function importSharedSequence(payload: SharePayload): string {
+  return transaction(() => insertSharedSequence(payload));
+}
+
+function insertSharedSequence(payload: SharePayload): string {
   const sequence = createSequence(payload.name);
 
   for (const sec of payload.sections) {

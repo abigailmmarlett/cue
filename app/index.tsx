@@ -109,7 +109,12 @@ export default function SequencesScreen() {
   };
 
   const handleClipboardImport = async () => {
-    const text = await Clipboard.getStringAsync();
+    let text = '';
+    try {
+      text = await Clipboard.getStringAsync();
+    } catch {
+      // Treated the same as an empty clipboard below.
+    }
     const payload = decodeShareData(text.trim());
     if (!payload) {
       Alert.alert('Nothing to Import', 'Copy a shared sequence link first, then tap Import.');

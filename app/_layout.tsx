@@ -13,6 +13,9 @@ import { TourProvider, useTour } from '@/lib/contexts/TourContext';
 import { WelcomeScreen } from '@/components/WelcomeScreen';
 import { TourOverlay } from '@/components/TourOverlay';
 
+// Keep the home screen under deep-linked routes (e.g. cue://import) so they can always go back.
+export const unstable_settings = { initialRouteName: 'index' };
+
 // Run synchronously before any screen renders
 runMigrations();
 SplashScreen.preventAutoHideAsync();
