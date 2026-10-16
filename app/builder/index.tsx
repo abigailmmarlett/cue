@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import {
   View,
   TextInput,
@@ -22,6 +22,7 @@ import { Divider } from '@/components/ui/Divider';
 import { Colors, Spacing, Radius, FontSize, FontWeight } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
 import { TagChips } from '@/components/TagChips';
+import { transaction } from '@/lib/db/client';
 import { createSequence } from '@/lib/db/sequences';
 import { createExercise } from '@/lib/db/exercises';
 import { createSection } from '@/lib/db/sections';
@@ -42,6 +43,20 @@ interface LocalSection {
   exercises: LocalExercise[];
 }
 
+/** Adds each named, unlinked exercise to the library. Its tags move to the library entry. */
+function addUnlinkedToLibrary(sections: LocalSection[]): LocalSection[] {
+  return sections.map((s) => ({
+    ...s,
+    exercises: s.exercises.map((ex) => {
+      if (ex.libraryExerciseId || !ex.name.trim()) return ex;
+      const libEx = createLibraryExercise(ex.name.trim());
+      if (ex.tagValueIds.length > 0) setLibraryExerciseTags(libEx.id, ex.tagValueIds);
+      return { ...ex, libraryExerciseId: libEx.id, tagValueIds: [] };
+    }),
+  }));
+}
+
+
 export default function NewSequenceScreen() {
   const router = useRouter();
   const navigation = useNavigation();
@@ -57,7 +72,14 @@ export default function NewSequenceScreen() {
   const [exerciseSheetSectionId, setExerciseSheetSectionId] = useState<string | null>(null);
   const [showSectionImport, setShowSectionImport] = useState(false);
 
+  const hasSavedRef = useRef(false);
+
   usePreventRemove(isDirty, ({ data }) => {
+    // Right after a save, isDirty is still true until the next render; leave without asking.
+    if (hasSavedRef.current) {
+      navigation.dispatch(data.action);
+      return;
+    }
     Alert.alert('Discard changes?', 'You have unsaved changes. Are you sure you want to leave?', [
       { text: 'Keep editing', style: 'cancel' },
       { text: 'Discard', style: 'destructive', onPress: () => navigation.dispatch(data.action) },
@@ -179,37 +201,46 @@ export default function NewSequenceScreen() {
   }, []);
 
   const doSave = useCallback(
-    (sectionsToSave: typeof sections) => {
-      const trimmedName = name.trim() || 'Untitled Sequence';
-      const seq = createSequence(trimmedName);
-      if (sequenceTags.length > 0)
-        saveSequenceTags(
-          seq.id,
-          sequenceTags.map((t) => t.tagValueId)
-        );
-      for (const section of sectionsToSave) {
-        const dbSection = createSection(seq.id, section.name.trim() || 'Section');
-        for (const ex of section.exercises) {
-          const libId = ex.libraryExerciseId ?? null;
-          createExercise(
-            seq.id,
-            dbSection.id,
-            ex.name.trim() || 'Exercise',
-            ex.duration,
-            ex.notes ?? undefined,
-            libId,
-            ex.variation ?? null,
-            ex.side ?? null,
-            ex.variationSets ?? null
-          );
-          if (!libId && ex.tagValueIds.length > 0) setExerciseTags(ex.id, ex.tagValueIds);
-        }
+    (shouldAddUnlinkedToLibrary: boolean) => {
+      if (hasSavedRef.current) return;
+      try {
+        transaction(() => {
+          const sectionsToSave = shouldAddUnlinkedToLibrary ? addUnlinkedToLibrary(sections) : sections;
+          const seq = createSequence(name.trim() || 'Untitled Sequence');
+          if (sequenceTags.length > 0)
+            saveSequenceTags(
+              seq.id,
+              sequenceTags.map((t) => t.tagValueId)
+            );
+          for (const section of sectionsToSave) {
+            const dbSection = createSection(seq.id, section.name.trim() || 'Section');
+            for (const ex of section.exercises) {
+              const created = createExercise(
+                seq.id,
+                dbSection.id,
+                ex.name.trim() || 'Exercise',
+                ex.duration,
+                ex.notes ?? undefined,
+                ex.libraryExerciseId ?? null,
+                ex.variation ?? null,
+                ex.side ?? null,
+                ex.variationSets ?? null
+              );
+              // Own tags; linked exercises without them inherit their library tags.
+              if (ex.tagValueIds.length > 0) setExerciseTags(created.id, ex.tagValueIds);
+            }
+          }
+        });
+      } catch {
+        Alert.alert("Couldn't save", 'Something went wrong, so nothing was saved. Please try again.');
+        return;
       }
+      hasSavedRef.current = true;
       emitSequenceChange();
       setIsDirty(false);
       router.back();
     },
-    [name, sequenceTags, router]
+    [name, sections, sequenceTags, router]
   );
 
   const save = useCallback(() => {
@@ -221,30 +252,12 @@ export default function NewSequenceScreen() {
         'Save to exercise library?',
         `${names} ${unlinked.length === 1 ? "isn't" : "aren't"} in your library yet.`,
         [
-          {
-            text: 'Not now',
-            style: 'cancel',
-            onPress: () => doSave(sections),
-          },
-          {
-            text: 'Add to library',
-            onPress: () => {
-              const updated = sections.map((s) => ({
-                ...s,
-                exercises: s.exercises.map((ex) => {
-                  if (ex.libraryExerciseId || !ex.name.trim()) return ex;
-                  const libEx = createLibraryExercise(ex.name.trim());
-                  if (ex.tagValueIds.length > 0) setLibraryExerciseTags(libEx.id, ex.tagValueIds);
-                  return { ...ex, libraryExerciseId: libEx.id };
-                }),
-              }));
-              doSave(updated);
-            },
-          },
+          { text: 'Not now', style: 'cancel', onPress: () => doSave(false) },
+          { text: 'Add to library', onPress: () => doSave(true) },
         ]
       );
     } else {
-      doSave(sections);
+      doSave(false);
     }
   }, [sections, doSave]);
 

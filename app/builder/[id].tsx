@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   View,
   TextInput,
@@ -23,8 +23,9 @@ import { TagPicker } from '@/components/TagPicker';
 import { TagChips } from '@/components/TagChips';
 import { ExerciseSearchSheet } from '@/components/ExerciseSearchSheet';
 import { SectionImportSheet } from '@/components/SectionImportSheet';
+import { transaction } from '@/lib/db/client';
 import { getSequenceById, updateSequence } from '@/lib/db/sequences';
-import { getExercisesBySequenceId, upsertExercise, deleteExercise } from '@/lib/db/exercises';
+import { getExercisesBySequenceId, upsertExercise, deleteExercise, parseVariationSets } from '@/lib/db/exercises';
 import { getSectionsBySequenceId, upsertSection, deleteSection } from '@/lib/db/sections';
 import {
   getOwnTagsForExercise,
@@ -34,9 +35,8 @@ import {
   getAllTagValuesWithCategory,
   type ExerciseTag,
 } from '@/lib/db/tags';
-import { createLibraryExercise, setLibraryExerciseTags } from '@/lib/db/libraryExercises';
+import { createLibraryExercise, getLibraryExercise, setLibraryExerciseTags } from '@/lib/db/libraryExercises';
 import { getAllLoadIcons, parseLoad, serializeLoad, type LoadIcon } from '@/lib/db/loadIcons';
-import type { VariationItem } from '@/lib/db/exercises';
 import { LoadEditor } from '@/components/LoadEditor';
 import { VariationEditor } from '@/components/VariationEditor';
 import { generateId } from '@/lib/utils/id';
@@ -48,6 +48,29 @@ interface LocalSection {
   name: string;
   exercises: LocalExercise[];
 }
+
+/** Adds each named, unlinked exercise to the library. Its tags move to the library entry. */
+function addUnlinkedToLibrary(sections: LocalSection[]): LocalSection[] {
+  return sections.map((s) => ({
+    ...s,
+    exercises: s.exercises.map((ex) => {
+      if (ex.libraryExerciseId || !ex.name.trim()) return ex;
+      const libEx = createLibraryExercise(ex.name.trim());
+      if (ex.tagValueIds.length > 0) setLibraryExerciseTags(libEx.id, ex.tagValueIds);
+      return { ...ex, libraryExerciseId: libEx.id, tagValueIds: [] };
+    }),
+  }));
+}
+
+/**
+ * The editor shows a linked exercise's effective loads (its own, else the library's).
+ * Store only a load that differs from the library's so later library edits still apply.
+ */
+function loadOverride(load: string[] | null, libraryLoad: string | null | undefined): string | null {
+  const own = serializeLoad(load);
+  return own === serializeLoad(parseLoad(libraryLoad ?? null)) ? null : own;
+}
+
 
 export default function EditSequenceScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -73,7 +96,14 @@ export default function EditSequenceScreen() {
     ? (sections.flatMap((s) => s.exercises).find((e) => e.id === tagPickerExerciseId) ?? null)
     : null;
 
+  const hasSavedRef = useRef(false);
+
   usePreventRemove(isDirty, ({ data }) => {
+    // Right after a save, isDirty is still true until the next render; leave without asking.
+    if (hasSavedRef.current) {
+      navigation.dispatch(data.action);
+      return;
+    }
     Alert.alert('Discard changes?', 'You have unsaved changes. Are you sure you want to leave?', [
       { text: 'Keep editing', style: 'cancel' },
       { text: 'Discard', style: 'destructive', onPress: () => navigation.dispatch(data.action) },
@@ -111,7 +141,7 @@ export default function EditSequenceScreen() {
               loadBase: parseLoad(e.load_base),
               loadAmplified: parseLoad(e.load_amplified),
               variation: e.variation,
-              variationSets: e.variation_sets ? (JSON.parse(e.variation_sets) as VariationItem[]) : null,
+              variationSets: parseVariationSets(e.variation_sets),
               isBilateral: !!e.is_bilateral,
               side: e.side,
             };
@@ -237,56 +267,66 @@ export default function EditSequenceScreen() {
   }, []);
 
   const doSave = useCallback(
-    (sectionsToSave: typeof sections) => {
-      updateSequence(id, name.trim() || 'Untitled Sequence');
-      saveSequenceTags(
-        id,
-        sequenceTags.map((t) => t.tagValueId)
-      );
-
-      const dbSectionIds = new Set(getSectionsBySequenceId(id).map((s) => s.id));
-      const dbExerciseIds = new Set(getExercisesBySequenceId(id).map((e) => e.id));
-      const localSectionIds = new Set(sectionsToSave.map((s) => s.id));
-      const localExerciseIds = new Set(sectionsToSave.flatMap((s) => s.exercises.map((e) => e.id)));
-
-      for (const dbId of dbExerciseIds) {
-        if (!localExerciseIds.has(dbId)) deleteExercise(dbId);
-      }
-      for (const dbId of dbSectionIds) {
-        if (!localSectionIds.has(dbId)) deleteSection(dbId);
-      }
-
-      for (let sIdx = 0; sIdx < sectionsToSave.length; sIdx++) {
-        const section = sectionsToSave[sIdx];
-        upsertSection(section.id, id, section.name.trim() || 'Section', sIdx);
-        for (let eIdx = 0; eIdx < section.exercises.length; eIdx++) {
-          const ex = section.exercises[eIdx];
-          const libId = ex.libraryExerciseId ?? null;
-          upsertExercise(
-            ex.id,
+    (shouldAddUnlinkedToLibrary: boolean) => {
+      if (hasSavedRef.current) return;
+      try {
+        transaction(() => {
+          const sectionsToSave = shouldAddUnlinkedToLibrary ? addUnlinkedToLibrary(sections) : sections;
+          updateSequence(id, name.trim() || 'Untitled Sequence');
+          saveSequenceTags(
             id,
-            section.id,
-            ex.name.trim() || 'Exercise',
-            ex.duration,
-            eIdx,
-            ex.notes ?? null,
-            libId,
-            serializeLoad(ex.loadModified),
-            serializeLoad(ex.loadBase),
-            serializeLoad(ex.loadAmplified),
-            ex.variation ?? null,
-            ex.side ?? null,
-            ex.variationSets?.length ? ex.variationSets : null
+            sequenceTags.map((t) => t.tagValueId)
           );
-          setExerciseTags(ex.id, ex.tagValueIds);
-        }
-      }
 
+          const dbSectionIds = new Set(getSectionsBySequenceId(id).map((s) => s.id));
+          const dbExerciseIds = new Set(getExercisesBySequenceId(id).map((e) => e.id));
+          const localSectionIds = new Set(sectionsToSave.map((s) => s.id));
+          const localExerciseIds = new Set(sectionsToSave.flatMap((s) => s.exercises.map((e) => e.id)));
+
+          for (const dbId of dbExerciseIds) {
+            if (!localExerciseIds.has(dbId)) deleteExercise(dbId);
+          }
+          for (const dbId of dbSectionIds) {
+            if (!localSectionIds.has(dbId)) deleteSection(dbId);
+          }
+
+          for (let sIdx = 0; sIdx < sectionsToSave.length; sIdx++) {
+            const section = sectionsToSave[sIdx];
+            upsertSection(section.id, id, section.name.trim() || 'Section', sIdx);
+            for (let eIdx = 0; eIdx < section.exercises.length; eIdx++) {
+              const ex = section.exercises[eIdx];
+              const libId = ex.libraryExerciseId ?? null;
+              const libEx = libId ? getLibraryExercise(libId) : null;
+              upsertExercise(
+                ex.id,
+                id,
+                section.id,
+                ex.name.trim() || 'Exercise',
+                ex.duration,
+                eIdx,
+                ex.notes ?? null,
+                libId,
+                loadOverride(ex.loadModified, libEx?.load_modified),
+                loadOverride(ex.loadBase, libEx?.load_base),
+                loadOverride(ex.loadAmplified, libEx?.load_amplified),
+                ex.variation ?? null,
+                ex.side ?? null,
+                ex.variationSets?.length ? ex.variationSets : null
+              );
+              setExerciseTags(ex.id, ex.tagValueIds);
+            }
+          }
+        });
+      } catch {
+        Alert.alert("Couldn't save", "Something went wrong, so your changes weren't saved. Please try again.");
+        return;
+      }
+      hasSavedRef.current = true;
       emitSequenceChange();
       setIsDirty(false);
       router.back();
     },
-    [id, name, sequenceTags, router]
+    [id, name, sections, sequenceTags, router]
   );
 
   const save = useCallback(() => {
@@ -298,30 +338,12 @@ export default function EditSequenceScreen() {
         'Save to exercise library?',
         `${names} ${unlinked.length === 1 ? "isn't" : "aren't"} in your library yet.`,
         [
-          {
-            text: 'Not now',
-            style: 'cancel',
-            onPress: () => doSave(sections),
-          },
-          {
-            text: 'Add to library',
-            onPress: () => {
-              const updated = sections.map((s) => ({
-                ...s,
-                exercises: s.exercises.map((ex) => {
-                  if (ex.libraryExerciseId || !ex.name.trim()) return ex;
-                  const libEx = createLibraryExercise(ex.name.trim());
-                  if (ex.tagValueIds.length > 0) setLibraryExerciseTags(libEx.id, ex.tagValueIds);
-                  return { ...ex, libraryExerciseId: libEx.id };
-                }),
-              }));
-              doSave(updated);
-            },
-          },
+          { text: 'Not now', style: 'cancel', onPress: () => doSave(false) },
+          { text: 'Add to library', onPress: () => doSave(true) },
         ]
       );
     } else {
-      doSave(sections);
+      doSave(false);
     }
   }, [sections, doSave]);
 
