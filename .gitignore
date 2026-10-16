@@ -1,6 +1,6 @@
 # Dependencies
 node_modules/
-package-lock.json
+# npm is the package manager; keep its lockfile committed for reproducible builds
 yarn.lock
 pnpm-lock.yaml
 
