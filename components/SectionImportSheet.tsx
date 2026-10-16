@@ -1,11 +1,4 @@
-import {
-  View,
-  Modal,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-} from 'react-native';
+import { View, Modal, FlatList, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
 import { useState, useEffect } from 'react';
 import { Text } from './ui/Text';
 import { Colors, Spacing, Radius } from '@/constants/theme';
@@ -145,7 +138,9 @@ export function SectionImportSheet({ currentSequenceId, onImport, onClose }: Pro
         <View style={styles.header}>
           {selectedSequence ? (
             <TouchableOpacity onPress={goBack} style={styles.backBtn} hitSlop={8}>
-              <Text variant="body" color="secondary">Back</Text>
+              <Text variant="body" color="secondary">
+                Back
+              </Text>
             </TouchableOpacity>
           ) : (
             <View style={styles.cancelBtn} />
@@ -154,7 +149,9 @@ export function SectionImportSheet({ currentSequenceId, onImport, onClose }: Pro
             {selectedSequence ? selectedSequence.name : 'Import Section'}
           </Text>
           <TouchableOpacity onPress={onClose} style={styles.cancelBtn} hitSlop={8}>
-            <Text variant="body" color="secondary" style={{ textAlign: 'right' }}>Cancel</Text>
+            <Text variant="body" color="secondary" style={{ textAlign: 'right' }}>
+              Cancel
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -174,7 +171,9 @@ export function SectionImportSheet({ currentSequenceId, onImport, onClose }: Pro
             )}
             ListEmptyComponent={
               <View style={styles.emptyState}>
-                <Text variant="body" color="tertiary">No other sequences.</Text>
+                <Text variant="body" color="tertiary">
+                  No other sequences.
+                </Text>
               </View>
             }
           />
@@ -194,7 +193,9 @@ export function SectionImportSheet({ currentSequenceId, onImport, onClose }: Pro
             )}
             ListEmptyComponent={
               <View style={styles.emptyState}>
-                <Text variant="body" color="tertiary">No sections in this sequence.</Text>
+                <Text variant="body" color="tertiary">
+                  No sections in this sequence.
+                </Text>
               </View>
             }
           />

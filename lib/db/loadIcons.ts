@@ -23,17 +23,16 @@ export function getAllLoadIcons(): LoadIcon[] {
     }));
 }
 
-export function createLoadIcon(
-  color: string,
-  size: 'S' | 'M' | 'L' | null,
-  label: string
-): LoadIcon {
+export function createLoadIcon(color: string, size: 'S' | 'M' | 'L' | null, label: string): LoadIcon {
   const id = generateId();
   const now = Date.now();
-  db.runSync(
-    `INSERT INTO load_icons (id, color, size, label, created_at) VALUES (?, ?, ?, ?, ?);`,
-    [id, color, size, label, now]
-  );
+  db.runSync(`INSERT INTO load_icons (id, color, size, label, created_at) VALUES (?, ?, ?, ?, ?);`, [
+    id,
+    color,
+    size,
+    label,
+    now,
+  ]);
   return { id, color, size, label, createdAt: now };
 }
 

@@ -70,23 +70,22 @@ export default function EditSequenceScreen() {
   const [allLoadIcons] = useState<LoadIcon[]>(() => getAllLoadIcons());
 
   const activeExercise = tagPickerExerciseId
-    ? sections.flatMap((s) => s.exercises).find((e) => e.id === tagPickerExerciseId) ?? null
+    ? (sections.flatMap((s) => s.exercises).find((e) => e.id === tagPickerExerciseId) ?? null)
     : null;
 
   usePreventRemove(isDirty, ({ data }) => {
-    Alert.alert(
-      'Discard changes?',
-      'You have unsaved changes. Are you sure you want to leave?',
-      [
-        { text: 'Keep editing', style: 'cancel' },
-        { text: 'Discard', style: 'destructive', onPress: () => navigation.dispatch(data.action) },
-      ]
-    );
+    Alert.alert('Discard changes?', 'You have unsaved changes. Are you sure you want to leave?', [
+      { text: 'Keep editing', style: 'cancel' },
+      { text: 'Discard', style: 'destructive', onPress: () => navigation.dispatch(data.action) },
+    ]);
   });
 
   useEffect(() => {
     const seq = getSequenceById(id);
-    if (!seq) { router.back(); return; }
+    if (!seq) {
+      router.back();
+      return;
+    }
     setName(seq.name);
 
     const dbSections = getSectionsBySequenceId(id);
@@ -112,7 +111,7 @@ export default function EditSequenceScreen() {
               loadBase: parseLoad(e.load_base),
               loadAmplified: parseLoad(e.load_amplified),
               variation: e.variation,
-              variationSets: e.variation_sets ? JSON.parse(e.variation_sets) as VariationItem[] : null,
+              variationSets: e.variation_sets ? (JSON.parse(e.variation_sets) as VariationItem[]) : null,
               isBilateral: !!e.is_bilateral,
               side: e.side,
             };
@@ -136,9 +135,7 @@ export default function EditSequenceScreen() {
 
   const renameSection = useCallback((sectionId: string, newName: string) => {
     setIsDirty(true);
-    setSections((prev) =>
-      prev.map((s) => (s.id === sectionId ? { ...s, name: newName } : s))
-    );
+    setSections((prev) => prev.map((s) => (s.id === sectionId ? { ...s, name: newName } : s)));
   }, []);
 
   const removeSection = useCallback((sectionId: string) => {
@@ -146,32 +143,50 @@ export default function EditSequenceScreen() {
     setSections((prev) => prev.filter((s) => s.id !== sectionId));
   }, []);
 
-  const addExercise = useCallback((
-    sectionId: string,
-    name = '',
-    libraryExerciseId: string | null = null,
-    tagValueIds: string[] = [],
-    loadModified: string[] | null = null,
-    loadBase: string[] | null = null,
-    loadAmplified: string[] | null = null,
-    isBilateral = false,
-    tags: ExerciseTag[] = [],
-  ) => {
-    setIsDirty(true);
-    setSections((prev) =>
-      prev.map((s) =>
-        s.id === sectionId
-          ? {
-              ...s,
-              exercises: [
-                ...s.exercises,
-                { id: generateId(), name, duration: 30, notes: null, tagValueIds, tags, libraryExerciseId, loadModified, loadBase, loadAmplified, variation: null, variationSets: null, isBilateral, side: null },
-              ],
-            }
-          : s
-      )
-    );
-  }, []);
+  const addExercise = useCallback(
+    (
+      sectionId: string,
+      name = '',
+      libraryExerciseId: string | null = null,
+      tagValueIds: string[] = [],
+      loadModified: string[] | null = null,
+      loadBase: string[] | null = null,
+      loadAmplified: string[] | null = null,
+      isBilateral = false,
+      tags: ExerciseTag[] = []
+    ) => {
+      setIsDirty(true);
+      setSections((prev) =>
+        prev.map((s) =>
+          s.id === sectionId
+            ? {
+                ...s,
+                exercises: [
+                  ...s.exercises,
+                  {
+                    id: generateId(),
+                    name,
+                    duration: 30,
+                    notes: null,
+                    tagValueIds,
+                    tags,
+                    libraryExerciseId,
+                    loadModified,
+                    loadBase,
+                    loadAmplified,
+                    variation: null,
+                    variationSets: null,
+                    isBilateral,
+                    side: null,
+                  },
+                ],
+              }
+            : s
+        )
+      );
+    },
+    []
+  );
 
   const updateExercise = useCallback((sectionId: string, exId: string, fields: Partial<LocalExercise>) => {
     setIsDirty(true);
@@ -187,9 +202,7 @@ export default function EditSequenceScreen() {
   const removeExercise = useCallback((sectionId: string, exId: string) => {
     setIsDirty(true);
     setSections((prev) =>
-      prev.map((s) =>
-        s.id === sectionId ? { ...s, exercises: s.exercises.filter((ex) => ex.id !== exId) } : s
-      )
+      prev.map((s) => (s.id === sectionId ? { ...s, exercises: s.exercises.filter((ex) => ex.id !== exId) } : s))
     );
   }, []);
 
@@ -208,64 +221,82 @@ export default function EditSequenceScreen() {
 
   const setTotalSectionDuration = useCallback((sectionId: string, total: number) => {
     setIsDirty(true);
-    setSections((prev) => prev.map((s) => {
-      if (s.id !== sectionId || s.exercises.length === 0) return s;
-      const perEx = Math.floor(total / s.exercises.length);
-      return {
-        ...s,
-        exercises: s.exercises.map((ex, i) => ({
-          ...ex,
-          duration: i === s.exercises.length - 1 ? total - perEx * (s.exercises.length - 1) : perEx,
-        })),
-      };
-    }));
+    setSections((prev) =>
+      prev.map((s) => {
+        if (s.id !== sectionId || s.exercises.length === 0) return s;
+        const perEx = Math.floor(total / s.exercises.length);
+        return {
+          ...s,
+          exercises: s.exercises.map((ex, i) => ({
+            ...ex,
+            duration: i === s.exercises.length - 1 ? total - perEx * (s.exercises.length - 1) : perEx,
+          })),
+        };
+      })
+    );
   }, []);
 
-  const doSave = useCallback((sectionsToSave: typeof sections) => {
-    updateSequence(id, name.trim() || 'Untitled Sequence');
-    saveSequenceTags(id, sequenceTags.map((t) => t.tagValueId));
+  const doSave = useCallback(
+    (sectionsToSave: typeof sections) => {
+      updateSequence(id, name.trim() || 'Untitled Sequence');
+      saveSequenceTags(
+        id,
+        sequenceTags.map((t) => t.tagValueId)
+      );
 
-    const dbSectionIds = new Set(getSectionsBySequenceId(id).map((s) => s.id));
-    const dbExerciseIds = new Set(getExercisesBySequenceId(id).map((e) => e.id));
-    const localSectionIds = new Set(sectionsToSave.map((s) => s.id));
-    const localExerciseIds = new Set(sectionsToSave.flatMap((s) => s.exercises.map((e) => e.id)));
+      const dbSectionIds = new Set(getSectionsBySequenceId(id).map((s) => s.id));
+      const dbExerciseIds = new Set(getExercisesBySequenceId(id).map((e) => e.id));
+      const localSectionIds = new Set(sectionsToSave.map((s) => s.id));
+      const localExerciseIds = new Set(sectionsToSave.flatMap((s) => s.exercises.map((e) => e.id)));
 
-    for (const dbId of dbExerciseIds) {
-      if (!localExerciseIds.has(dbId)) deleteExercise(dbId);
-    }
-    for (const dbId of dbSectionIds) {
-      if (!localSectionIds.has(dbId)) deleteSection(dbId);
-    }
-
-    for (let sIdx = 0; sIdx < sectionsToSave.length; sIdx++) {
-      const section = sectionsToSave[sIdx];
-      upsertSection(section.id, id, section.name.trim() || 'Section', sIdx);
-      for (let eIdx = 0; eIdx < section.exercises.length; eIdx++) {
-        const ex = section.exercises[eIdx];
-        const libId = ex.libraryExerciseId ?? null;
-        upsertExercise(
-          ex.id, id, section.id, ex.name.trim() || 'Exercise', ex.duration, eIdx, ex.notes ?? null, libId,
-          serializeLoad(ex.loadModified), serializeLoad(ex.loadBase), serializeLoad(ex.loadAmplified), ex.variation ?? null, ex.side ?? null, ex.variationSets?.length ? ex.variationSets : null
-        );
-        setExerciseTags(ex.id, ex.tagValueIds);
+      for (const dbId of dbExerciseIds) {
+        if (!localExerciseIds.has(dbId)) deleteExercise(dbId);
       }
-    }
+      for (const dbId of dbSectionIds) {
+        if (!localSectionIds.has(dbId)) deleteSection(dbId);
+      }
 
-    emitSequenceChange();
-    setIsDirty(false);
-    router.back();
-  }, [id, name, sequenceTags, router]);
+      for (let sIdx = 0; sIdx < sectionsToSave.length; sIdx++) {
+        const section = sectionsToSave[sIdx];
+        upsertSection(section.id, id, section.name.trim() || 'Section', sIdx);
+        for (let eIdx = 0; eIdx < section.exercises.length; eIdx++) {
+          const ex = section.exercises[eIdx];
+          const libId = ex.libraryExerciseId ?? null;
+          upsertExercise(
+            ex.id,
+            id,
+            section.id,
+            ex.name.trim() || 'Exercise',
+            ex.duration,
+            eIdx,
+            ex.notes ?? null,
+            libId,
+            serializeLoad(ex.loadModified),
+            serializeLoad(ex.loadBase),
+            serializeLoad(ex.loadAmplified),
+            ex.variation ?? null,
+            ex.side ?? null,
+            ex.variationSets?.length ? ex.variationSets : null
+          );
+          setExerciseTags(ex.id, ex.tagValueIds);
+        }
+      }
+
+      emitSequenceChange();
+      setIsDirty(false);
+      router.back();
+    },
+    [id, name, sequenceTags, router]
+  );
 
   const save = useCallback(() => {
-    const unlinked = sections
-      .flatMap((s) => s.exercises)
-      .filter((e) => !e.libraryExerciseId && e.name.trim());
+    const unlinked = sections.flatMap((s) => s.exercises).filter((e) => !e.libraryExerciseId && e.name.trim());
 
     if (unlinked.length > 0) {
       const names = unlinked.map((e) => e.name.trim()).join(', ');
       Alert.alert(
         'Save to exercise library?',
-        `${names} ${unlinked.length === 1 ? 'isn\'t' : 'aren\'t'} in your library yet.`,
+        `${names} ${unlinked.length === 1 ? "isn't" : "aren't"} in your library yet.`,
         [
           {
             text: 'Not now',
@@ -336,7 +367,10 @@ export default function EditSequenceScreen() {
         <TextInput
           style={styles.nameInput}
           value={name}
-          onChangeText={(v) => { setIsDirty(true); setName(v); }}
+          onChangeText={(v) => {
+            setIsDirty(true);
+            setName(v);
+          }}
           placeholder="Sequence name"
           placeholderTextColor={colors.text.tertiary}
           returnKeyType="done"
@@ -390,12 +424,16 @@ export default function EditSequenceScreen() {
 
         <TouchableOpacity onPress={addSection} style={styles.addSectionRow} activeOpacity={0.7}>
           <Text style={styles.addIcon}>+</Text>
-          <Text variant="body" color="tertiary">Add section</Text>
+          <Text variant="body" color="tertiary">
+            Add section
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => setShowSectionImport(true)} style={styles.addSectionRow} activeOpacity={0.7}>
           <Text style={styles.addIcon}>↓</Text>
-          <Text variant="body" color="tertiary">Import section from another sequence</Text>
+          <Text variant="body" color="tertiary">
+            Import section from another sequence
+          </Text>
         </TouchableOpacity>
       </ScrollView>
 
@@ -406,7 +444,9 @@ export default function EditSequenceScreen() {
           activeOpacity={0.8}
           style={[styles.saveButton, { backgroundColor: colors.fill.primary }, !canSave && styles.saveButtonDisabled]}
         >
-          <Text variant="label" color="inverse">Save Changes</Text>
+          <Text variant="label" color="inverse">
+            Save Changes
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -414,9 +454,7 @@ export default function EditSequenceScreen() {
         <TagPicker
           selectedTagValueIds={activeExercise.tagValueIds}
           onConfirm={(ids) => {
-            const sectionId = sections.find((s) =>
-              s.exercises.some((e) => e.id === tagPickerExerciseId)
-            )?.id;
+            const sectionId = sections.find((s) => s.exercises.some((e) => e.id === tagPickerExerciseId))?.id;
             if (sectionId) {
               const all = getAllTagValuesWithCategory();
               const map = new Map(all.map((t) => [t.id, t]));
@@ -435,7 +473,10 @@ export default function EditSequenceScreen() {
       {showSectionImport && (
         <SectionImportSheet
           currentSequenceId={id}
-          onImport={(s) => { importSection(s); setShowSectionImport(false); }}
+          onImport={(s) => {
+            importSection(s);
+            setShowSectionImport(false);
+          }}
           onClose={() => setShowSectionImport(false)}
         />
       )}
@@ -447,10 +488,12 @@ export default function EditSequenceScreen() {
             const all = getAllTagValuesWithCategory();
             const map = new Map(all.map((t) => [t.id, t]));
             setIsDirty(true);
-            setSequenceTags(ids.flatMap((id) => {
-              const t = map.get(id);
-              return t ? [{ tagValueId: t.id, categoryName: t.categoryName, label: t.label }] : [];
-            }));
+            setSequenceTags(
+              ids.flatMap((id) => {
+                const t = map.get(id);
+                return t ? [{ tagValueId: t.id, categoryName: t.categoryName, label: t.label }] : [];
+              })
+            );
             setShowSequenceTagPicker(false);
           }}
           onClose={() => setShowSequenceTagPicker(false)}
@@ -503,7 +546,7 @@ export default function EditSequenceScreen() {
               parseLoad(libEx.load_base),
               parseLoad(libEx.load_amplified),
               !!libEx.is_bilateral,
-              libEx.tags,
+              libEx.tags
             );
             setExerciseSheetSectionId(null);
           }}

@@ -32,16 +32,9 @@ export function Text({ variant = 'body', color = 'primary', style, ...props }: P
     inverse: { color: colors.text.inverse },
   }[color];
 
-  const sizeStyle = variant === 'timer'
-    ? null
-    : { fontSize: Math.round(BASE_FONT_SIZES[variant] * scale) };
+  const sizeStyle = variant === 'timer' ? null : { fontSize: Math.round(BASE_FONT_SIZES[variant] * scale) };
 
-  return (
-    <RNText
-      style={[styles.base, styles[variant], colorStyle, sizeStyle, style]}
-      {...props}
-    />
-  );
+  return <RNText style={[styles.base, styles[variant], colorStyle, sizeStyle, style]} {...props} />;
 }
 
 const styles = StyleSheet.create({

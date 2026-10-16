@@ -15,14 +15,30 @@ interface HapticTimerState {
 
 export function fireHaptic(style: HapticStyle): void {
   switch (style) {
-    case 'light':   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); break;
-    case 'medium':  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); break;
-    case 'heavy':   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); break;
-    case 'rigid':   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid); break;
-    case 'soft':    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Soft); break;
-    case 'success': Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); break;
-    case 'warning': Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning); break;
-    case 'error':   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error); break;
+    case 'light':
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      break;
+    case 'medium':
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      break;
+    case 'heavy':
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      break;
+    case 'rigid':
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid);
+      break;
+    case 'soft':
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Soft);
+      break;
+    case 'success':
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      break;
+    case 'warning':
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      break;
+    case 'error':
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      break;
   }
 }
 
@@ -67,9 +83,21 @@ export function useHapticFeedback(state: HapticTimerState, settings: HapticSetti
     }
     armedCountdownsRef.current = new Set([
       ...settings.countdownWarnings.filter((w) => duration > w.seconds).map((w) => `countdown_${w.seconds}`),
-      ...(settings.onLoadChange.enabled && settings.onLoadChange.timing === 'countdown' && duration > settings.onLoadChange.secondsBefore ? ['loadChange'] : []),
-      ...(settings.onSideChange.enabled && settings.onSideChange.timing === 'countdown' && duration > settings.onSideChange.secondsBefore ? ['sideChange'] : []),
-      ...(settings.onVariationChange.enabled && settings.onVariationChange.timing === 'countdown' && duration > settings.onVariationChange.secondsBefore ? ['variationChange'] : []),
+      ...(settings.onLoadChange.enabled &&
+      settings.onLoadChange.timing === 'countdown' &&
+      duration > settings.onLoadChange.secondsBefore
+        ? ['loadChange']
+        : []),
+      ...(settings.onSideChange.enabled &&
+      settings.onSideChange.timing === 'countdown' &&
+      duration > settings.onSideChange.secondsBefore
+        ? ['sideChange']
+        : []),
+      ...(settings.onVariationChange.enabled &&
+      settings.onVariationChange.timing === 'countdown' &&
+      duration > settings.onVariationChange.secondsBefore
+        ? ['variationChange']
+        : []),
       ...variationMarkKeys,
     ]);
 
@@ -124,7 +152,8 @@ export function useHapticFeedback(state: HapticTimerState, settings: HapticSetti
       settings.onLoadChange.enabled &&
       settings.onLoadChange.timing === 'countdown' &&
       timeRemaining <= settings.onLoadChange.secondsBefore &&
-      armed.has('loadChange') && !fired.has('loadChange') &&
+      armed.has('loadChange') &&
+      !fired.has('loadChange') &&
       hasLoadChanged(currentExercise, nextExercise)
     ) {
       fired.add('loadChange');
@@ -135,7 +164,8 @@ export function useHapticFeedback(state: HapticTimerState, settings: HapticSetti
       settings.onSideChange.enabled &&
       settings.onSideChange.timing === 'countdown' &&
       timeRemaining <= settings.onSideChange.secondsBefore &&
-      armed.has('sideChange') && !fired.has('sideChange') &&
+      armed.has('sideChange') &&
+      !fired.has('sideChange') &&
       hasSideChanged(currentExercise, nextExercise)
     ) {
       fired.add('sideChange');
@@ -146,7 +176,8 @@ export function useHapticFeedback(state: HapticTimerState, settings: HapticSetti
       settings.onVariationChange.enabled &&
       settings.onVariationChange.timing === 'countdown' &&
       timeRemaining <= settings.onVariationChange.secondsBefore &&
-      armed.has('variationChange') && !fired.has('variationChange') &&
+      armed.has('variationChange') &&
+      !fired.has('variationChange') &&
       hasVariationChanged(currentExercise, nextExercise)
     ) {
       fired.add('variationChange');

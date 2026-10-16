@@ -21,7 +21,9 @@ export default function ImportScreen() {
   if (!payload) {
     return (
       <View style={styles.centered}>
-        <Text variant="heading" style={styles.errorTitle}>Invalid Link</Text>
+        <Text variant="heading" style={styles.errorTitle}>
+          Invalid Link
+        </Text>
         <Text variant="body" color="tertiary" style={styles.errorBody}>
           This link doesn&apos;t contain a valid sequence.
         </Text>
@@ -31,10 +33,7 @@ export default function ImportScreen() {
   }
 
   const totalExercises = payload.sections.reduce((sum, s) => sum + s.exercises.length, 0);
-  const totalDuration = payload.sections.reduce(
-    (sum, s) => sum + s.exercises.reduce((es, e) => es + e.duration, 0),
-    0
-  );
+  const totalDuration = payload.sections.reduce((sum, s) => sum + s.exercises.reduce((es, e) => es + e.duration, 0), 0);
 
   const handleImport = () => {
     setImporting(true);
@@ -51,13 +50,20 @@ export default function ImportScreen() {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.header}>
-          <Text variant="title" style={styles.sequenceName}>{payload.name}</Text>
+          <Text variant="title" style={styles.sequenceName}>
+            {payload.name}
+          </Text>
           <View style={styles.meta}>
             <Text variant="caption" color="secondary">
               {totalExercises} exercise{totalExercises !== 1 ? 's' : ''}
             </Text>
-            <Text variant="caption" color="tertiary"> · </Text>
-            <Text variant="caption" color="secondary">{formatSeconds(totalDuration)}</Text>
+            <Text variant="caption" color="tertiary">
+              {' '}
+              ·{' '}
+            </Text>
+            <Text variant="caption" color="secondary">
+              {formatSeconds(totalDuration)}
+            </Text>
           </View>
         </View>
 
@@ -73,9 +79,8 @@ export default function ImportScreen() {
               </View>
             )}
             {section.exercises.map((ex, eIdx) => {
-              const globalIndex = payload.sections
-                .slice(0, sIdx)
-                .reduce((sum, s) => sum + s.exercises.length, 0) + eIdx;
+              const globalIndex =
+                payload.sections.slice(0, sIdx).reduce((sum, s) => sum + s.exercises.length, 0) + eIdx;
               const isLastInSection = eIdx === section.exercises.length - 1;
               const isLastSection = sIdx === payload.sections.length - 1;
               return (
@@ -102,12 +107,7 @@ export default function ImportScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <Button
-          label="Cancel"
-          variant="secondary"
-          onPress={() => router.back()}
-          style={styles.cancelButton}
-        />
+        <Button label="Cancel" variant="secondary" onPress={() => router.back()} style={styles.cancelButton} />
         <Button
           label="Add to My Sequences"
           variant="primary"

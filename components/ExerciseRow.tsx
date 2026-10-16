@@ -144,7 +144,16 @@ function makeStyles(c: typeof Colors, scale: number, textScale: number) {
   });
 }
 
-export function ExerciseRow({ exercise, onNameChange, onDurationChange, onDelete, onEditTags, onEditLoad, onEditVariation, onSideChange }: Props) {
+export function ExerciseRow({
+  exercise,
+  onNameChange,
+  onDurationChange,
+  onDelete,
+  onEditTags,
+  onEditLoad,
+  onEditVariation,
+  onSideChange,
+}: Props) {
   const { colors } = useTheme();
   const actionButtonSize = useActionButtonSize();
   const textSize = useTextSize();
@@ -176,7 +185,9 @@ export function ExerciseRow({ exercise, onNameChange, onDurationChange, onDelete
     <View style={styles.outer}>
       <View style={styles.mainRow}>
         <View style={styles.handle}>
-          <Text color="tertiary" style={styles.handleIcon}>≡</Text>
+          <Text color="tertiary" style={styles.handleIcon}>
+            ≡
+          </Text>
         </View>
 
         <TextInput
@@ -198,7 +209,11 @@ export function ExerciseRow({ exercise, onNameChange, onDurationChange, onDelete
 
         {onEditVariation && (
           <TouchableOpacity onPress={onEditVariation} hitSlop={8} style={styles.tagButton}>
-            <Text style={[styles.tagIcon, !!(exercise.variationSets?.length || exercise.variation) && styles.tagIconActive]}>◈</Text>
+            <Text
+              style={[styles.tagIcon, !!(exercise.variationSets?.length || exercise.variation) && styles.tagIconActive]}
+            >
+              ◈
+            </Text>
           </TouchableOpacity>
         )}
 
@@ -228,16 +243,16 @@ export function ExerciseRow({ exercise, onNameChange, onDurationChange, onDelete
         </TouchableOpacity>
 
         <TouchableOpacity onPress={onDelete} hitSlop={8} style={styles.deleteButton}>
-          <Text color="tertiary" style={styles.deleteIcon}>✕</Text>
+          <Text color="tertiary" style={styles.deleteIcon}>
+            ✕
+          </Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.tagsRow}>
         {exercise.tags.length > 0 && <TagChips tags={exercise.tags} />}
         <TouchableOpacity onPress={onEditTags} hitSlop={8}>
-          <Text style={styles.addTagsLabel}>
-            {exercise.tags.length > 0 ? 'Edit tags' : '+ Add tags'}
-          </Text>
+          <Text style={styles.addTagsLabel}>{exercise.tags.length > 0 ? 'Edit tags' : '+ Add tags'}</Text>
         </TouchableOpacity>
       </View>
     </View>

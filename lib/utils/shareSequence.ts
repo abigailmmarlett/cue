@@ -6,27 +6,24 @@ import { generateId } from './id';
 import db from '../db/client';
 
 function findOrCreateTagValue(categoryName: string, label: string): string {
-  let category = db.getFirstSync<{ id: string }>(
-    `SELECT id FROM tag_categories WHERE name = ?;`, [categoryName]
-  );
+  let category = db.getFirstSync<{ id: string }>(`SELECT id FROM tag_categories WHERE name = ?;`, [categoryName]);
   if (!category) {
     const id = generateId();
-    db.runSync(
-      `INSERT INTO tag_categories (id, name, created_at) VALUES (?, ?, ?);`,
-      [id, categoryName, Date.now()]
-    );
+    db.runSync(`INSERT INTO tag_categories (id, name, created_at) VALUES (?, ?, ?);`, [id, categoryName, Date.now()]);
     category = { id };
   }
-  let tagValue = db.getFirstSync<{ id: string }>(
-    `SELECT id FROM tag_values WHERE category_id = ? AND label = ?;`,
-    [category.id, label]
-  );
+  let tagValue = db.getFirstSync<{ id: string }>(`SELECT id FROM tag_values WHERE category_id = ? AND label = ?;`, [
+    category.id,
+    label,
+  ]);
   if (!tagValue) {
     const id = generateId();
-    db.runSync(
-      `INSERT INTO tag_values (id, category_id, label, created_at) VALUES (?, ?, ?, ?);`,
-      [id, category.id, label, Date.now()]
-    );
+    db.runSync(`INSERT INTO tag_values (id, category_id, label, created_at) VALUES (?, ?, ?, ?);`, [
+      id,
+      category.id,
+      label,
+      Date.now(),
+    ]);
     tagValue = { id };
   }
   return tagValue.id;
@@ -111,7 +108,9 @@ export function decodeShareData(data: string | undefined): SharePayload | null {
     if (parsed?.v === 1 && typeof parsed.name === 'string' && Array.isArray(parsed.sections)) {
       return parsed as SharePayload;
     }
-  } catch { /* fall through */ }
+  } catch {
+    /* fall through */
+  }
 
   // Fallback: try decoding first in case the param arrived still-encoded
   try {
@@ -119,7 +118,9 @@ export function decodeShareData(data: string | undefined): SharePayload | null {
     if (parsed?.v === 1 && typeof parsed.name === 'string' && Array.isArray(parsed.sections)) {
       return parsed as SharePayload;
     }
-  } catch { /* fall through */ }
+  } catch {
+    /* fall through */
+  }
 
   return null;
 }
@@ -156,10 +157,10 @@ export function importSharedSequence(payload: SharePayload): string {
       if (ex.tags && ex.tags.length > 0) {
         for (const tag of ex.tags) {
           const tagValueId = findOrCreateTagValue(tag.c, tag.l);
-          db.runSync(
-            `INSERT OR IGNORE INTO exercise_tags (exercise_id, tag_value_id) VALUES (?, ?);`,
-            [exId, tagValueId]
-          );
+          db.runSync(`INSERT OR IGNORE INTO exercise_tags (exercise_id, tag_value_id) VALUES (?, ?);`, [
+            exId,
+            tagValueId,
+          ]);
         }
       }
     }

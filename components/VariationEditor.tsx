@@ -162,10 +162,17 @@ export function VariationEditor({ visible, variationSets, exerciseDuration, onSa
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.headerBtn}>
-            <Text variant="label" color="secondary">Cancel</Text>
+            <Text variant="label" color="secondary">
+              Cancel
+            </Text>
           </TouchableOpacity>
-          <Text variant="label" style={styles.headerTitle}>Variations</Text>
-          <TouchableOpacity onPress={() => onSave(items.filter((it) => it.instruction.trim()).map(({ _key: _, ...rest }) => rest))} style={styles.headerBtn}>
+          <Text variant="label" style={styles.headerTitle}>
+            Variations
+          </Text>
+          <TouchableOpacity
+            onPress={() => onSave(items.filter((it) => it.instruction.trim()).map(({ _key: _, ...rest }) => rest))}
+            style={styles.headerBtn}
+          >
             <Text variant="label">Done</Text>
           </TouchableOpacity>
         </View>

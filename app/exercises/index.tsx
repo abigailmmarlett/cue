@@ -29,7 +29,9 @@ export default function ExerciseLibraryScreen() {
     setExercises(getAllLibraryExercises());
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const handleAdd = () => {
     const name = newNameText.trim();
@@ -49,22 +51,24 @@ export default function ExerciseLibraryScreen() {
 
   const handleDelete = (ex: LibraryExerciseWithTags) => {
     const count = getLinkedCount(ex.id);
-    const detail = count > 0
-      ? `This will unlink "${ex.name}" from ${count} sequence${count === 1 ? '' : 's'}. Their names and current tags will be preserved.`
-      : `"${ex.name}" is not used in any sequences.`;
+    const detail =
+      count > 0
+        ? `This will unlink "${ex.name}" from ${count} sequence${count === 1 ? '' : 's'}. Their names and current tags will be preserved.`
+        : `"${ex.name}" is not used in any sequences.`;
     Alert.alert(`Delete "${ex.name}"?`, detail, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
         style: 'destructive',
-        onPress: () => { deleteLibraryExercise(ex.id); load(); },
+        onPress: () => {
+          deleteLibraryExercise(ex.id);
+          load();
+        },
       },
     ]);
   };
 
-  const tagPickerExercise = tagPickerExerciseId
-    ? exercises.find((e) => e.id === tagPickerExerciseId) ?? null
-    : null;
+  const tagPickerExercise = tagPickerExerciseId ? (exercises.find((e) => e.id === tagPickerExerciseId) ?? null) : null;
 
   return (
     <ScrollView style={styles.container} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
@@ -85,14 +89,21 @@ export default function ExerciseLibraryScreen() {
                 <Text variant="label">Done</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => setEditingId(null)} style={styles.actionBtn}>
-                <Text variant="label" color="tertiary">Cancel</Text>
+                <Text variant="label" color="tertiary">
+                  Cancel
+                </Text>
               </TouchableOpacity>
             </View>
           ) : (
             <View style={styles.nameRow}>
-              <Text variant="body" style={styles.exerciseName}>{ex.name}</Text>
+              <Text variant="body" style={styles.exerciseName}>
+                {ex.name}
+              </Text>
               <TouchableOpacity
-                onPress={() => { setEditingId(ex.id); setEditNameText(ex.name); }}
+                onPress={() => {
+                  setEditingId(ex.id);
+                  setEditNameText(ex.name);
+                }}
                 hitSlop={8}
                 style={styles.actionBtn}
               >
@@ -106,11 +117,7 @@ export default function ExerciseLibraryScreen() {
 
           <View style={styles.tagsRow}>
             {ex.tags.length > 0 && <TagChips tags={ex.tags} style={styles.tagChips} />}
-            <TouchableOpacity
-              onPress={() => setTagPickerExerciseId(ex.id)}
-              hitSlop={8}
-              style={styles.editTagsBtn}
-            >
+            <TouchableOpacity onPress={() => setTagPickerExerciseId(ex.id)} hitSlop={8} style={styles.editTagsBtn}>
               <Text variant="caption" color="tertiary">
                 {ex.tags.length > 0 ? 'Edit tags' : '+ Add tags'}
               </Text>
@@ -137,16 +144,23 @@ export default function ExerciseLibraryScreen() {
               <Text variant="label">Add</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => { setAddingNew(false); setNewNameText(''); }}
+              onPress={() => {
+                setAddingNew(false);
+                setNewNameText('');
+              }}
               style={styles.actionBtn}
             >
-              <Text variant="label" color="tertiary">Cancel</Text>
+              <Text variant="label" color="tertiary">
+                Cancel
+              </Text>
             </TouchableOpacity>
           </View>
         ) : (
           <TouchableOpacity style={styles.addRow} onPress={() => setAddingNew(true)} activeOpacity={0.7}>
             <Text style={styles.addIcon}>+</Text>
-            <Text variant="body" color="secondary">New exercise</Text>
+            <Text variant="body" color="secondary">
+              New exercise
+            </Text>
           </TouchableOpacity>
         )}
       </View>

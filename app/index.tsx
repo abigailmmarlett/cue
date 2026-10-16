@@ -74,7 +74,11 @@ export default function SequencesScreen() {
     };
   }, [registerTarget, unregisterTarget]);
 
-  useFocusEffect(useCallback(() => { refresh(); }, [refresh]));
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [refresh])
+  );
 
   const allTagPills = useMemo(() => {
     const seen = new Map<string, ExerciseTag>();
@@ -87,9 +91,7 @@ export default function SequencesScreen() {
   const filteredSequences = useMemo(() => {
     let result = sequences;
     if (activeFilterTags.length > 0) {
-      result = result.filter((s) =>
-        activeFilterTags.every((f) => s.tags.some((t) => t.tagValueId === f.tagValueId))
-      );
+      result = result.filter((s) => activeFilterTags.every((f) => s.tags.some((t) => t.tagValueId === f.tagValueId)));
     }
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -145,7 +147,9 @@ export default function SequencesScreen() {
                 onPress={() => router.push('/builder')}
                 activeOpacity={0.8}
               >
-                <Text variant="label" color="inverse">New Sequence</Text>
+                <Text variant="label" color="inverse">
+                  New Sequence
+                </Text>
               </TouchableOpacity>
             )}
           </View>
@@ -162,9 +166,18 @@ export default function SequencesScreen() {
                   sequence={item}
                   onPress={() => router.push(`/sequence/${item.id}`)}
                   onPlay={() => router.push(`/sequence/${item.id}/timer`)}
-                  onDuplicate={() => { duplicateSequence(item.id); refresh(); }}
-                  onDelete={() => { deleteSequence(item.id); refresh(); }}
-                  onFavorite={() => { updateSequenceFavorite(item.id, !item.is_favorited); refresh(); }}
+                  onDuplicate={() => {
+                    duplicateSequence(item.id);
+                    refresh();
+                  }}
+                  onDelete={() => {
+                    deleteSequence(item.id);
+                    refresh();
+                  }}
+                  onFavorite={() => {
+                    updateSequenceFavorite(item.id, !item.is_favorited);
+                    refresh();
+                  }}
                   onShare={() => {
                     const payload = serializeSequence(item.id);
                     const url = buildShareUrl(payload);

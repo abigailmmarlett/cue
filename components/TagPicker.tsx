@@ -1,12 +1,4 @@
-import {
-  View,
-  Modal,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  StyleSheet,
-  SafeAreaView,
-} from 'react-native';
+import { View, Modal, ScrollView, TouchableOpacity, TextInput, StyleSheet, SafeAreaView } from 'react-native';
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'expo-router';
 import { Text } from './ui/Text';
@@ -183,21 +175,13 @@ export function TagPicker({ selectedTagValueIds, onConfirm, onClose }: Props) {
     createTagValue(categoryId, trimmed);
     setCategories((prev) =>
       prev.map((c) =>
-        c.id === categoryId
-          ? { ...c, values: getTagValuesByCategory(c.id), addingValue: false, newValueText: '' }
-          : c
+        c.id === categoryId ? { ...c, values: getTagValuesByCategory(c.id), addingValue: false, newValueText: '' } : c
       )
     );
   };
 
-  const setCategoryField = (
-    categoryId: string,
-    field: 'addingValue' | 'newValueText',
-    value: boolean | string
-  ) => {
-    setCategories((prev) =>
-      prev.map((c) => (c.id === categoryId ? { ...c, [field]: value } : c))
-    );
+  const setCategoryField = (categoryId: string, field: 'addingValue' | 'newValueText', value: boolean | string) => {
+    setCategories((prev) => prev.map((c) => (c.id === categoryId ? { ...c, [field]: value } : c)));
   };
 
   return (
@@ -205,9 +189,13 @@ export function TagPicker({ selectedTagValueIds, onConfirm, onClose }: Props) {
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.headerBtn}>
-            <Text variant="label" color="secondary">Cancel</Text>
+            <Text variant="label" color="secondary">
+              Cancel
+            </Text>
           </TouchableOpacity>
-          <Text variant="label" style={styles.headerTitle}>Tags</Text>
+          <Text variant="label" style={styles.headerTitle}>
+            Tags
+          </Text>
           <TouchableOpacity onPress={() => onConfirm(Array.from(selected))} style={styles.headerBtn}>
             <Text variant="label">Done</Text>
           </TouchableOpacity>
@@ -216,8 +204,12 @@ export function TagPicker({ selectedTagValueIds, onConfirm, onClose }: Props) {
         <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled">
           {categories.length === 0 && !addingCategory && (
             <View style={styles.empty}>
-              <Text variant="body" color="tertiary">No tag categories yet.</Text>
-              <Text variant="caption" color="tertiary">Add one below to get started.</Text>
+              <Text variant="body" color="tertiary">
+                No tag categories yet.
+              </Text>
+              <Text variant="caption" color="tertiary">
+                Add one below to get started.
+              </Text>
             </View>
           )}
 
@@ -236,7 +228,12 @@ export function TagPicker({ selectedTagValueIds, onConfirm, onClose }: Props) {
                     onPress={() => toggleValue(val.id)}
                     activeOpacity={0.7}
                   >
-                    <View style={[styles.checkbox, isSelected && { backgroundColor: colors.fill.primary, borderColor: colors.fill.primary }]}>
+                    <View
+                      style={[
+                        styles.checkbox,
+                        isSelected && { backgroundColor: colors.fill.primary, borderColor: colors.fill.primary },
+                      ]}
+                    >
                       {isSelected && <Text style={styles.checkmark}>✓</Text>}
                     </View>
                     <Text variant="body">{val.label}</Text>
@@ -266,7 +263,9 @@ export function TagPicker({ selectedTagValueIds, onConfirm, onClose }: Props) {
                     onPress={() => setCategoryField(cat.id, 'addingValue', false)}
                     style={styles.inlineCancelBtn}
                   >
-                    <Text variant="label" color="tertiary">Cancel</Text>
+                    <Text variant="label" color="tertiary">
+                      Cancel
+                    </Text>
                   </TouchableOpacity>
                 </View>
               ) : (
@@ -276,7 +275,9 @@ export function TagPicker({ selectedTagValueIds, onConfirm, onClose }: Props) {
                   activeOpacity={0.7}
                 >
                   <Text style={styles.addIcon}>+</Text>
-                  <Text variant="body" color="tertiary">Add value</Text>
+                  <Text variant="body" color="tertiary">
+                    Add value
+                  </Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -299,10 +300,15 @@ export function TagPicker({ selectedTagValueIds, onConfirm, onClose }: Props) {
                   <Text variant="label">Add</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  onPress={() => { setAddingCategory(false); setNewCategoryText(''); }}
+                  onPress={() => {
+                    setAddingCategory(false);
+                    setNewCategoryText('');
+                  }}
                   style={styles.inlineCancelBtn}
                 >
-                  <Text variant="label" color="tertiary">Cancel</Text>
+                  <Text variant="label" color="tertiary">
+                    Cancel
+                  </Text>
                 </TouchableOpacity>
               </View>
             ) : (
@@ -312,7 +318,9 @@ export function TagPicker({ selectedTagValueIds, onConfirm, onClose }: Props) {
                 activeOpacity={0.7}
               >
                 <Text style={styles.addIcon}>+</Text>
-                <Text variant="body" color="secondary">New category</Text>
+                <Text variant="body" color="secondary">
+                  New category
+                </Text>
               </TouchableOpacity>
             )}
           </View>
@@ -320,10 +328,15 @@ export function TagPicker({ selectedTagValueIds, onConfirm, onClose }: Props) {
           <View style={styles.addCategorySection}>
             <TouchableOpacity
               style={styles.addCategoryRow}
-              onPress={() => { onClose(); router.push('/tags'); }}
+              onPress={() => {
+                onClose();
+                router.push('/tags');
+              }}
               activeOpacity={0.7}
             >
-              <Text variant="body" color="tertiary">Manage tags ›</Text>
+              <Text variant="body" color="tertiary">
+                Manage tags ›
+              </Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

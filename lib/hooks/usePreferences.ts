@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getPreference, setPreference } from '@/lib/db/preferences';
 
-export type HapticStyle =
-  | 'light' | 'medium' | 'heavy' | 'rigid' | 'soft'
-  | 'success' | 'warning' | 'error';
+export type HapticStyle = 'light' | 'medium' | 'heavy' | 'rigid' | 'soft' | 'success' | 'warning' | 'error';
 
 export interface BasicEvent {
   enabled: boolean;
@@ -102,7 +100,9 @@ export function useActionButtonSize(): ActionButtonSize {
   const [size, setSize] = useState<ActionButtonSize>(_getActionButtonSize);
   useEffect(() => {
     _absListeners.add(setSize);
-    return () => { _absListeners.delete(setSize); };
+    return () => {
+      _absListeners.delete(setSize);
+    };
   }, []);
   return size;
 }
@@ -123,7 +123,9 @@ export function useTextSize(): TextSize {
   const [size, setSize] = useState<TextSize>(_getTextSize);
   useEffect(() => {
     _tsListeners.add(setSize);
-    return () => { _tsListeners.delete(setSize); };
+    return () => {
+      _tsListeners.delete(setSize);
+    };
   }, []);
   return size;
 }
@@ -136,9 +138,7 @@ export function usePreferences() {
 
   const [hapticSettings, setHapticSettingsState] = useState<HapticSettings>(loadHapticSettings);
 
-  const [actionButtonSize, setActionButtonSizeState] = useState<ActionButtonSize>(
-    _getActionButtonSize
-  );
+  const [actionButtonSize, setActionButtonSizeState] = useState<ActionButtonSize>(_getActionButtonSize);
 
   const [textSize, setTextSizeState] = useState<TextSize>(_getTextSize);
 

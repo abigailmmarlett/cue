@@ -47,11 +47,7 @@ export interface TimerControls {
   end: () => void;
 }
 
-function computeSectionTimeRemaining(
-  exercises: TimerExercise[],
-  exerciseIndex: number,
-  timeRemaining: number
-): number {
+function computeSectionTimeRemaining(exercises: TimerExercise[], exerciseIndex: number, timeRemaining: number): number {
   const sectionId = exercises[exerciseIndex]?.sectionId ?? '';
   let total = timeRemaining;
   for (let i = exerciseIndex + 1; i < exercises.length; i++) {
@@ -79,19 +75,24 @@ export function useTimer(
   const timeRemainingRef = useRef<number>(exercises[0]?.duration ?? 0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => { statusRef.current = status; }, [status]);
-  useEffect(() => { timeRemainingRef.current = timeRemaining; }, [timeRemaining]);
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
+  useEffect(() => {
+    timeRemainingRef.current = timeRemaining;
+  }, [timeRemaining]);
 
-  const currentSectionIndex = sections.findIndex(
-    (s) => s.id === (exercises[exerciseIndex]?.sectionId ?? '')
-  );
+  const currentSectionIndex = sections.findIndex((s) => s.id === (exercises[exerciseIndex]?.sectionId ?? ''));
   const currentSection = sections[currentSectionIndex] ?? null;
 
-  const setTime = useCallback((exIdx: number, remaining: number) => {
-    timeRemainingRef.current = remaining;
-    setTimeRemaining(remaining);
-    setSectionTimeRemaining(computeSectionTimeRemaining(exercises, exIdx, remaining));
-  }, [exercises]);
+  const setTime = useCallback(
+    (exIdx: number, remaining: number) => {
+      timeRemainingRef.current = remaining;
+      setTimeRemaining(remaining);
+      setSectionTimeRemaining(computeSectionTimeRemaining(exercises, exIdx, remaining));
+    },
+    [exercises]
+  );
 
   const clearTimer = useCallback(() => {
     if (intervalRef.current !== null) {

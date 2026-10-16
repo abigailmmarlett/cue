@@ -35,7 +35,15 @@ interface Props {
   children?: React.ReactNode;
 }
 
-export function TripleRing({ exerciseProgress, sectionProgress, totalProgress, exerciseMarks, markColor, variationMarks, children }: Props) {
+export function TripleRing({
+  exerciseProgress,
+  sectionProgress,
+  totalProgress,
+  exerciseMarks,
+  markColor,
+  variationMarks,
+  children,
+}: Props) {
   const { colors } = useTheme();
   const innerVal = useSharedValue(exerciseProgress);
   const midVal = useSharedValue(sectionProgress);
@@ -69,23 +77,18 @@ export function TripleRing({ exerciseProgress, sectionProgress, totalProgress, e
     <View style={styles.container}>
       <Svg width={SIZE} height={SIZE} style={StyleSheet.absoluteFill}>
         {/* Track rings */}
-        <Circle
-          cx={CENTER} cy={CENTER} r={R_INNER}
-          stroke={colors.border} strokeWidth={STROKE} fill="none"
-        />
-        <Circle
-          cx={CENTER} cy={CENTER} r={R_MID}
-          stroke={colors.border} strokeWidth={STROKE} fill="none"
-        />
-        <Circle
-          cx={CENTER} cy={CENTER} r={R_OUTER}
-          stroke={colors.border} strokeWidth={STROKE} fill="none"
-        />
+        <Circle cx={CENTER} cy={CENTER} r={R_INNER} stroke={colors.border} strokeWidth={STROKE} fill="none" />
+        <Circle cx={CENTER} cy={CENTER} r={R_MID} stroke={colors.border} strokeWidth={STROKE} fill="none" />
+        <Circle cx={CENTER} cy={CENTER} r={R_OUTER} stroke={colors.border} strokeWidth={STROKE} fill="none" />
 
         {/* Progress rings — rotate -90° so they start at the top */}
         <AnimatedCircle
-          cx={CENTER} cy={CENTER} r={R_INNER}
-          stroke={colors.accent} strokeWidth={STROKE} fill="none"
+          cx={CENTER}
+          cy={CENTER}
+          r={R_INNER}
+          stroke={colors.accent}
+          strokeWidth={STROKE}
+          fill="none"
           strokeDasharray={C_INNER}
           strokeLinecap="round"
           rotation="-90"
@@ -93,8 +96,12 @@ export function TripleRing({ exerciseProgress, sectionProgress, totalProgress, e
           animatedProps={innerProps}
         />
         <AnimatedCircle
-          cx={CENTER} cy={CENTER} r={R_MID}
-          stroke={colors.accentDeep} strokeWidth={STROKE} fill="none"
+          cx={CENTER}
+          cy={CENTER}
+          r={R_MID}
+          stroke={colors.accentDeep}
+          strokeWidth={STROKE}
+          fill="none"
           strokeDasharray={C_MID}
           strokeLinecap="round"
           rotation="-90"
@@ -102,8 +109,12 @@ export function TripleRing({ exerciseProgress, sectionProgress, totalProgress, e
           animatedProps={midProps}
         />
         <AnimatedCircle
-          cx={CENTER} cy={CENTER} r={R_OUTER}
-          stroke={colors.accentDim} strokeWidth={STROKE} fill="none"
+          cx={CENTER}
+          cy={CENTER}
+          r={R_OUTER}
+          stroke={colors.accentDim}
+          strokeWidth={STROKE}
+          fill="none"
           strokeDasharray={C_OUTER}
           strokeLinecap="round"
           rotation="-90"
@@ -127,9 +138,7 @@ export function TripleRing({ exerciseProgress, sectionProgress, totalProgress, e
       </Svg>
 
       {/* Centered content — constrained to the inner ring's usable area */}
-      <View style={[styles.center, { width: (R_INNER - STROKE / 2 - 6) * 2 }]}>
-        {children}
-      </View>
+      <View style={[styles.center, { width: (R_INNER - STROKE / 2 - 6) * 2 }]}>{children}</View>
     </View>
   );
 }

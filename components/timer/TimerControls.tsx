@@ -76,24 +76,10 @@ export function TimerControls({ status, controls, onMark }: Props) {
   return (
     <View style={styles.container}>
       <View style={styles.primaryRow}>
-        <ControlButton
-          icon="←"
-          label="Back"
-          onPress={controls.goBack}
-          disabled={isIdle}
-          size="md"
-          styles={styles}
-        />
+        <ControlButton icon="←" label="Back" onPress={controls.goBack} disabled={isIdle} size="md" styles={styles} />
 
         {onMark && (
-          <ControlButton
-            icon="●"
-            label="Mark"
-            onPress={onMark}
-            disabled={!isRunning}
-            size="md"
-            styles={styles}
-          />
+          <ControlButton icon="●" label="Mark" onPress={onMark} disabled={!isRunning} size="md" styles={styles} />
         )}
 
         <ControlButton
@@ -106,14 +92,7 @@ export function TimerControls({ status, controls, onMark }: Props) {
           styles={styles}
         />
 
-        <ControlButton
-          icon="→"
-          label="Skip"
-          onPress={controls.skip}
-          disabled={isIdle}
-          size="md"
-          styles={styles}
-        />
+        <ControlButton icon="→" label="Skip" onPress={controls.skip} disabled={isIdle} size="md" styles={styles} />
       </View>
 
       <View style={styles.secondaryRow}>

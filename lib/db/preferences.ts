@@ -1,10 +1,7 @@
 import db from './client';
 
 export function getPreference(key: string): string | null {
-  const row = db.getFirstSync<{ value: string }>(
-    'SELECT value FROM preferences WHERE key = ?',
-    [key]
-  );
+  const row = db.getFirstSync<{ value: string }>('SELECT value FROM preferences WHERE key = ?', [key]);
   return row?.value ?? null;
 }
 

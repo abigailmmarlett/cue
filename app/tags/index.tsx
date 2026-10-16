@@ -48,13 +48,15 @@ export default function TagsScreen() {
     );
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const setCatField = (
     id: string,
     fields: Partial<Pick<CategoryWithValues, 'editingName' | 'editNameText' | 'addingValue' | 'newValueText'>>
   ) => {
-    setCategories((prev) => prev.map((c) => c.id === id ? { ...c, ...fields } : c));
+    setCategories((prev) => prev.map((c) => (c.id === id ? { ...c, ...fields } : c)));
   };
 
   const handleAddCategory = () => {
@@ -74,14 +76,17 @@ export default function TagsScreen() {
   };
 
   const handleDeleteCategory = (cat: CategoryWithValues) => {
-    Alert.alert(
-      `Delete "${cat.name}"?`,
-      'This deletes all values and removes these tags from all exercises.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => { deleteTagCategory(cat.id); load(); } },
-      ]
-    );
+    Alert.alert(`Delete "${cat.name}"?`, 'This deletes all values and removes these tags from all exercises.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => {
+          deleteTagCategory(cat.id);
+          load();
+        },
+      },
+    ]);
   };
 
   const handleAddValue = (cat: CategoryWithValues) => {
@@ -93,14 +98,17 @@ export default function TagsScreen() {
   };
 
   const handleDeleteValue = (val: TagValue, categoryName: string) => {
-    Alert.alert(
-      `Delete "${val.label}"?`,
-      `Removes this value from all exercises in "${categoryName}".`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => { deleteTagValue(val.id); load(); } },
-      ]
-    );
+    Alert.alert(`Delete "${val.label}"?`, `Removes this value from all exercises in "${categoryName}".`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => {
+          deleteTagValue(val.id);
+          load();
+        },
+      },
+    ]);
   };
 
   const handleSaveValue = (valId: string) => {
@@ -134,16 +142,17 @@ export default function TagsScreen() {
               <TouchableOpacity onPress={() => handleRenameCategory(cat)} style={styles.actionBtn}>
                 <Text variant="label">Done</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setCatField(cat.id, { editingName: false })}
-                style={styles.actionBtn}
-              >
-                <Text variant="label" color="tertiary">Cancel</Text>
+              <TouchableOpacity onPress={() => setCatField(cat.id, { editingName: false })} style={styles.actionBtn}>
+                <Text variant="label" color="tertiary">
+                  Cancel
+                </Text>
               </TouchableOpacity>
             </View>
           ) : (
             <View style={styles.categoryHeader}>
-              <Text variant="label" style={styles.categoryName}>{cat.name}</Text>
+              <Text variant="label" style={styles.categoryName}>
+                {cat.name}
+              </Text>
               <TouchableOpacity
                 onPress={() => setCatField(cat.id, { editingName: true, editNameText: cat.name })}
                 hitSlop={8}
@@ -174,16 +183,17 @@ export default function TagsScreen() {
                   <TouchableOpacity onPress={() => handleSaveValue(val.id)} style={styles.actionBtn}>
                     <Text variant="label">Done</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => setEditingValueId(null)}
-                    style={styles.actionBtn}
-                  >
-                    <Text variant="label" color="tertiary">Cancel</Text>
+                  <TouchableOpacity onPress={() => setEditingValueId(null)} style={styles.actionBtn}>
+                    <Text variant="label" color="tertiary">
+                      Cancel
+                    </Text>
                   </TouchableOpacity>
                 </View>
               ) : (
                 <View style={styles.valueRow}>
-                  <Text variant="body" style={styles.valueLabel}>{val.label}</Text>
+                  <Text variant="body" style={styles.valueLabel}>
+                    {val.label}
+                  </Text>
                   <TouchableOpacity onPress={() => startEditValue(val)} hitSlop={8} style={styles.actionBtn}>
                     <Text style={styles.editIcon}>✎</Text>
                   </TouchableOpacity>
@@ -219,7 +229,9 @@ export default function TagsScreen() {
                 onPress={() => setCatField(cat.id, { addingValue: false, newValueText: '' })}
                 style={styles.actionBtn}
               >
-                <Text variant="label" color="tertiary">Cancel</Text>
+                <Text variant="label" color="tertiary">
+                  Cancel
+                </Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -229,7 +241,9 @@ export default function TagsScreen() {
               activeOpacity={0.7}
             >
               <Text style={styles.addIcon}>+</Text>
-              <Text variant="body" color="tertiary">Add value</Text>
+              <Text variant="body" color="tertiary">
+                Add value
+              </Text>
             </TouchableOpacity>
           )}
         </View>
@@ -253,16 +267,23 @@ export default function TagsScreen() {
               <Text variant="label">Add</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => { setAddingCategory(false); setNewCategoryText(''); }}
+              onPress={() => {
+                setAddingCategory(false);
+                setNewCategoryText('');
+              }}
               style={styles.actionBtn}
             >
-              <Text variant="label" color="tertiary">Cancel</Text>
+              <Text variant="label" color="tertiary">
+                Cancel
+              </Text>
             </TouchableOpacity>
           </View>
         ) : (
           <TouchableOpacity style={styles.addRow} onPress={() => setAddingCategory(true)} activeOpacity={0.7}>
             <Text style={styles.addIcon}>+</Text>
-            <Text variant="body" color="secondary">New category</Text>
+            <Text variant="body" color="secondary">
+              New category
+            </Text>
           </TouchableOpacity>
         )}
       </View>

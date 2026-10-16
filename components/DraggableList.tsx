@@ -73,15 +73,7 @@ interface ItemProps {
   children: React.ReactNode;
 }
 
-function DraggableItem({
-  index,
-  total,
-  activeIndex,
-  translateY,
-  onDragStart,
-  onReorder,
-  children,
-}: ItemProps) {
+function DraggableItem({ index, total, activeIndex, translateY, onDragStart, onReorder, children }: ItemProps) {
   const gesture = Gesture.Pan()
     .activateAfterLongPress(150)
     .onStart(() => {
@@ -127,9 +119,7 @@ function DraggableItem({
       };
     }
 
-    const hoverIdx = Math.round(
-      Math.max(0, Math.min(active + translateY.value / DRAG_ITEM_HEIGHT, total - 1))
-    );
+    const hoverIdx = Math.round(Math.max(0, Math.min(active + translateY.value / DRAG_ITEM_HEIGHT, total - 1)));
 
     let shift = 0;
     if (active < hoverIdx && index > active && index <= hoverIdx) {
@@ -147,9 +137,7 @@ function DraggableItem({
 
   return (
     <GestureDetector gesture={gesture}>
-      <Animated.View style={[{ height: DRAG_ITEM_HEIGHT }, animatedStyle]}>
-        {children}
-      </Animated.View>
+      <Animated.View style={[{ height: DRAG_ITEM_HEIGHT }, animatedStyle]}>{children}</Animated.View>
     </GestureDetector>
   );
 }

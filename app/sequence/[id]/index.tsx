@@ -104,9 +104,7 @@ export default function SequenceDetailScreen() {
                     </View>
                   )}
                   {section.exercises.map((ex, i) => {
-                    const globalIndex = sections
-                      .slice(0, sIdx)
-                      .reduce((sum, s) => sum + s.exercises.length, 0) + i;
+                    const globalIndex = sections.slice(0, sIdx).reduce((sum, s) => sum + s.exercises.length, 0) + i;
                     const isLastInSection = i === section.exercises.length - 1;
                     const isLastSection = sIdx === sections.length - 1;
                     return (
@@ -118,7 +116,9 @@ export default function SequenceDetailScreen() {
                             </Text>
                           </View>
                           <View style={styles.exerciseInfo}>
-                            <Text variant="body" numberOfLines={1}>{ex.name}</Text>
+                            <Text variant="body" numberOfLines={1}>
+                              {ex.name}
+                            </Text>
                             {ex.notes ? (
                               <Text variant="caption" color="tertiary" numberOfLines={1}>
                                 {ex.notes}

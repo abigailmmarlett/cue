@@ -66,18 +66,9 @@ function AppShellInner() {
           name="builder/[id]"
           options={{ title: 'Edit Sequence', presentation: 'modal', headerBackButtonMenuEnabled: false }}
         />
-        <Stack.Screen
-          name="sequence/[id]/index"
-          options={{ title: '' }}
-        />
-        <Stack.Screen
-          name="sequence/[id]/timer"
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="tags/index"
-          options={{ title: 'Tags' }}
-        />
+        <Stack.Screen name="sequence/[id]/index" options={{ title: '' }} />
+        <Stack.Screen name="sequence/[id]/timer" options={{ headerShown: false }} />
+        <Stack.Screen name="tags/index" options={{ title: 'Tags' }} />
         <Stack.Screen
           name="import"
           options={{ title: 'Shared Sequence', presentation: 'modal', headerBackButtonMenuEnabled: false }}

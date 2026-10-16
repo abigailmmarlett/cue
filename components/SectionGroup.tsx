@@ -73,7 +73,16 @@ function makeStyles(c: typeof Colors, textScale = 1.0) {
   });
 }
 
-export function SectionGroup({ name, canDelete, onRename, onDelete, onAddExercise, totalDuration, onSetTotalDuration, children }: Props) {
+export function SectionGroup({
+  name,
+  canDelete,
+  onRename,
+  onDelete,
+  onAddExercise,
+  totalDuration,
+  onSetTotalDuration,
+  children,
+}: Props) {
   const { colors } = useTheme();
   const styles = makeStyles(colors, TEXT_SCALE[useTextSize()]);
 
@@ -88,7 +97,7 @@ export function SectionGroup({ name, canDelete, onRename, onDelete, onAddExercis
           if (!isNaN(mins) && mins > 0) onSetTotalDuration(Math.round(mins * 60));
         },
         'plain-text',
-        String(+(totalDuration / 60).toFixed(2)),
+        String(+(totalDuration / 60).toFixed(2))
       );
     }
   };
@@ -119,7 +128,9 @@ export function SectionGroup({ name, canDelete, onRename, onDelete, onAddExercis
         </TouchableOpacity>
         {canDelete && (
           <TouchableOpacity onPress={onDelete} hitSlop={10} style={styles.deleteButton}>
-            <Text color="tertiary" style={styles.deleteIcon}>✕</Text>
+            <Text color="tertiary" style={styles.deleteIcon}>
+              ✕
+            </Text>
           </TouchableOpacity>
         )}
       </View>
@@ -128,7 +139,9 @@ export function SectionGroup({ name, canDelete, onRename, onDelete, onAddExercis
 
       <TouchableOpacity onPress={onAddExercise} style={styles.addExerciseRow} activeOpacity={0.7}>
         <Text style={styles.addIcon}>+</Text>
-        <Text variant="body" color="secondary">Add exercise</Text>
+        <Text variant="body" color="secondary">
+          Add exercise
+        </Text>
       </TouchableOpacity>
     </View>
   );

@@ -142,14 +142,10 @@ export function SequenceCard({ sequence, onPress, onPlay, onDuplicate, onDelete,
   };
 
   const confirmDelete = () => {
-    Alert.alert(
-      'Delete Sequence',
-      `Delete "${sequence.name}"? This cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: onDelete },
-      ]
-    );
+    Alert.alert('Delete Sequence', `Delete "${sequence.name}"? This cannot be undone.`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: onDelete },
+    ]);
   };
 
   const totalTime = formatSeconds(sequence.total_duration);
@@ -169,19 +165,26 @@ export function SequenceCard({ sequence, onPress, onPlay, onDuplicate, onDelete,
 
         <View style={styles.body}>
           <View style={styles.nameRow}>
-            <TouchableOpacity onPress={() => { if (hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onFavorite(); }} hitSlop={8} activeOpacity={0.7}>
+            <TouchableOpacity
+              onPress={() => {
+                if (hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onFavorite();
+              }}
+              hitSlop={8}
+              activeOpacity={0.7}
+            >
               <Text style={[styles.star, { color: sequence.is_favorited ? '#f59e0b' : colors.text.tertiary }]}>★</Text>
             </TouchableOpacity>
-            <Text style={styles.name} numberOfLines={1}>{sequence.name}</Text>
+            <Text style={styles.name} numberOfLines={1}>
+              {sequence.name}
+            </Text>
           </View>
           <View style={styles.meta}>
             <Text style={[styles.metaTime, { color: colors.accent }]}>{totalTime}</Text>
             <Text style={styles.metaDot}>·</Text>
             <Text style={styles.metaSub}>{exLabel}</Text>
           </View>
-          {sequence.tags.length > 0 && (
-            <TagChips tags={sequence.tags} style={styles.tags} />
-          )}
+          {sequence.tags.length > 0 && <TagChips tags={sequence.tags} style={styles.tags} />}
         </View>
 
         <TouchableOpacity style={styles.menuButton} onPress={showMenu} hitSlop={12}>

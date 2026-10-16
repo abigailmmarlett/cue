@@ -36,9 +36,7 @@ export function LoadDotRow({ label, iconIds, allIcons, dotDiameter = 14, style }
       <View style={{ flexDirection: 'row', gap: 3, flexWrap: 'wrap' }}>
         {visible.map((id, idx) => {
           const icon = iconMap.get(id)!;
-          return (
-            <LoadDot key={`${id}-${idx}`} color={icon.color} size={icon.size} diameter={dotDiameter} />
-          );
+          return <LoadDot key={`${id}-${idx}`} color={icon.color} size={icon.size} diameter={dotDiameter} />;
         })}
       </View>
     </View>

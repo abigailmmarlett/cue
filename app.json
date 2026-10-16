@@ -5,10 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": [
-      "cue",
-      "traintrack"
-    ],
+    "scheme": ["cue", "traintrack"],
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {

@@ -103,7 +103,9 @@ export function runMigrations(): void {
   `);
 
   try {
-    db.execSync(`ALTER TABLE exercises ADD COLUMN library_exercise_id TEXT REFERENCES library_exercises(id) ON DELETE SET NULL;`);
+    db.execSync(
+      `ALTER TABLE exercises ADD COLUMN library_exercise_id TEXT REFERENCES library_exercises(id) ON DELETE SET NULL;`
+    );
   } catch {
     // Column already exists
   }
@@ -125,17 +127,39 @@ export function runMigrations(): void {
     );
   `);
 
-  try { db.execSync(`ALTER TABLE library_exercises ADD COLUMN load_modified TEXT;`); } catch {}
-  try { db.execSync(`ALTER TABLE library_exercises ADD COLUMN load_base TEXT;`); } catch {}
-  try { db.execSync(`ALTER TABLE library_exercises ADD COLUMN load_amplified TEXT;`); } catch {}
-  try { db.execSync(`ALTER TABLE exercises ADD COLUMN load_modified TEXT;`); } catch {}
-  try { db.execSync(`ALTER TABLE exercises ADD COLUMN load_base TEXT;`); } catch {}
-  try { db.execSync(`ALTER TABLE exercises ADD COLUMN load_amplified TEXT;`); } catch {}
-  try { db.execSync(`ALTER TABLE exercises ADD COLUMN variation TEXT;`); } catch {}
-  try { db.execSync(`ALTER TABLE exercises ADD COLUMN variation_sets TEXT;`); } catch {}
-  try { db.execSync(`ALTER TABLE library_exercises ADD COLUMN is_bilateral INTEGER NOT NULL DEFAULT 0;`); } catch {}
-  try { db.execSync(`ALTER TABLE exercises ADD COLUMN side TEXT;`); } catch {}
-  try { db.execSync(`ALTER TABLE sequences ADD COLUMN is_favorited INTEGER NOT NULL DEFAULT 0;`); } catch {}
+  try {
+    db.execSync(`ALTER TABLE library_exercises ADD COLUMN load_modified TEXT;`);
+  } catch {}
+  try {
+    db.execSync(`ALTER TABLE library_exercises ADD COLUMN load_base TEXT;`);
+  } catch {}
+  try {
+    db.execSync(`ALTER TABLE library_exercises ADD COLUMN load_amplified TEXT;`);
+  } catch {}
+  try {
+    db.execSync(`ALTER TABLE exercises ADD COLUMN load_modified TEXT;`);
+  } catch {}
+  try {
+    db.execSync(`ALTER TABLE exercises ADD COLUMN load_base TEXT;`);
+  } catch {}
+  try {
+    db.execSync(`ALTER TABLE exercises ADD COLUMN load_amplified TEXT;`);
+  } catch {}
+  try {
+    db.execSync(`ALTER TABLE exercises ADD COLUMN variation TEXT;`);
+  } catch {}
+  try {
+    db.execSync(`ALTER TABLE exercises ADD COLUMN variation_sets TEXT;`);
+  } catch {}
+  try {
+    db.execSync(`ALTER TABLE library_exercises ADD COLUMN is_bilateral INTEGER NOT NULL DEFAULT 0;`);
+  } catch {}
+  try {
+    db.execSync(`ALTER TABLE exercises ADD COLUMN side TEXT;`);
+  } catch {}
+  try {
+    db.execSync(`ALTER TABLE sequences ADD COLUMN is_favorited INTEGER NOT NULL DEFAULT 0;`);
+  } catch {}
 
   // Data migration: assign existing exercises (section_id IS NULL) to a default "Main" section
   const unmigrated = db.getAllSync<{ sequence_id: string }>(
@@ -144,13 +168,16 @@ export function runMigrations(): void {
   for (const { sequence_id } of unmigrated) {
     const sectionId = generateId();
     const now = Date.now();
-    db.runSync(
-      `INSERT INTO sections (id, sequence_id, name, order_index, created_at) VALUES (?, ?, ?, ?, ?);`,
-      [sectionId, sequence_id, 'Main', 0, now]
-    );
-    db.runSync(
-      `UPDATE exercises SET section_id = ? WHERE sequence_id = ? AND section_id IS NULL;`,
-      [sectionId, sequence_id]
-    );
+    db.runSync(`INSERT INTO sections (id, sequence_id, name, order_index, created_at) VALUES (?, ?, ?, ?, ?);`, [
+      sectionId,
+      sequence_id,
+      'Main',
+      0,
+      now,
+    ]);
+    db.runSync(`UPDATE exercises SET section_id = ? WHERE sequence_id = ? AND section_id IS NULL;`, [
+      sectionId,
+      sequence_id,
+    ]);
   }
 }
