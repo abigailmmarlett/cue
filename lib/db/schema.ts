@@ -18,6 +18,14 @@ const MIGRATIONS: { version: number; up: (db: SQLiteDatabase) => void }[] = [
 
 export const SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;
 
+/** Thrown when the database was last opened by a newer version of Cue. Retrying can't help. */
+export class DatabaseTooNewError extends Error {
+  constructor(version: number) {
+    super(`Database version ${version} is newer than this app supports (${SCHEMA_VERSION}).`);
+    this.name = 'DatabaseTooNewError';
+  }
+}
+
 export function runMigrations(): void {
   const db = getDb();
   // Neither pragma can change inside a transaction, so set them first.
@@ -27,7 +35,7 @@ export function runMigrations(): void {
   const current = db.getFirstSync<{ user_version: number }>(`PRAGMA user_version;`)?.user_version ?? 0;
   if (current > SCHEMA_VERSION) {
     // Opening a newer database with an older app could corrupt it, so refuse instead.
-    throw new Error(`Database version ${current} is newer than this app supports (${SCHEMA_VERSION}).`);
+    throw new DatabaseTooNewError(current);
   }
 
   for (const migration of MIGRATIONS) {
