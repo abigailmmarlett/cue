@@ -68,12 +68,12 @@ export function getLibraryExercise(id: string): LibraryExerciseWithTags | null {
   return attachTags([row])[0];
 }
 
-export function createLibraryExercise(name: string): LibraryExercise {
+export function createLibraryExercise(name: string, isBilateral = false): LibraryExercise {
   const id = generateId();
   const now = Date.now();
   getDb().runSync(
-    `INSERT INTO library_exercises (id, name, created_at, updated_at, is_bilateral) VALUES (?, ?, ?, ?, 0);`,
-    [id, name, now, now]
+    `INSERT INTO library_exercises (id, name, created_at, updated_at, is_bilateral) VALUES (?, ?, ?, ?, ?);`,
+    [id, name, now, now, isBilateral ? 1 : 0]
   );
   return {
     id,
@@ -83,7 +83,7 @@ export function createLibraryExercise(name: string): LibraryExercise {
     load_modified: null,
     load_base: null,
     load_amplified: null,
-    is_bilateral: 0,
+    is_bilateral: isBilateral ? 1 : 0,
   };
 }
 
