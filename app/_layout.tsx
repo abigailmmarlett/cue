@@ -82,9 +82,10 @@ function AppShellInner() {
           contentStyle: { backgroundColor: colors.background },
         }}
       >
-        <Stack.Screen name="index" options={{ headerShown: false, animation: 'none' }} />
-        <Stack.Screen name="library" options={{ headerShown: false, animation: 'none' }} />
-        <Stack.Screen name="preferences" options={{ headerShown: false, animation: 'none' }} />
+        {/* The tab screens hide their headers; the titles label the back button on screens they open. */}
+        <Stack.Screen name="index" options={{ title: 'Sequences', headerShown: false, animation: 'none' }} />
+        <Stack.Screen name="library" options={{ title: 'Library', headerShown: false, animation: 'none' }} />
+        <Stack.Screen name="preferences" options={{ title: 'Settings', headerShown: false, animation: 'none' }} />
         <Stack.Screen
           name="builder/index"
           options={{ title: 'New Sequence', presentation: 'modal', headerBackButtonMenuEnabled: false }}
