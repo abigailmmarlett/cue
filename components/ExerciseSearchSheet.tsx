@@ -107,7 +107,7 @@ export function ExerciseSearchSheet({ onSelect, onCreateNew, onClose }: Props) {
       <SafeAreaView style={styles.container}>
         <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <View style={styles.header}>
-            <TouchableOpacity onPress={onClose} style={styles.cancelBtn}>
+            <TouchableOpacity onPress={onClose} style={styles.cancelBtn} hitSlop={12} accessibilityRole="button">
               <Text variant="label" color="secondary">
                 Cancel
               </Text>
@@ -124,6 +124,7 @@ export function ExerciseSearchSheet({ onSelect, onCreateNew, onClose }: Props) {
               value={query}
               onChangeText={setQuery}
               placeholder="Search or type a name…"
+              accessibilityLabel="Search exercises"
               placeholderTextColor={colors.text.tertiary}
               autoFocus
               returnKeyType="search"
@@ -148,7 +149,12 @@ export function ExerciseSearchSheet({ onSelect, onCreateNew, onClose }: Props) {
               ) : null
             }
             renderItem={({ item }) => (
-              <TouchableOpacity style={styles.resultRow} onPress={() => onSelect(item)} activeOpacity={0.7}>
+              <TouchableOpacity
+                style={styles.resultRow}
+                onPress={() => onSelect(item)}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+              >
                 <View style={styles.resultBody}>
                   <Text variant="body">{item.name}</Text>
                   {item.tags.length > 0 && <TagChips tags={item.tags} style={styles.resultTags} />}
@@ -161,6 +167,8 @@ export function ExerciseSearchSheet({ onSelect, onCreateNew, onClose }: Props) {
                   style={styles.createRow}
                   onPress={() => onCreateNew(query.trim())}
                   activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Create ${query.trim()} as a new exercise`}
                 >
                   <Text style={styles.createIcon}>+</Text>
                   <Text variant="body" color="secondary">

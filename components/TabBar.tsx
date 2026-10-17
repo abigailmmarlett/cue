@@ -92,7 +92,7 @@ export function TabBar() {
   ];
 
   return (
-    <View style={[styles.bar, { paddingBottom: bottom + 4 }]}>
+    <View style={[styles.bar, { paddingBottom: bottom + 4 }]} accessibilityRole="tabbar">
       {tabs.map((tab) => {
         const active = tab.match(pathname);
         const color = active ? colors.accentText : colors.text.tertiary;
@@ -102,6 +102,9 @@ export function TabBar() {
             style={styles.tab}
             onPress={() => router.replace(tab.href as any)}
             activeOpacity={0.7}
+            accessibilityRole="tab"
+            accessibilityLabel={tab.label}
+            accessibilityState={{ selected: active }}
           >
             <tab.Icon color={color} />
             <Text style={[styles.label, active && { color: colors.accentText, fontWeight: '700' }]}>{tab.label}</Text>

@@ -66,6 +66,8 @@ export function Button({ label, onPress, variant = 'primary', size = 'md', disab
       onPress={onPress}
       disabled={disabled || loading}
       activeOpacity={0.75}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: !!(disabled || loading), busy: !!loading }}
       style={[styles.base, styles[variant], sizeStyles[size], (disabled || loading) && styles.disabled, style]}
     >
       {loading ? (

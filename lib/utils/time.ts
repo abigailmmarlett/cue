@@ -4,6 +4,16 @@ export function formatSeconds(totalSeconds: number): string {
   return `${mins}:${String(secs).padStart(2, '0')}`;
 }
 
+/** A duration as VoiceOver should say it: "1 minute 30 seconds" rather than "1:30". */
+export function spokenDuration(totalSeconds: number): string {
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = totalSeconds % 60;
+  const parts = [];
+  if (mins > 0) parts.push(`${mins} ${mins === 1 ? 'minute' : 'minutes'}`);
+  if (secs > 0 || mins === 0) parts.push(`${secs} ${secs === 1 ? 'second' : 'seconds'}`);
+  return parts.join(' ');
+}
+
 export function totalDuration(exercises: { duration: number }[]): number {
   return exercises.reduce((sum, e) => sum + e.duration, 0);
 }

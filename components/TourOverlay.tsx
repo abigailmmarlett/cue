@@ -183,7 +183,7 @@ export function TourOverlay() {
         <Text style={[styles.description, { color: colors.text.secondary }]}>{shown.step?.description ?? ''}</Text>
 
         <View style={styles.actions}>
-          <TouchableOpacity onPress={skipTour} hitSlop={8} activeOpacity={0.6}>
+          <TouchableOpacity onPress={skipTour} hitSlop={12} activeOpacity={0.6} accessibilityRole="button">
             <Text style={[styles.skipLabel, { color: colors.text.tertiary }]}>{isDone ? '' : 'Skip tour'}</Text>
           </TouchableOpacity>
 
@@ -191,6 +191,8 @@ export function TourOverlay() {
             style={[styles.nextBtn, { backgroundColor: colors.fill.primary }]}
             onPress={nextStep}
             activeOpacity={0.8}
+            hitSlop={6}
+            accessibilityRole="button"
           >
             <Text style={[styles.nextLabel, { color: colors.text.onFill }]}>{isLastStep ? 'Done' : 'Next'}</Text>
           </TouchableOpacity>

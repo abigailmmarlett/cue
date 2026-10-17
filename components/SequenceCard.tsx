@@ -13,7 +13,7 @@ import { TagChips } from './TagChips';
 import { Colors } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
 import { usePreferences, useTextSize, TEXT_SCALE } from '@/lib/hooks/usePreferences';
-import { formatSeconds } from '@/lib/utils/time';
+import { formatSeconds, spokenDuration } from '@/lib/utils/time';
 import type { SequenceWithTags } from '@/lib/db/sequences';
 
 interface Props {
@@ -175,7 +175,7 @@ export function SequenceCard({ sequence, onPress, onEdit, onPlay, onDuplicate, o
   const accessibilityLabel = [
     sequence.is_favorited ? 'Favorite' : null,
     sequence.name,
-    totalTime,
+    spokenDuration(sequence.total_duration),
     sequence.exercise_count === 1 ? '1 exercise' : `${sequence.exercise_count} exercises`,
     sequence.tags.length > 0 ? `tags: ${sequence.tags.map((t) => t.label).join(', ')}` : null,
   ]
@@ -210,13 +210,14 @@ export function SequenceCard({ sequence, onPress, onEdit, onPlay, onDuplicate, o
           style={[styles.playButton, { backgroundColor: colors.accentDim, borderColor: colors.accentBorder }]}
           onPress={onPlay}
           activeOpacity={0.7}
+          hitSlop={4}
         >
           <View style={[styles.playTriangle, { borderLeftColor: colors.accent }]} />
         </TouchableOpacity>
 
         <View style={styles.body}>
           <View style={styles.nameRow}>
-            <TouchableOpacity onPress={toggleFavorite} hitSlop={8} activeOpacity={0.7}>
+            <TouchableOpacity onPress={toggleFavorite} hitSlop={15} activeOpacity={0.7}>
               <Text style={[styles.star, { color: sequence.is_favorited ? '#f59e0b' : colors.text.tertiary }]}>★</Text>
             </TouchableOpacity>
             <Text style={styles.name} numberOfLines={1}>
@@ -231,7 +232,7 @@ export function SequenceCard({ sequence, onPress, onEdit, onPlay, onDuplicate, o
           {sequence.tags.length > 0 && <TagChips tags={sequence.tags} style={styles.tags} />}
         </View>
 
-        <TouchableOpacity style={styles.menuButton} onPress={showMenu} hitSlop={12}>
+        <TouchableOpacity style={styles.menuButton} onPress={showMenu} hitSlop={16}>
           <View style={styles.dot} />
           <View style={styles.dot} />
           <View style={styles.dot} />

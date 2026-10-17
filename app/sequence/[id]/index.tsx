@@ -1,4 +1,4 @@
-import { View, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity, Share } from 'react-native';
+import { View, ScrollView, StyleSheet, ActivityIndicator, Share } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
 import { useEffect } from 'react';
@@ -12,6 +12,7 @@ import { Colors, Spacing } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
 import { useSequence } from '@/lib/hooks/useSequence';
 import { formatSeconds, totalDuration } from '@/lib/utils/time';
+import { IconButton } from '@/components/ui/IconButton';
 
 export { RouteErrorBoundary as ErrorBoundary } from '@/components/ErrorFallback';
 
@@ -28,17 +29,17 @@ export default function SequenceDetailScreen() {
       navigation.setOptions({
         title: sequence.name,
         headerRight: () => (
-          <TouchableOpacity
+          <IconButton
+            label="Share sequence"
             onPress={() => {
               const payload = serializeSequence(id);
               const url = buildShareUrl(payload);
               Share.share({ message: url });
             }}
-            hitSlop={12}
             style={{ marginRight: 4 }}
           >
             <SymbolView name="square.and.arrow.up" size={22} tintColor={colors.accentText} />
-          </TouchableOpacity>
+          </IconButton>
         ),
       });
     }

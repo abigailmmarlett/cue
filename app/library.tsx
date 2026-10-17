@@ -34,6 +34,7 @@ import {
 import { getAllLoadIcons, parseLoad, serializeLoad, type LoadIcon } from '@/lib/db/loadIcons';
 import type { ExerciseTag } from '@/lib/db/tags';
 import { hasAllTags } from '@/lib/utils/tagFilter';
+import { IconButton } from '@/components/ui/IconButton';
 
 function buildCatColors(accent: string, deep: string): string[] {
   return [accent, deep, `${accent}dd`, `${deep}dd`, `${accent}bb`, `${deep}bb`, `${accent}99`, `${deep}99`];
@@ -135,7 +136,8 @@ function makeStyles(c: typeof Colors, buttonScale = 1.0, textScale = 1.0) {
       color: c.text.primary,
       letterSpacing: -0.5,
     },
-    iconBtn: { padding: Math.round(4 * buttonScale) },
+    // 44pt touch targets; the icons themselves stay their chosen size.
+    iconBtn: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
     editIcon: { fontSize: Math.round(17 * buttonScale), color: c.text.secondary },
     deleteIcon: { fontSize: Math.round(14 * buttonScale), color: c.text.tertiary },
     editRow: {
@@ -296,6 +298,7 @@ export default function LibraryScreen() {
           countLabel={`${exercises.length} exercise${exercises.length !== 1 ? 's' : ''}`}
           safeTop={top}
           onAdd={() => setAddingNew(true)}
+          addLabel="New exercise"
           search={search}
           onSearchChange={setSearch}
           tagPills={allTagPills}
@@ -316,12 +319,13 @@ export default function LibraryScreen() {
                   value={newNameText}
                   onChangeText={setNewNameText}
                   placeholder="Exercise name"
+                  accessibilityLabel="New exercise name"
                   placeholderTextColor={colors.text.tertiary}
                   autoFocus
                   returnKeyType="done"
                   onSubmitEditing={handleAdd}
                 />
-                <TouchableOpacity onPress={handleAdd} style={styles.actionBtn} hitSlop={8}>
+                <TouchableOpacity onPress={handleAdd} style={styles.actionBtn} hitSlop={12} accessibilityRole="button">
                   <Text style={[styles.actionAdd, { color: colors.accentText }]}>Add</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -329,7 +333,8 @@ export default function LibraryScreen() {
                     setAddingNew(false);
                     setNewNameText('');
                   }}
-                  hitSlop={8}
+                  hitSlop={12}
+                  accessibilityRole="button"
                 >
                   <Text style={styles.actionCancel}>Cancel</Text>
                 </TouchableOpacity>
@@ -469,45 +474,58 @@ function ExerciseItem({
               style={styles.editInput}
               value={editText}
               onChangeText={onEditText}
+              accessibilityLabel="Exercise name"
               autoFocus
               returnKeyType="done"
               onSubmitEditing={onFinishEdit}
               onBlur={onFinishEdit}
             />
-            <TouchableOpacity onPress={onFinishEdit} hitSlop={8}>
+            <TouchableOpacity onPress={onFinishEdit} hitSlop={12} accessibilityRole="button">
               <Text style={[styles.actionAdd, { color: colors.accentText }]}>Done</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={onCancelEdit} hitSlop={8}>
+            <TouchableOpacity onPress={onCancelEdit} hitSlop={12} accessibilityRole="button">
               <Text style={styles.actionCancel}>Cancel</Text>
             </TouchableOpacity>
           </View>
         ) : (
           <View style={styles.exNameRow}>
             <Text style={styles.exName}>{ex.name}</Text>
-            <TouchableOpacity onPress={onToggleBilateral} hitSlop={8} style={styles.iconBtn}>
+            <IconButton
+              label="Left and right sides"
+              accessibilityState={{ checked: isBilateral }}
+              accessibilityRole="switch"
+              onPress={onToggleBilateral}
+              hitSlop={0}
+              style={styles.iconBtn}
+            >
               <Text style={[styles.editIcon, { color: isBilateral ? colors.accentText : colors.text.tertiary }]}>
                 ⇌
               </Text>
-            </TouchableOpacity>
+            </IconButton>
             {onEditLoad && (
-              <TouchableOpacity onPress={onEditLoad} hitSlop={8} style={styles.iconBtn}>
+              <IconButton
+                label={hasLoad ? 'Edit loads' : 'Add loads'}
+                onPress={onEditLoad}
+                hitSlop={0}
+                style={styles.iconBtn}
+              >
                 <Text style={[styles.editIcon, { color: hasLoad ? colors.text.secondary : colors.text.tertiary }]}>
                   ⊙
                 </Text>
-              </TouchableOpacity>
+              </IconButton>
             )}
-            <TouchableOpacity onPress={onStartEdit} hitSlop={8} style={styles.iconBtn}>
+            <IconButton label={`Rename ${ex.name}`} onPress={onStartEdit} hitSlop={0} style={styles.iconBtn}>
               <Text style={styles.editIcon}>✎</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={onDelete} hitSlop={8} style={styles.iconBtn}>
+            </IconButton>
+            <IconButton label={`Delete ${ex.name}`} onPress={onDelete} hitSlop={0} style={styles.iconBtn}>
               <Text style={styles.deleteIcon}>✕</Text>
-            </TouchableOpacity>
+            </IconButton>
           </View>
         )}
 
         <View style={styles.exTagsRow}>
           {ex.tags.length > 0 && <TagChips tags={ex.tags} />}
-          <TouchableOpacity onPress={onEditTags} hitSlop={8}>
+          <TouchableOpacity onPress={onEditTags} hitSlop={12} accessibilityRole="button">
             <Text style={styles.editTagsLabel}>{ex.tags.length > 0 ? 'Edit tags' : '+ Add tags'}</Text>
           </TouchableOpacity>
         </View>

@@ -372,6 +372,7 @@ export default function EditSequenceScreen() {
             setName(v);
           }}
           placeholder="Sequence name"
+          accessibilityLabel="Sequence name"
           placeholderTextColor={colors.text.tertiary}
           returnKeyType="done"
           maxLength={80}
@@ -379,7 +380,7 @@ export default function EditSequenceScreen() {
 
         <View style={styles.sequenceTagsRow}>
           {sequenceTags.length > 0 && <TagChips tags={sequenceTags} style={styles.sequenceTagChips} />}
-          <TouchableOpacity onPress={() => setShowSequenceTagPicker(true)} hitSlop={8}>
+          <TouchableOpacity onPress={() => setShowSequenceTagPicker(true)} hitSlop={12} accessibilityRole="button">
             <Text variant="caption" color="tertiary">
               {sequenceTags.length > 0 ? 'Edit tags' : '+ Add tags'}
             </Text>
@@ -422,14 +423,26 @@ export default function EditSequenceScreen() {
           </SectionGroup>
         ))}
 
-        <TouchableOpacity onPress={addSection} style={styles.addSectionRow} activeOpacity={0.7}>
+        <TouchableOpacity
+          onPress={addSection}
+          style={styles.addSectionRow}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Add section"
+        >
           <Text style={styles.addIcon}>+</Text>
           <Text variant="body" color="tertiary">
             Add section
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => setShowSectionImport(true)} style={styles.addSectionRow} activeOpacity={0.7}>
+        <TouchableOpacity
+          onPress={() => setShowSectionImport(true)}
+          style={styles.addSectionRow}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Import section from another sequence"
+        >
           <Text style={styles.addIcon}>↓</Text>
           <Text variant="body" color="tertiary">
             Import section from another sequence
@@ -442,6 +455,8 @@ export default function EditSequenceScreen() {
           onPress={save}
           disabled={!canSave}
           activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: !canSave }}
           style={[styles.saveButton, { backgroundColor: colors.fill.primary }, !canSave && styles.saveButtonDisabled]}
         >
           <Text variant="label" color="inverse">

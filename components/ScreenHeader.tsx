@@ -7,12 +7,15 @@ import { useTheme } from '@/lib/contexts/ThemeContext';
 import { useTextSize, TEXT_SCALE } from '@/lib/hooks/usePreferences';
 import type { ExerciseTag } from '@/lib/db/tags';
 import type { RefObject } from 'react';
+import { IconButton } from '@/components/ui/IconButton';
 
 interface Props {
   title: string;
   countLabel?: string;
   safeTop: number;
   onAdd?: () => void;
+  /** What VoiceOver says for the + button, e.g. "New sequence". */
+  addLabel?: string;
   onImport?: () => void;
   search?: string;
   onSearchChange?: (v: string) => void;
@@ -153,6 +156,7 @@ export function ScreenHeader({
   countLabel,
   safeTop,
   onAdd,
+  addLabel,
   onImport,
   search = '',
   onSearchChange,
@@ -181,23 +185,25 @@ export function ScreenHeader({
         {(onImport || onAdd) && (
           <View style={styles.headerActions}>
             {onImport && (
-              <TouchableOpacity
+              <IconButton
+                label="Import a copied sequence link"
                 style={[styles.importButton, { borderColor: colors.border }]}
                 onPress={onImport}
-                activeOpacity={0.7}
+                hitSlop={4}
               >
                 <SymbolView name="square.and.arrow.down" size={18} tintColor={colors.text.secondary} />
-              </TouchableOpacity>
+              </IconButton>
             )}
             {onAdd && (
               <View ref={addButtonRef}>
-                <TouchableOpacity
+                <IconButton
+                  label={addLabel ?? 'Add'}
                   style={[styles.addButton, { borderColor: colors.accent }]}
                   onPress={onAdd}
-                  activeOpacity={0.7}
+                  hitSlop={4}
                 >
                   <Text style={[styles.addButtonText, { color: colors.accentText }]}>+</Text>
-                </TouchableOpacity>
+                </IconButton>
               </View>
             )}
           </View>
@@ -211,13 +217,14 @@ export function ScreenHeader({
             value={search}
             onChangeText={onSearchChange}
             placeholder={`Search ${title}…`}
+            accessibilityLabel={`Search ${title}`}
             placeholderTextColor={colors.text.tertiary}
             style={styles.searchInput}
           />
           {search.length > 0 && (
-            <TouchableOpacity onPress={() => onSearchChange('')} hitSlop={8}>
+            <IconButton label="Clear search" onPress={() => onSearchChange('')}>
               <Text style={styles.searchClear}>✕</Text>
-            </TouchableOpacity>
+            </IconButton>
           )}
         </View>
       )}
@@ -242,6 +249,10 @@ export function ScreenHeader({
                   ]}
                   onPress={() => onTagToggle(tag)}
                   activeOpacity={0.7}
+                  hitSlop={{ top: 8, bottom: 8 }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Filter by ${tag.label}`}
+                  accessibilityState={{ selected: active }}
                 >
                   <Text
                     style={[styles.pillText, { color: colors.pill.text }, active && { color: colors.pill.activeText }]}

@@ -446,6 +446,9 @@ export default function PreferencesScreen() {
                     onPress={() => setTheme(preset.id as ThemeId)}
                     activeOpacity={0.75}
                     style={styles.swatchWrap}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${preset.name} theme`}
+                    accessibilityState={{ selected: active }}
                   >
                     <View style={[styles.swatch, { backgroundColor: preset.accent }, active && styles.swatchActive]}>
                       {active && <Text style={styles.swatchCheck}>✓</Text>}
@@ -465,6 +468,10 @@ export default function PreferencesScreen() {
                   key={m}
                   onPress={() => setMode(m)}
                   activeOpacity={0.75}
+                  hitSlop={{ top: 6, bottom: 6 }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${m.charAt(0).toUpperCase() + m.slice(1)} appearance`}
+                  accessibilityState={{ selected: active }}
                   style={[styles.modeOption, active && { backgroundColor: colors.fill.primary }]}
                 >
                   <Text style={[styles.modeLabel, active && styles.modeLabelActive]}>
@@ -482,7 +489,13 @@ export default function PreferencesScreen() {
               <View key={icon.id} style={[styles.iconListRow, idx > 0 && styles.rowBorder]}>
                 <LoadDot color={icon.color} size={icon.size} diameter={20} />
                 <Text style={styles.iconLabel}>{icon.label}</Text>
-                <TouchableOpacity onPress={() => handleDeleteIcon(icon.id)} style={styles.deleteIconBtn} hitSlop={8}>
+                <TouchableOpacity
+                  onPress={() => handleDeleteIcon(icon.id)}
+                  style={styles.deleteIconBtn}
+                  hitSlop={12}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Delete ${icon.label} icon`}
+                >
                   <Text variant="caption" color="tertiary">
                     ✕
                   </Text>
@@ -497,7 +510,15 @@ export default function PreferencesScreen() {
                     const isWhite = c.hex === '#FFFFFF';
                     const active = newColor === c.hex;
                     return (
-                      <TouchableOpacity key={c.hex} onPress={() => setNewColor(c.hex)} activeOpacity={0.8}>
+                      <TouchableOpacity
+                        key={c.hex}
+                        onPress={() => setNewColor(c.hex)}
+                        activeOpacity={0.8}
+                        hitSlop={6}
+                        accessibilityRole="button"
+                        accessibilityLabel={c.name}
+                        accessibilityState={{ selected: active }}
+                      >
                         <View
                           style={[
                             styles.colorSwatch,
@@ -522,6 +543,10 @@ export default function PreferencesScreen() {
                         onPress={() => setNewSize(s)}
                         style={[styles.sizePill, active && styles.sizePillActive]}
                         activeOpacity={0.8}
+                        hitSlop={{ top: 8, bottom: 8 }}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Size ${s ?? 'none'}`}
+                        accessibilityState={{ selected: active }}
                       >
                         <Text style={[styles.sizePillText, active && styles.sizePillTextActive]}>{s ?? 'None'}</Text>
                       </TouchableOpacity>
@@ -539,7 +564,13 @@ export default function PreferencesScreen() {
                 </View>
 
                 <View style={{ flexDirection: 'row', gap: 10 }}>
-                  <TouchableOpacity onPress={handleCreateIcon} style={styles.addIconBtn} activeOpacity={0.8}>
+                  <TouchableOpacity
+                    onPress={handleCreateIcon}
+                    style={styles.addIconBtn}
+                    activeOpacity={0.8}
+                    hitSlop={{ top: 6, bottom: 6 }}
+                    accessibilityRole="button"
+                  >
                     <Text style={styles.addIconBtnText}>Save Icon</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -553,6 +584,8 @@ export default function PreferencesScreen() {
                       { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
                     ]}
                     activeOpacity={0.8}
+                    hitSlop={{ top: 6, bottom: 6 }}
+                    accessibilityRole="button"
                   >
                     <Text style={[styles.addIconBtnText, { color: colors.text.secondary }]}>Cancel</Text>
                   </TouchableOpacity>
@@ -563,6 +596,8 @@ export default function PreferencesScreen() {
                 onPress={() => setShowAddForm(true)}
                 style={[styles.addTriggerRow, loadIcons.length > 0 && styles.rowBorder]}
                 activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="New icon"
               >
                 <Text style={{ fontSize: 18, color: colors.text.tertiary, lineHeight: 22 }}>+</Text>
                 <Text variant="body" color="tertiary">
@@ -580,6 +615,7 @@ export default function PreferencesScreen() {
               <Switch
                 value={showTimerTags}
                 onValueChange={setShowTimerTags}
+                accessibilityLabel="Show tags in timer"
                 trackColor={{ false: colors.borderMid, true: colors.accent }}
                 thumbColor={colors.surfaceSolid}
               />
@@ -603,6 +639,10 @@ export default function PreferencesScreen() {
                       ]}
                       onPress={() => setTextSize(opt)}
                       activeOpacity={0.7}
+                      hitSlop={{ top: 10, bottom: 10, left: 3, right: 3 }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Text size ${opt === 'default' ? 'medium' : opt}`}
+                      accessibilityState={{ selected: active }}
                     >
                       <Text style={[styles.timingChipText, active && { color: colors.text.onFill }]}>
                         {opt === 'small' ? 'S' : opt === 'default' ? 'M' : 'L'}
@@ -626,6 +666,10 @@ export default function PreferencesScreen() {
                       ]}
                       onPress={() => setActionButtonSize(opt)}
                       activeOpacity={0.7}
+                      hitSlop={{ top: 10, bottom: 10, left: 3, right: 3 }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Action button size ${opt === 'default' ? 'medium' : opt}`}
+                      accessibilityState={{ selected: active }}
                     >
                       <Text style={[styles.timingChipText, active && { color: colors.text.onFill }]}>
                         {opt === 'small' ? 'S' : opt === 'default' ? 'M' : 'L'}
@@ -645,6 +689,7 @@ export default function PreferencesScreen() {
               <Switch
                 value={hapticSettings.enabled}
                 onValueChange={(v) => updateHaptic({ enabled: v })}
+                accessibilityLabel="Haptic feedback"
                 trackColor={{ false: colors.borderMid, true: colors.accent }}
                 thumbColor={colors.surfaceSolid}
               />
@@ -667,6 +712,7 @@ export default function PreferencesScreen() {
                         <Switch
                           value={event.enabled}
                           onValueChange={(v) => updateBasicEvent(key, { enabled: v })}
+                          accessibilityLabel={label}
                           trackColor={{ false: colors.borderMid, true: colors.accent }}
                           thumbColor={colors.surfaceSolid}
                         />
@@ -678,6 +724,9 @@ export default function PreferencesScreen() {
                             onPress={() => pickStyle((s) => updateBasicEvent(key, { style: s }), event.style)}
                             style={styles.timingChip}
                             activeOpacity={0.7}
+                            hitSlop={{ top: 10, bottom: 10, left: 3, right: 3 }}
+                            accessibilityRole="button"
+                            accessibilityLabel={`${label} pattern, ${styleLabel(event.style)}`}
                           >
                             <Text style={styles.timingChipText}>{styleLabel(event.style)} ▾</Text>
                           </TouchableOpacity>
@@ -702,13 +751,18 @@ export default function PreferencesScreen() {
                       onPress={() => pickStyle((s) => updateCountdownWarningStyle(warning.seconds, s), warning.style)}
                       style={[styles.timingChip, { marginRight: 8 }]}
                       activeOpacity={0.7}
+                      hitSlop={{ top: 10, bottom: 10, left: 3, right: 3 }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${warning.seconds} second warning pattern, ${styleLabel(warning.style)}`}
                     >
                       <Text style={styles.timingChipText}>{styleLabel(warning.style)} ▾</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       onPress={() => removeCountdownWarning(warning.seconds)}
                       style={styles.deleteBtn}
-                      hitSlop={8}
+                      hitSlop={12}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Remove ${warning.seconds} second warning`}
                     >
                       <Text variant="caption" color="tertiary">
                         ✕
@@ -721,6 +775,8 @@ export default function PreferencesScreen() {
                     onPress={addCountdownWarning}
                     style={[styles.addTriggerRow, hapticSettings.countdownWarnings.length > 0 && styles.rowBorder]}
                     activeOpacity={0.7}
+                    accessibilityRole="button"
+                    accessibilityLabel="Add warning"
                   >
                     <Text style={{ fontSize: 18, color: colors.text.tertiary, lineHeight: 22 }}>+</Text>
                     <Text variant="body" color="tertiary">
@@ -751,6 +807,7 @@ export default function PreferencesScreen() {
                         <Switch
                           value={event.enabled}
                           onValueChange={(v) => updateContextualEvent(key, { enabled: v })}
+                          accessibilityLabel={label}
                           trackColor={{ false: colors.borderMid, true: colors.accent }}
                           thumbColor={colors.surfaceSolid}
                         />
@@ -763,6 +820,9 @@ export default function PreferencesScreen() {
                               onPress={() => pickTiming(key)}
                               style={styles.timingChip}
                               activeOpacity={0.7}
+                              hitSlop={{ top: 10, bottom: 10, left: 3, right: 3 }}
+                              accessibilityRole="button"
+                              accessibilityLabel={`${label}: when to alert, ${timingLabel(event)}`}
                             >
                               <Text style={styles.timingChipText}>{timingLabel(event)} ▾</Text>
                             </TouchableOpacity>
@@ -773,6 +833,9 @@ export default function PreferencesScreen() {
                               onPress={() => pickStyle((s) => updateContextualEvent(key, { style: s }), event.style)}
                               style={styles.timingChip}
                               activeOpacity={0.7}
+                              hitSlop={{ top: 10, bottom: 10, left: 3, right: 3 }}
+                              accessibilityRole="button"
+                              accessibilityLabel={`${label} pattern, ${styleLabel(event.style)}`}
                             >
                               <Text style={styles.timingChipText}>{styleLabel(event.style)} ▾</Text>
                             </TouchableOpacity>
@@ -789,7 +852,13 @@ export default function PreferencesScreen() {
           <Text style={styles.sectionLabel}>TOUR</Text>
 
           <View style={styles.card}>
-            <TouchableOpacity style={styles.row} onPress={startTour} activeOpacity={0.7}>
+            <TouchableOpacity
+              style={styles.row}
+              onPress={startTour}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="View app tour"
+            >
               <Text style={styles.rowLabel}>View App Tour</Text>
               <Text style={styles.rowValue}>›</Text>
             </TouchableOpacity>
@@ -798,7 +867,13 @@ export default function PreferencesScreen() {
           <Text style={styles.sectionLabel}>TAGS</Text>
 
           <View style={styles.card}>
-            <TouchableOpacity style={styles.row} onPress={() => router.push('/tags')} activeOpacity={0.7}>
+            <TouchableOpacity
+              style={styles.row}
+              onPress={() => router.push('/tags')}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Manage tags"
+            >
               <Text style={styles.rowLabel}>Manage Tags</Text>
               <Text style={styles.rowValue}>›</Text>
             </TouchableOpacity>

@@ -141,7 +141,7 @@ export function SectionImportSheet({ currentSequenceId, onImport, onClose }: Pro
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           {selectedSequence ? (
-            <TouchableOpacity onPress={goBack} style={styles.backBtn} hitSlop={8}>
+            <TouchableOpacity onPress={goBack} style={styles.backBtn} hitSlop={12} accessibilityRole="button">
               <Text variant="body" color="secondary">
                 Back
               </Text>
@@ -152,7 +152,7 @@ export function SectionImportSheet({ currentSequenceId, onImport, onClose }: Pro
           <Text variant="label" style={styles.headerTitle}>
             {selectedSequence ? selectedSequence.name : 'Import Section'}
           </Text>
-          <TouchableOpacity onPress={onClose} style={styles.cancelBtn} hitSlop={8}>
+          <TouchableOpacity onPress={onClose} style={styles.cancelBtn} hitSlop={12} accessibilityRole="button">
             <Text variant="body" color="secondary" style={{ textAlign: 'right' }}>
               Cancel
             </Text>
@@ -164,7 +164,12 @@ export function SectionImportSheet({ currentSequenceId, onImport, onClose }: Pro
             data={sequences}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
-              <TouchableOpacity style={styles.row} onPress={() => selectSequence(item)} activeOpacity={0.7}>
+              <TouchableOpacity
+                style={styles.row}
+                onPress={() => selectSequence(item)}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+              >
                 <Text variant="body">{item.name}</Text>
                 <View style={styles.rowRight}>
                   <Text variant="caption" color="tertiary">
@@ -186,7 +191,12 @@ export function SectionImportSheet({ currentSequenceId, onImport, onClose }: Pro
             data={sections}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
-              <TouchableOpacity style={styles.row} onPress={() => importSection(item)} activeOpacity={0.7}>
+              <TouchableOpacity
+                style={styles.row}
+                onPress={() => importSection(item)}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+              >
                 <Text variant="body">{item.name || 'Untitled Section'}</Text>
                 <View style={styles.rowRight}>
                   <Text variant="caption" color="tertiary">

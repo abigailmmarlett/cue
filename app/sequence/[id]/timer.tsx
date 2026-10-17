@@ -18,7 +18,7 @@ import { useSequence } from '@/lib/hooks/useSequence';
 import { useTimer, type TimerExercise, type TimerSection } from '@/lib/hooks/useTimer';
 import { useHapticFeedback, fireHaptic } from '@/lib/hooks/useHapticFeedback';
 import { usePreferences } from '@/lib/hooks/usePreferences';
-import { formatSeconds } from '@/lib/utils/time';
+import { formatSeconds, spokenDuration } from '@/lib/utils/time';
 
 export { RouteErrorBoundary as ErrorBoundary } from '@/components/ErrorFallback';
 
@@ -200,7 +200,12 @@ export default function TimerScreen() {
             Add exercises to {sequence.name} to use the timer.
           </Text>
           <View style={styles.completionActions}>
-            <TouchableOpacity onPress={leave} style={styles.restartButton} activeOpacity={0.8}>
+            <TouchableOpacity
+              onPress={leave}
+              style={styles.restartButton}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+            >
               <Text variant="label" color="secondary">
                 Back
               </Text>
@@ -209,6 +214,7 @@ export default function TimerScreen() {
               onPress={() => router.replace(`/builder/${id}`)}
               style={[styles.exitButton, { backgroundColor: colors.fill.primary }]}
               activeOpacity={0.8}
+              accessibilityRole="button"
             >
               <Text variant="label" color="inverse">
                 Edit Sequence
@@ -232,10 +238,20 @@ export default function TimerScreen() {
           <Text variant="body" color="secondary" style={styles.completeSubtitle}>
             {sequence.name}
           </Text>
-          <Text style={[styles.completeTotalTime, { color: colors.accentText }]}>{formatSeconds(totalDuration)}</Text>
+          <Text
+            style={[styles.completeTotalTime, { color: colors.accentText }]}
+            accessibilityLabel={`Total time ${spokenDuration(totalDuration)}`}
+          >
+            {formatSeconds(totalDuration)}
+          </Text>
 
           <View style={styles.completionActions}>
-            <TouchableOpacity onPress={controls.reset} style={styles.restartButton} activeOpacity={0.8}>
+            <TouchableOpacity
+              onPress={controls.reset}
+              style={styles.restartButton}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+            >
               <Text variant="label" color="secondary">
                 Restart
               </Text>
@@ -244,6 +260,7 @@ export default function TimerScreen() {
               onPress={leave}
               style={[styles.exitButton, { backgroundColor: colors.fill.primary }]}
               activeOpacity={0.8}
+              accessibilityRole="button"
             >
               <Text variant="label" color="inverse">
                 Done
@@ -274,7 +291,10 @@ export default function TimerScreen() {
           {sequence.name}
         </Text>
         <View style={[styles.totalTimeBadge, { backgroundColor: colors.accentDim, borderColor: colors.pill.border }]}>
-          <Text style={[styles.totalTimeBadgeText, { color: colors.accentText }]}>
+          <Text
+            style={[styles.totalTimeBadgeText, { color: colors.accentText }]}
+            accessibilityLabel={`${spokenDuration(totalTimeRemaining)} left in workout`}
+          >
             {formatSeconds(totalTimeRemaining)}
           </Text>
         </View>
@@ -297,7 +317,9 @@ export default function TimerScreen() {
               <Text style={styles.exerciseName} numberOfLines={2}>
                 {currentExercise.name}
               </Text>
-              <Text style={styles.countdown}>{formatSeconds(timeRemaining)}</Text>
+              <Text style={styles.countdown} accessibilityLabel={`${spokenDuration(timeRemaining)} left`}>
+                {formatSeconds(timeRemaining)}
+              </Text>
               {showTimerTags && <TagChips tags={currentExercise.tags} style={styles.timerTagChips} />}
               {allLoadIcons.length > 0 && hasLoadData && (
                 <View style={styles.loadRows}>
