@@ -131,7 +131,8 @@ export function useTextSize(): TextSize {
 }
 
 export function usePreferences() {
-  const [showExerciseNotes, setShowExerciseNotesState] = useState<boolean>(() => {
+  // Stored under its original key, so the setting people already chose carries over.
+  const [showTimerTags, setShowTimerTagsState] = useState<boolean>(() => {
     const val = getPreference('showExerciseNotes');
     return val === null ? true : val === 'true';
   });
@@ -152,8 +153,8 @@ export function usePreferences() {
     };
   }, []);
 
-  const setShowExerciseNotes = (show: boolean) => {
-    setShowExerciseNotesState(show);
+  const setShowTimerTags = (show: boolean) => {
+    setShowTimerTagsState(show);
     setPreference('showExerciseNotes', String(show));
   };
 
@@ -173,8 +174,8 @@ export function usePreferences() {
   return {
     hapticsEnabled: hapticSettings.enabled,
     setHapticsEnabled: (enabled: boolean) => setHapticSettings({ ...hapticSettings, enabled }),
-    showExerciseNotes,
-    setShowExerciseNotes,
+    showTimerTags,
+    setShowTimerTags,
     hapticSettings,
     setHapticSettings,
     actionButtonSize,
