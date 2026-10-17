@@ -130,6 +130,36 @@ export function getTagsForExercise(exerciseId: string): ExerciseTag[] {
   return [];
 }
 
+/**
+ * Each exercise's tags in a sequence, in one query: its own tags, or for a linked exercise with none
+ * of its own, its library entry's. Same rule as getTagsForExercise.
+ */
+export function getTagsForSequenceExercises(sequenceId: string): Map<string, ExerciseTag[]> {
+  const rows = getDb().getAllSync<ExerciseTag & { exerciseId: string }>(
+    `SELECT e.id AS exerciseId, tv.id AS tagValueId, tc.name AS categoryName, tv.label
+     FROM exercises e
+     JOIN exercise_tags et ON et.exercise_id = e.id
+     JOIN tag_values tv ON tv.id = et.tag_value_id
+     JOIN tag_categories tc ON tc.id = tv.category_id
+     WHERE e.sequence_id = ?
+     UNION ALL
+     SELECT e.id, tv.id, tc.name, tv.label
+     FROM exercises e
+     JOIN library_exercise_tags lt ON lt.library_exercise_id = e.library_exercise_id
+     JOIN tag_values tv ON tv.id = lt.tag_value_id
+     JOIN tag_categories tc ON tc.id = tv.category_id
+     WHERE e.sequence_id = ? AND NOT EXISTS (SELECT 1 FROM exercise_tags own WHERE own.exercise_id = e.id)
+     ORDER BY exerciseId, categoryName, label;`,
+    [sequenceId, sequenceId]
+  );
+  const map = new Map<string, ExerciseTag[]>();
+  for (const { exerciseId, ...tag } of rows) {
+    if (!map.has(exerciseId)) map.set(exerciseId, []);
+    map.get(exerciseId)!.push(tag);
+  }
+  return map;
+}
+
 export function getOwnTagsForExercise(exerciseId: string): ExerciseTag[] {
   return getDb().getAllSync<ExerciseTag>(
     `SELECT tv.id AS tagValueId, tc.name AS categoryName, tv.label
