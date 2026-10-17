@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { AppState } from 'react-native';
 import type { VariationItem } from '@/lib/db/exercises';
+import { positionAfter } from '@/lib/utils/time';
 
 export interface TimerExercise {
   id: string;
@@ -35,6 +37,8 @@ export interface TimerState {
   currentSectionIndex: number;
   currentSection: TimerSection | null;
   sectionTimeRemaining: number;
+  /** Changes whenever an exercise starts over from the top (Start, Skip, Back), but not on Resume. */
+  runId: number;
 }
 
 export interface TimerControls {
@@ -44,7 +48,6 @@ export interface TimerControls {
   skip: () => void;
   goBack: () => void;
   reset: () => void;
-  end: () => void;
 }
 
 function computeSectionTimeRemaining(exercises: TimerExercise[], exerciseIndex: number, timeRemaining: number): number {
@@ -63,164 +66,154 @@ export function useTimer(
 ): TimerState & { controls: TimerControls } {
   const [status, setStatus] = useState<TimerStatus>('idle');
   const [exerciseIndex, setExerciseIndex] = useState(0);
-  const [timeRemaining, setTimeRemaining] = useState(exercises[0]?.duration ?? 0);
-  const [sectionTimeRemaining, setSectionTimeRemaining] = useState(
-    computeSectionTimeRemaining(exercises, 0, exercises[0]?.duration ?? 0)
-  );
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [runId, setRunId] = useState(0);
 
-  const anchorTimeRef = useRef<number>(0);
-  const anchorSecondsRef = useRef<number>(0);
-  const exerciseIndexRef = useRef<number>(0);
+  const exercisesRef = useRef(exercises);
   const statusRef = useRef<TimerStatus>('idle');
-  const timeRemainingRef = useRef<number>(exercises[0]?.duration ?? 0);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const indexRef = useRef(0);
+  // While running: the Date.now() at which the current exercise started, shifted forward by any time spent paused.
+  const startedAtRef = useRef(0);
+  // While paused: how far into the current exercise the timer got, in milliseconds.
+  const pausedMsRef = useRef(0);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    statusRef.current = status;
-  }, [status]);
-  useEffect(() => {
-    timeRemainingRef.current = timeRemaining;
-  }, [timeRemaining]);
+    exercisesRef.current = exercises;
+  }, [exercises]);
 
-  const currentSectionIndex = sections.findIndex((s) => s.id === (exercises[exerciseIndex]?.sectionId ?? ''));
-  const currentSection = sections[currentSectionIndex] ?? null;
-
-  const setTime = useCallback(
-    (exIdx: number, remaining: number) => {
-      timeRemainingRef.current = remaining;
-      setTimeRemaining(remaining);
-      setSectionTimeRemaining(computeSectionTimeRemaining(exercises, exIdx, remaining));
-    },
-    [exercises]
-  );
-
-  const clearTimer = useCallback(() => {
-    if (intervalRef.current !== null) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
+  const clearTick = useCallback(() => {
+    if (timeoutRef.current !== null) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
     }
   }, []);
 
-  const startInterval = useCallback(() => {
-    clearTimer();
-    intervalRef.current = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - anchorTimeRef.current) / 1000);
-      const remaining = Math.max(0, anchorSecondsRef.current - elapsed);
+  const updateStatus = useCallback((next: TimerStatus) => {
+    statusRef.current = next;
+    setStatus(next);
+  }, []);
 
-      if (remaining > 0) {
-        setTime(exerciseIndexRef.current, remaining);
-        return;
-      }
+  const show = useCallback((index: number, elapsedMs: number) => {
+    indexRef.current = index;
+    setExerciseIndex(index);
+    setElapsedSeconds(Math.floor(elapsedMs / 1000));
+  }, []);
 
-      const nextIndex = exerciseIndexRef.current + 1;
-      if (nextIndex >= exercises.length) {
-        clearTimer();
-        setTime(exerciseIndexRef.current, 0);
-        statusRef.current = 'finished';
-        setStatus('finished');
-      } else {
-        exerciseIndexRef.current = nextIndex;
-        setExerciseIndex(nextIndex);
-        const nextDuration = exercises[nextIndex].duration;
-        anchorTimeRef.current = Date.now();
-        anchorSecondsRef.current = nextDuration;
-        setTime(nextIndex, nextDuration);
-      }
-    }, 200);
-  }, [clearTimer, exercises, setTime]);
+  const finish = useCallback(() => {
+    clearTick();
+    const last = exercisesRef.current.length - 1;
+    show(Math.max(0, last), (exercisesRef.current[last]?.duration ?? 0) * 1000);
+    updateStatus('finished');
+  }, [clearTick, show, updateStatus]);
 
-  useEffect(() => () => clearTimer(), [clearTimer]);
+  // Works the position out from the clock rather than counting ticks, so time that passed while the
+  // app was in the background (when timers don't fire) is caught up instead of lost.
+  const sync = useCallback(() => {
+    clearTick();
+    if (statusRef.current !== 'running') return;
+    const now = Date.now();
+    const pos = positionAfter(exercisesRef.current, indexRef.current, now - startedAtRef.current);
+    if (!pos) {
+      finish();
+      return;
+    }
+    startedAtRef.current = now - pos.elapsedMs;
+    show(pos.index, pos.elapsedMs);
+    // Wake just after the next whole second instead of polling.
+    timeoutRef.current = setTimeout(sync, 1000 - (pos.elapsedMs % 1000) + 5);
+  }, [clearTick, finish, show]);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') sync();
+    });
+    return () => sub.remove();
+  }, [sync]);
+
+  useEffect(() => clearTick, [clearTick]);
+
+  const runFrom = useCallback(
+    (index: number, elapsedMs: number) => {
+      startedAtRef.current = Date.now() - elapsedMs;
+      indexRef.current = index;
+      updateStatus('running');
+      sync();
+    },
+    [sync, updateStatus]
+  );
 
   const start = useCallback(() => {
-    if (exercises.length === 0) return;
-    exerciseIndexRef.current = 0;
-    setExerciseIndex(0);
-    anchorTimeRef.current = Date.now();
-    anchorSecondsRef.current = exercises[0].duration;
-    setTime(0, exercises[0].duration);
-    statusRef.current = 'running';
-    setStatus('running');
-    startInterval();
-  }, [exercises, setTime, startInterval]);
+    if (exercisesRef.current.length === 0) return;
+    setRunId((n) => n + 1);
+    runFrom(0, 0);
+  }, [runFrom]);
 
   const pause = useCallback(() => {
-    clearTimer();
-    statusRef.current = 'paused';
-    setStatus('paused');
-  }, [clearTimer]);
+    sync();
+    if (statusRef.current !== 'running') return;
+    clearTick();
+    pausedMsRef.current = Date.now() - startedAtRef.current;
+    updateStatus('paused');
+  }, [clearTick, sync, updateStatus]);
 
   const resume = useCallback(() => {
-    anchorTimeRef.current = Date.now();
-    anchorSecondsRef.current = timeRemainingRef.current;
-    statusRef.current = 'running';
-    setStatus('running');
-    startInterval();
-  }, [startInterval]);
+    if (statusRef.current !== 'paused') return;
+    runFrom(indexRef.current, pausedMsRef.current);
+  }, [runFrom]);
 
   const skip = useCallback(() => {
-    const nextIndex = exerciseIndexRef.current + 1;
-    if (nextIndex >= exercises.length) {
-      clearTimer();
-      setTime(exerciseIndexRef.current, 0);
-      statusRef.current = 'finished';
-      setStatus('finished');
-    } else {
-      exerciseIndexRef.current = nextIndex;
-      setExerciseIndex(nextIndex);
-      const nextDuration = exercises[nextIndex].duration;
-      anchorTimeRef.current = Date.now();
-      anchorSecondsRef.current = nextDuration;
-      setTime(nextIndex, nextDuration);
-      if (statusRef.current !== 'running') {
-        statusRef.current = 'running';
-        setStatus('running');
-        startInterval();
-      }
+    sync();
+    if (statusRef.current !== 'running' && statusRef.current !== 'paused') return;
+    const nextIndex = indexRef.current + 1;
+    if (nextIndex >= exercisesRef.current.length) {
+      finish();
+      return;
     }
-  }, [clearTimer, exercises, setTime, startInterval]);
+    setRunId((n) => n + 1);
+    runFrom(nextIndex, 0);
+  }, [finish, runFrom, sync]);
 
+  // Restarts the current exercise, or goes to the previous one if the current one only just began.
   const goBack = useCallback(() => {
-    const currentDuration = exercises[exerciseIndexRef.current]?.duration ?? 0;
-    const elapsed = currentDuration - timeRemainingRef.current;
-    const shouldGoPrev = elapsed <= 3 && exerciseIndexRef.current > 0;
-    const targetIndex = shouldGoPrev ? exerciseIndexRef.current - 1 : exerciseIndexRef.current;
-
-    exerciseIndexRef.current = targetIndex;
-    setExerciseIndex(targetIndex);
-    const duration = exercises[targetIndex].duration;
-    anchorTimeRef.current = Date.now();
-    anchorSecondsRef.current = duration;
-    setTime(targetIndex, duration);
-
-    if (statusRef.current === 'running') startInterval();
-  }, [exercises, setTime, startInterval]);
+    sync();
+    const current = statusRef.current;
+    if (current !== 'running' && current !== 'paused') return;
+    const elapsedMs = current === 'running' ? Date.now() - startedAtRef.current : pausedMsRef.current;
+    const targetIndex = elapsedMs < 4000 && indexRef.current > 0 ? indexRef.current - 1 : indexRef.current;
+    setRunId((n) => n + 1);
+    if (current === 'running') {
+      runFrom(targetIndex, 0);
+    } else {
+      pausedMsRef.current = 0;
+      show(targetIndex, 0);
+    }
+  }, [runFrom, show, sync]);
 
   const reset = useCallback(() => {
-    clearTimer();
-    exerciseIndexRef.current = 0;
-    setExerciseIndex(0);
-    const firstDuration = exercises[0]?.duration ?? 0;
-    setTime(0, firstDuration);
-    statusRef.current = 'idle';
-    setStatus('idle');
-  }, [clearTimer, exercises, setTime]);
+    clearTick();
+    pausedMsRef.current = 0;
+    show(0, 0);
+    updateStatus('idle');
+  }, [clearTick, show, updateStatus]);
 
-  const end = useCallback(() => {
-    clearTimer();
-    statusRef.current = 'finished';
-    setStatus('finished');
-  }, [clearTimer]);
+  // Derived from the exercise list on every render, so the first exercise shows before Start even
+  // when the list loads after the screen mounts.
+  const currentExercise = exercises[exerciseIndex] ?? null;
+  const timeRemaining = Math.max(0, (currentExercise?.duration ?? 0) - elapsedSeconds);
+  const currentSectionIndex = sections.findIndex((s) => s.id === currentExercise?.sectionId);
 
   return {
     status,
     exerciseIndex,
     timeRemaining,
-    currentExercise: exercises[exerciseIndex] ?? null,
+    currentExercise,
     nextExercise: exercises[exerciseIndex + 1] ?? null,
     totalExercises: exercises.length,
     currentSectionIndex,
-    currentSection,
-    sectionTimeRemaining,
-    controls: { start, pause, resume, skip, goBack, reset, end },
+    currentSection: sections[currentSectionIndex] ?? null,
+    sectionTimeRemaining: computeSectionTimeRemaining(exercises, exerciseIndex, timeRemaining),
+    runId,
+    controls: { start, pause, resume, skip, goBack, reset },
   };
 }

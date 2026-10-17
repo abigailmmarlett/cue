@@ -11,6 +11,7 @@ interface HapticTimerState {
   currentExercise: TimerExercise | null;
   nextExercise: TimerExercise | null;
   currentSectionIndex: number;
+  runId: number;
 }
 
 export function fireHaptic(style: HapticStyle): void {
@@ -59,16 +60,21 @@ function hasVariationChanged(a: TimerExercise | null, b: TimerExercise | null): 
 }
 
 export function useHapticFeedback(state: HapticTimerState, settings: HapticSettings): void {
-  const { status, exerciseIndex, timeRemaining, currentExercise, nextExercise, currentSectionIndex } = state;
+  const { status, exerciseIndex, timeRemaining, currentExercise, nextExercise, currentSectionIndex, runId } = state;
 
   const prevSectionIndexRef = useRef<number>(-1);
   const prevExerciseRef = useRef<TimerExercise | null>(null);
   const firedThisExerciseRef = useRef<Set<string>>(new Set());
   const armedCountdownsRef = useRef<Set<string>>(new Set());
+  const armedKeyRef = useRef<string | null>(null);
 
   // Reset refs and fire transition haptics when exercise changes
   useEffect(() => {
-    if (status !== 'running') return;
+    // Resuming after a pause continues the same run of the same exercise, so don't buzz again or
+    // re-fire countdowns. Start, Skip and Back change runId, so a restarted exercise re-arms.
+    const key = `${runId}:${exerciseIndex}`;
+    if (status !== 'running' || armedKeyRef.current === key) return;
+    armedKeyRef.current = key;
 
     firedThisExerciseRef.current = new Set();
 
@@ -125,7 +131,7 @@ export function useHapticFeedback(state: HapticTimerState, settings: HapticSetti
 
     prevSectionIndexRef.current = currentSectionIndex;
     prevExerciseRef.current = currentExercise;
-  }, [exerciseIndex, status]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [runId, exerciseIndex, status]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Completion haptic
   useEffect(() => {

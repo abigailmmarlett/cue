@@ -1,7 +1,9 @@
-import { View, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { View, StyleSheet, TouchableOpacity, SafeAreaView, Alert } from 'react-native';
+import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import { usePreventRemove } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
+import { useKeepAwake } from 'expo-keep-awake';
 import { Text } from '@/components/ui/Text';
 import { TagChips } from '@/components/TagChips';
 import { LoadDotRow } from '@/components/LoadDotRow';
@@ -20,9 +22,16 @@ import { formatSeconds } from '@/lib/utils/time';
 
 export { RouteErrorBoundary as ErrorBoundary } from '@/components/ErrorFallback';
 
+/** Stops the phone auto-locking while it's mounted. */
+function KeepScreenAwake() {
+  useKeepAwake('cue-timer');
+  return null;
+}
+
 export default function TimerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const navigation = useNavigation();
   const { colors, isDark } = useTheme();
   const { sequence, sections, exercises } = useSequence(id);
   const [allLoadIcons] = useState<LoadIcon[]>(() => getAllLoadIcons());
@@ -31,27 +40,36 @@ export default function TimerScreen() {
   const prevExerciseKeyRef = useRef<string | null>(null);
   const currentRunMarksRef = useRef<Map<string, number[]>>(new Map());
 
-  const timerExercises: TimerExercise[] = exercises.map((e) => ({
-    id: e.id,
-    name: e.name,
-    duration: e.duration,
-    sectionId: e.section_id,
-    notes: e.notes,
-    tags: e.tags,
-    loadModified: parseLoad(e.load_modified),
-    loadBase: parseLoad(e.load_base),
-    loadAmplified: parseLoad(e.load_amplified),
-    variation: e.variation,
-    variationSets: parseVariationSets(e.variation_sets),
-    side: e.side,
-    libraryExerciseId: e.library_exercise_id,
-  }));
+  const timerExercises: TimerExercise[] = useMemo(
+    () =>
+      exercises.map((e) => ({
+        id: e.id,
+        name: e.name,
+        // Older data can have 0-second exercises; give them at least a second so the rings can draw.
+        duration: Math.max(1, e.duration),
+        sectionId: e.section_id,
+        notes: e.notes,
+        tags: e.tags,
+        loadModified: parseLoad(e.load_modified),
+        loadBase: parseLoad(e.load_base),
+        loadAmplified: parseLoad(e.load_amplified),
+        variation: e.variation,
+        variationSets: parseVariationSets(e.variation_sets),
+        side: e.side,
+        libraryExerciseId: e.library_exercise_id,
+      })),
+    [exercises]
+  );
 
-  const timerSections: TimerSection[] = sections.map((s) => ({
-    id: s.id,
-    name: s.name,
-    duration: s.exercises.reduce((sum, e) => sum + e.duration, 0),
-  }));
+  const timerSections: TimerSection[] = useMemo(
+    () =>
+      sections.map((s) => ({
+        id: s.id,
+        name: s.name,
+        duration: timerExercises.filter((e) => e.sectionId === s.id).reduce((sum, e) => sum + e.duration, 0),
+      })),
+    [sections, timerExercises]
+  );
 
   const totalDuration = timerExercises.reduce((sum, e) => sum + e.duration, 0);
 
@@ -65,13 +83,33 @@ export default function TimerScreen() {
     currentSectionIndex,
     currentSection,
     sectionTimeRemaining,
+    runId,
     controls,
   } = useTimer(timerExercises, timerSections);
   const styles = makeStyles(colors);
+  const inProgress = status === 'running' || status === 'paused';
+
+  // Leaving mid-workout (the ← button or a swipe back) asks first, so a stray swipe can't end the class.
+  usePreventRemove(inProgress, ({ data }) => {
+    Alert.alert('End workout?', 'The timer will stop.', [
+      { text: 'Keep going', style: 'cancel' },
+      { text: 'End', style: 'destructive', onPress: () => navigation.dispatch(data.action) },
+    ]);
+  });
+
+  const leave = () => (router.canGoBack() ? router.back() : router.replace(`/sequence/${id}`));
+
+  // Reset mid-workout loses your place, so it asks first too.
+  const confirmReset = () =>
+    Alert.alert('Restart workout?', 'The timer will go back to the first exercise.', [
+      { text: 'Keep going', style: 'cancel' },
+      { text: 'Restart', style: 'destructive', onPress: controls.reset },
+    ]);
+  const timerControls = inProgress ? { ...controls, reset: confirmReset } : controls;
 
   const { hapticSettings } = usePreferences();
   useHapticFeedback(
-    { status, exerciseIndex, timeRemaining, currentExercise, nextExercise, currentSectionIndex },
+    { status, exerciseIndex, timeRemaining, currentExercise, nextExercise, currentSectionIndex, runId },
     hapticSettings
   );
 
@@ -150,6 +188,38 @@ export default function TimerScreen() {
 
   if (!sequence) return null;
 
+  if (timerExercises.length === 0) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar style={isDark ? 'light' : 'dark'} />
+        <View style={styles.completionContainer}>
+          <Text variant="title" style={styles.completeTitle}>
+            No exercises yet
+          </Text>
+          <Text variant="body" color="secondary" style={styles.emptyMessage}>
+            Add exercises to {sequence.name} to use the timer.
+          </Text>
+          <View style={styles.completionActions}>
+            <TouchableOpacity onPress={leave} style={styles.restartButton} activeOpacity={0.8}>
+              <Text variant="label" color="secondary">
+                Back
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => router.replace(`/builder/${id}`)}
+              style={[styles.exitButton, { backgroundColor: colors.accent }]}
+              activeOpacity={0.8}
+            >
+              <Text variant="label" color="inverse">
+                Edit Sequence
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   if (status === 'finished') {
     return (
       <SafeAreaView style={styles.container}>
@@ -171,7 +241,7 @@ export default function TimerScreen() {
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => router.back()}
+              onPress={leave}
               style={[styles.exitButton, { backgroundColor: colors.accent }]}
               activeOpacity={0.8}
             >
@@ -188,9 +258,16 @@ export default function TimerScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
+      {inProgress && <KeepScreenAwake />}
 
       <View style={styles.topBar}>
-        <TouchableOpacity onPress={controls.end} hitSlop={12} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={leave}
+          hitSlop={12}
+          style={styles.backButton}
+          accessibilityRole="button"
+          accessibilityLabel="Leave timer"
+        >
           <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
         <Text variant="caption" color="tertiary" style={styles.sequenceTitle} numberOfLines={1}>
@@ -290,7 +367,7 @@ export default function TimerScreen() {
         </View>
       )}
 
-      <TimerControls status={status} controls={controls} onMark={addMark} />
+      <TimerControls status={status} controls={timerControls} onMark={addMark} />
     </SafeAreaView>
   );
 }
@@ -410,6 +487,7 @@ function makeStyles(c: typeof Colors) {
     },
     completeTitle: { letterSpacing: -0.5 },
     completeSubtitle: {},
+    emptyMessage: { textAlign: 'center' },
     completeTotalTime: {
       fontSize: 13,
       fontWeight: '500',
