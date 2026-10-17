@@ -50,15 +50,15 @@ function AppShellInner() {
   useEffect(() => {
     SplashScreen.hideAsync()
       .catch(() => {})
-      .then(() => setShowWelcome(true));
+      .then(() => {
+        // The welcome plays on first launch and leads into the tour; later launches go straight in.
+        if (!getPreference('hasTakenTour')) setShowWelcome(true);
+      });
   }, []);
 
   const handleWelcomeComplete = useCallback(() => {
     setShowWelcome(false);
-    const hasTaken = getPreference('hasTakenTour');
-    if (!hasTaken) {
-      setTimeout(() => startTour(), 400);
-    }
+    setTimeout(() => startTour(), 400);
   }, [startTour]);
 
   const navTheme = {
