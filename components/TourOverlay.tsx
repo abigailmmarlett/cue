@@ -155,7 +155,8 @@ export function TourOverlay() {
             backgroundColor: colors.surfaceSolid,
             borderColor: colors.border,
             maxWidth: tooltipMaxWidth,
-            pointerEvents: 'auto',
+            // Hidden between steps, so it mustn't take taps until the next one shows.
+            pointerEvents: shown.index === currentStepIndex ? 'auto' : 'none',
           },
           tooltipPositionStyle,
           tooltipStyle,

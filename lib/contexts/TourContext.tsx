@@ -153,6 +153,8 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   const markReady = useCallback((stepIndex: number, layout: HighlightLayout | null) => {
     // Ignore a measurement that finishes after the tour has moved on.
     if (!isActiveRef.current || stepIndexRef.current !== stepIndex) return;
+    // Next works again only once this step can show, so a quick double tap can't skip it unseen.
+    isTransitioning.current = false;
     setHighlightLayout(layout);
     setReadyStepIndex(stepIndex);
   }, []);
@@ -175,7 +177,6 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
 
   const showStep = useCallback(
     (stepIndex: number, steps: TourStep[]) => {
-      isTransitioning.current = false;
       const step = steps[stepIndex];
       if (!step?.targetId) {
         markReady(stepIndex, null);
@@ -230,11 +231,19 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     setCurrentStepIndex(nextIndex);
 
     if (nextStepData.navigateTo) {
-      if (nextStepData.targetId) {
-        pendingTargetId.current = nextStepData.targetId;
+      const targetId = nextStepData.targetId;
+      if (targetId) {
+        pendingTargetId.current = targetId;
+        // Normally the new screen registers its target and that shows the step. If it doesn't
+        // (e.g. the screen was already mounted), show the step anyway rather than never.
+        setTimeout(() => {
+          if (pendingTargetId.current !== targetId) return;
+          pendingTargetId.current = null;
+          showStep(nextIndex, steps);
+        }, 1000);
       }
       router.replace(nextStepData.navigateTo as any);
-      if (!nextStepData.targetId) {
+      if (!targetId) {
         // No target to wait for; show the step once navigation settles.
         setTimeout(() => showStep(nextIndex, steps), 350);
       }
