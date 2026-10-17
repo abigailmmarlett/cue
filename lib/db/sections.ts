@@ -1,4 +1,4 @@
-import db, { transaction } from './client';
+import { getDb, transaction } from './client';
 import { generateId } from '../utils/id';
 
 export interface Section {
@@ -10,19 +10,21 @@ export interface Section {
 }
 
 export function getSectionsBySequenceId(sequenceId: string): Section[] {
-  return db.getAllSync<Section>(`SELECT * FROM sections WHERE sequence_id = ? ORDER BY order_index;`, [sequenceId]);
+  return getDb().getAllSync<Section>(`SELECT * FROM sections WHERE sequence_id = ? ORDER BY order_index;`, [
+    sequenceId,
+  ]);
 }
 
 export function createSection(sequenceId: string, name: string): Section {
   const id = generateId();
   const now = Date.now();
-  const maxIndex = db.getFirstSync<{ max_index: number | null }>(
+  const maxIndex = getDb().getFirstSync<{ max_index: number | null }>(
     `SELECT MAX(order_index) as max_index FROM sections WHERE sequence_id = ?;`,
     [sequenceId]
   );
   const orderIndex = (maxIndex?.max_index ?? -1) + 1;
 
-  db.runSync(`INSERT INTO sections (id, sequence_id, name, order_index, created_at) VALUES (?, ?, ?, ?, ?);`, [
+  getDb().runSync(`INSERT INTO sections (id, sequence_id, name, order_index, created_at) VALUES (?, ?, ?, ?, ?);`, [
     id,
     sequenceId,
     name,
@@ -34,15 +36,15 @@ export function createSection(sequenceId: string, name: string): Section {
 }
 
 export function updateSection(id: string, name: string): void {
-  db.runSync(`UPDATE sections SET name = ? WHERE id = ?;`, [name, id]);
+  getDb().runSync(`UPDATE sections SET name = ? WHERE id = ?;`, [name, id]);
 }
 
 export function deleteSection(id: string): void {
-  db.runSync(`DELETE FROM sections WHERE id = ?;`, [id]);
+  getDb().runSync(`DELETE FROM sections WHERE id = ?;`, [id]);
 }
 
 export function upsertSection(id: string, sequenceId: string, name: string, orderIndex: number): void {
-  db.runSync(
+  getDb().runSync(
     `INSERT INTO sections (id, sequence_id, name, order_index, created_at)
      VALUES (?, ?, ?, ?, ?)
      ON CONFLICT(id) DO UPDATE SET
@@ -55,7 +57,7 @@ export function upsertSection(id: string, sequenceId: string, name: string, orde
 export function reorderSections(sequenceId: string, orderedIds: string[]): void {
   transaction(() => {
     for (let i = 0; i < orderedIds.length; i++) {
-      db.runSync(`UPDATE sections SET order_index = ? WHERE id = ? AND sequence_id = ?;`, [
+      getDb().runSync(`UPDATE sections SET order_index = ? WHERE id = ? AND sequence_id = ?;`, [
         i,
         orderedIds[i],
         sequenceId,

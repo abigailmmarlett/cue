@@ -1,11 +1,11 @@
-import db, { transaction } from './client';
+import { getDb, transaction } from './client';
 import { generateId } from '../utils/id';
 
 export function runMigrations(): void {
-  db.execSync(`PRAGMA journal_mode = WAL;`);
-  db.execSync(`PRAGMA foreign_keys = ON;`);
+  getDb().execSync(`PRAGMA journal_mode = WAL;`);
+  getDb().execSync(`PRAGMA foreign_keys = ON;`);
 
-  db.execSync(`
+  getDb().execSync(`
     CREATE TABLE IF NOT EXISTS sequences (
       id         TEXT    PRIMARY KEY NOT NULL,
       name       TEXT    NOT NULL,
@@ -14,7 +14,7 @@ export function runMigrations(): void {
     );
   `);
 
-  db.execSync(`
+  getDb().execSync(`
     CREATE TABLE IF NOT EXISTS exercises (
       id          TEXT    PRIMARY KEY NOT NULL,
       sequence_id TEXT    NOT NULL,
@@ -27,7 +27,7 @@ export function runMigrations(): void {
     );
   `);
 
-  db.execSync(`
+  getDb().execSync(`
     CREATE TABLE IF NOT EXISTS sections (
       id          TEXT    PRIMARY KEY NOT NULL,
       sequence_id TEXT    NOT NULL,
@@ -40,12 +40,12 @@ export function runMigrations(): void {
 
   // Add section_id column to exercises if it doesn't exist yet
   try {
-    db.execSync(`ALTER TABLE exercises ADD COLUMN section_id TEXT REFERENCES sections(id) ON DELETE SET NULL;`);
+    getDb().execSync(`ALTER TABLE exercises ADD COLUMN section_id TEXT REFERENCES sections(id) ON DELETE SET NULL;`);
   } catch {
     // Column already exists — safe to ignore
   }
 
-  db.execSync(`
+  getDb().execSync(`
     CREATE TABLE IF NOT EXISTS tag_categories (
       id         TEXT    PRIMARY KEY NOT NULL,
       name       TEXT    NOT NULL,
@@ -53,7 +53,7 @@ export function runMigrations(): void {
     );
   `);
 
-  db.execSync(`
+  getDb().execSync(`
     CREATE TABLE IF NOT EXISTS tag_values (
       id          TEXT    PRIMARY KEY NOT NULL,
       category_id TEXT    NOT NULL,
@@ -63,7 +63,7 @@ export function runMigrations(): void {
     );
   `);
 
-  db.execSync(`
+  getDb().execSync(`
     CREATE TABLE IF NOT EXISTS exercise_tags (
       exercise_id  TEXT NOT NULL,
       tag_value_id TEXT NOT NULL,
@@ -73,7 +73,7 @@ export function runMigrations(): void {
     );
   `);
 
-  db.execSync(`
+  getDb().execSync(`
     CREATE TABLE IF NOT EXISTS sequence_tags (
       sequence_id  TEXT NOT NULL,
       tag_value_id TEXT NOT NULL,
@@ -83,7 +83,7 @@ export function runMigrations(): void {
     );
   `);
 
-  db.execSync(`
+  getDb().execSync(`
     CREATE TABLE IF NOT EXISTS library_exercises (
       id         TEXT    PRIMARY KEY NOT NULL,
       name       TEXT    NOT NULL,
@@ -92,7 +92,7 @@ export function runMigrations(): void {
     );
   `);
 
-  db.execSync(`
+  getDb().execSync(`
     CREATE TABLE IF NOT EXISTS library_exercise_tags (
       library_exercise_id TEXT NOT NULL,
       tag_value_id        TEXT NOT NULL,
@@ -103,21 +103,21 @@ export function runMigrations(): void {
   `);
 
   try {
-    db.execSync(
+    getDb().execSync(
       `ALTER TABLE exercises ADD COLUMN library_exercise_id TEXT REFERENCES library_exercises(id) ON DELETE SET NULL;`
     );
   } catch {
     // Column already exists
   }
 
-  db.execSync(`
+  getDb().execSync(`
     CREATE TABLE IF NOT EXISTS preferences (
       key   TEXT PRIMARY KEY NOT NULL,
       value TEXT NOT NULL
     );
   `);
 
-  db.execSync(`
+  getDb().execSync(`
     CREATE TABLE IF NOT EXISTS load_icons (
       id         TEXT    PRIMARY KEY NOT NULL,
       color      TEXT    NOT NULL,
@@ -128,55 +128,55 @@ export function runMigrations(): void {
   `);
 
   try {
-    db.execSync(`ALTER TABLE library_exercises ADD COLUMN load_modified TEXT;`);
+    getDb().execSync(`ALTER TABLE library_exercises ADD COLUMN load_modified TEXT;`);
   } catch {}
   try {
-    db.execSync(`ALTER TABLE library_exercises ADD COLUMN load_base TEXT;`);
+    getDb().execSync(`ALTER TABLE library_exercises ADD COLUMN load_base TEXT;`);
   } catch {}
   try {
-    db.execSync(`ALTER TABLE library_exercises ADD COLUMN load_amplified TEXT;`);
+    getDb().execSync(`ALTER TABLE library_exercises ADD COLUMN load_amplified TEXT;`);
   } catch {}
   try {
-    db.execSync(`ALTER TABLE exercises ADD COLUMN load_modified TEXT;`);
+    getDb().execSync(`ALTER TABLE exercises ADD COLUMN load_modified TEXT;`);
   } catch {}
   try {
-    db.execSync(`ALTER TABLE exercises ADD COLUMN load_base TEXT;`);
+    getDb().execSync(`ALTER TABLE exercises ADD COLUMN load_base TEXT;`);
   } catch {}
   try {
-    db.execSync(`ALTER TABLE exercises ADD COLUMN load_amplified TEXT;`);
+    getDb().execSync(`ALTER TABLE exercises ADD COLUMN load_amplified TEXT;`);
   } catch {}
   try {
-    db.execSync(`ALTER TABLE exercises ADD COLUMN variation TEXT;`);
+    getDb().execSync(`ALTER TABLE exercises ADD COLUMN variation TEXT;`);
   } catch {}
   try {
-    db.execSync(`ALTER TABLE exercises ADD COLUMN variation_sets TEXT;`);
+    getDb().execSync(`ALTER TABLE exercises ADD COLUMN variation_sets TEXT;`);
   } catch {}
   try {
-    db.execSync(`ALTER TABLE library_exercises ADD COLUMN is_bilateral INTEGER NOT NULL DEFAULT 0;`);
+    getDb().execSync(`ALTER TABLE library_exercises ADD COLUMN is_bilateral INTEGER NOT NULL DEFAULT 0;`);
   } catch {}
   try {
-    db.execSync(`ALTER TABLE exercises ADD COLUMN side TEXT;`);
+    getDb().execSync(`ALTER TABLE exercises ADD COLUMN side TEXT;`);
   } catch {}
   try {
-    db.execSync(`ALTER TABLE sequences ADD COLUMN is_favorited INTEGER NOT NULL DEFAULT 0;`);
+    getDb().execSync(`ALTER TABLE sequences ADD COLUMN is_favorited INTEGER NOT NULL DEFAULT 0;`);
   } catch {}
 
   // Data migration: assign existing exercises (section_id IS NULL) to a default "Main" section
-  const unmigrated = db.getAllSync<{ sequence_id: string }>(
+  const unmigrated = getDb().getAllSync<{ sequence_id: string }>(
     `SELECT DISTINCT sequence_id FROM exercises WHERE section_id IS NULL;`
   );
   for (const { sequence_id } of unmigrated) {
     transaction(() => {
       const sectionId = generateId();
       const now = Date.now();
-      db.runSync(`INSERT INTO sections (id, sequence_id, name, order_index, created_at) VALUES (?, ?, ?, ?, ?);`, [
+      getDb().runSync(`INSERT INTO sections (id, sequence_id, name, order_index, created_at) VALUES (?, ?, ?, ?, ?);`, [
         sectionId,
         sequence_id,
         'Main',
         0,
         now,
       ]);
-      db.runSync(`UPDATE exercises SET section_id = ? WHERE sequence_id = ? AND section_id IS NULL;`, [
+      getDb().runSync(`UPDATE exercises SET section_id = ? WHERE sequence_id = ? AND section_id IS NULL;`, [
         sectionId,
         sequence_id,
       ]);

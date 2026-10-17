@@ -2,7 +2,7 @@ import React, { createContext, useCallback, useContext, useRef, useState } from 
 import { View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { setPreference } from '@/lib/db/preferences';
-import db from '@/lib/db/client';
+import { getDb } from '@/lib/db/client';
 
 export interface TourStep {
   id: string;
@@ -105,7 +105,7 @@ const ALL_TOUR_STEPS: TourStep[] = [
 
 function buildActiveSteps(): TourStep[] {
   try {
-    const row = db.getFirstSync<{ count: number }>('SELECT COUNT(*) as count FROM sequences');
+    const row = getDb().getFirstSync<{ count: number }>('SELECT COUNT(*) as count FROM sequences');
     const hasSeqs = (row?.count ?? 0) > 0;
     return ALL_TOUR_STEPS.filter((s) => {
       if (s.condition === 'has-sequences') return hasSeqs;

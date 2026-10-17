@@ -1,4 +1,4 @@
-import db, { transaction } from './client';
+import { getDb, transaction } from './client';
 import { generateId } from '../utils/id';
 
 export interface VariationItem {
@@ -46,7 +46,7 @@ export interface Exercise {
 }
 
 export function getExercisesBySequenceId(sequenceId: string): Exercise[] {
-  return db.getAllSync<Exercise>(
+  return getDb().getAllSync<Exercise>(
     `SELECT e.id, e.sequence_id, e.section_id, e.name, e.duration, e.order_index, e.notes, e.created_at, e.library_exercise_id,
       COALESCE(e.load_modified, le.load_modified) AS load_modified,
       COALESCE(e.load_base, le.load_base) AS load_base,
@@ -63,11 +63,11 @@ export function getExercisesBySequenceId(sequenceId: string): Exercise[] {
 }
 
 export function deleteExercisesBySequenceId(sequenceId: string): void {
-  db.runSync(`DELETE FROM exercises WHERE sequence_id = ?;`, [sequenceId]);
+  getDb().runSync(`DELETE FROM exercises WHERE sequence_id = ?;`, [sequenceId]);
 }
 
 export function getExercisesBySectionId(sectionId: string): Exercise[] {
-  return db.getAllSync<Exercise>(
+  return getDb().getAllSync<Exercise>(
     `SELECT e.id, e.sequence_id, e.section_id, e.name, e.duration, e.order_index, e.notes, e.created_at, e.library_exercise_id,
       COALESCE(e.load_modified, le.load_modified) AS load_modified,
       COALESCE(e.load_base, le.load_base) AS load_base,
@@ -103,14 +103,14 @@ export function createExercise(
 ): Exercise {
   const id = generateId();
   const now = Date.now();
-  const maxIndex = db.getFirstSync<{ max_index: number | null }>(
+  const maxIndex = getDb().getFirstSync<{ max_index: number | null }>(
     `SELECT MAX(order_index) as max_index FROM exercises WHERE section_id = ?;`,
     [sectionId]
   );
   const orderIndex = (maxIndex?.max_index ?? -1) + 1;
   const variationSetsJson = variationSets?.length ? JSON.stringify(variationSets) : null;
 
-  db.runSync(
+  getDb().runSync(
     `INSERT INTO exercises (id, sequence_id, section_id, name, duration, order_index, notes, created_at, library_exercise_id, load_modified, load_base, load_amplified, variation, variation_sets, side)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
     [
@@ -169,7 +169,7 @@ export function upsertExercise(
   variationSets: VariationItem[] | null = null
 ): void {
   const variationSetsJson = variationSets?.length ? JSON.stringify(variationSets) : null;
-  db.runSync(
+  getDb().runSync(
     `INSERT INTO exercises (id, sequence_id, section_id, name, duration, order_index, notes, created_at, library_exercise_id, load_modified, load_base, load_amplified, variation, variation_sets, side)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(id) DO UPDATE SET
@@ -224,17 +224,17 @@ export function updateExercise(id: string, fields: Partial<Pick<Exercise, 'name'
 
   if (parts.length === 0) return;
   values.push(id);
-  db.runSync(`UPDATE exercises SET ${parts.join(', ')} WHERE id = ?;`, values);
+  getDb().runSync(`UPDATE exercises SET ${parts.join(', ')} WHERE id = ?;`, values);
 }
 
 export function deleteExercise(id: string): void {
-  db.runSync(`DELETE FROM exercises WHERE id = ?;`, [id]);
+  getDb().runSync(`DELETE FROM exercises WHERE id = ?;`, [id]);
 }
 
 export function reorderExercises(sectionId: string, orderedIds: string[]): void {
   transaction(() => {
     for (let i = 0; i < orderedIds.length; i++) {
-      db.runSync(`UPDATE exercises SET order_index = ? WHERE id = ? AND section_id = ?;`, [
+      getDb().runSync(`UPDATE exercises SET order_index = ? WHERE id = ? AND section_id = ?;`, [
         i,
         orderedIds[i],
         sectionId,
