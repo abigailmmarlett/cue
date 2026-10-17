@@ -99,6 +99,14 @@ export default function TimerScreen() {
 
   const leave = () => (router.canGoBack() ? router.back() : router.replace(`/sequence/${id}`));
 
+  // Reset mid-workout loses your place, so it asks first too.
+  const confirmReset = () =>
+    Alert.alert('Restart workout?', 'The timer will go back to the first exercise.', [
+      { text: 'Keep going', style: 'cancel' },
+      { text: 'Restart', style: 'destructive', onPress: controls.reset },
+    ]);
+  const timerControls = inProgress ? { ...controls, reset: confirmReset } : controls;
+
   const { hapticSettings } = usePreferences();
   useHapticFeedback(
     { status, exerciseIndex, timeRemaining, currentExercise, nextExercise, currentSectionIndex, runId },
@@ -359,7 +367,7 @@ export default function TimerScreen() {
         </View>
       )}
 
-      <TimerControls status={status} controls={controls} onMark={addMark} />
+      <TimerControls status={status} controls={timerControls} onMark={addMark} />
     </SafeAreaView>
   );
 }
