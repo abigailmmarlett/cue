@@ -1,36 +1,12 @@
 import { getSequenceById, createSequence } from '../db/sequences';
 import { getSectionsBySequenceId, createSection } from '../db/sections';
 import { getExercisesBySectionId } from '../db/exercises';
-import { getTagsForExercise } from '../db/tags';
+import { createTagCategory, createTagValue, getTagsForExercise } from '../db/tags';
 import { generateId } from './id';
 import { getDb, transaction } from '../db/client';
 
 function findOrCreateTagValue(categoryName: string, label: string): string {
-  let category = getDb().getFirstSync<{ id: string }>(`SELECT id FROM tag_categories WHERE name = ?;`, [categoryName]);
-  if (!category) {
-    const id = generateId();
-    getDb().runSync(`INSERT INTO tag_categories (id, name, created_at) VALUES (?, ?, ?);`, [
-      id,
-      categoryName,
-      Date.now(),
-    ]);
-    category = { id };
-  }
-  let tagValue = getDb().getFirstSync<{ id: string }>(
-    `SELECT id FROM tag_values WHERE category_id = ? AND label = ?;`,
-    [category.id, label]
-  );
-  if (!tagValue) {
-    const id = generateId();
-    getDb().runSync(`INSERT INTO tag_values (id, category_id, label, created_at) VALUES (?, ?, ?, ?);`, [
-      id,
-      category.id,
-      label,
-      Date.now(),
-    ]);
-    tagValue = { id };
-  }
-  return tagValue.id;
+  return createTagValue(createTagCategory(categoryName).id, label).id;
 }
 
 interface ShareExercise {

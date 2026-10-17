@@ -12,6 +12,7 @@ import { generateId } from '../utils/id';
 const MIGRATIONS: { version: number; up: (db: SQLiteDatabase) => void }[] = [
   { version: 1, up: baselineSchema },
   { version: 2, up: addLinkIndexes },
+  { version: 3, up: uniqueTagNames },
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;
@@ -202,5 +203,51 @@ function addLinkIndexes(db: SQLiteDatabase): void {
     CREATE INDEX IF NOT EXISTS exercise_tags_tag_value_id ON exercise_tags(tag_value_id);
     CREATE INDEX IF NOT EXISTS sequence_tags_tag_value_id ON sequence_tags(tag_value_id);
     CREATE INDEX IF NOT EXISTS library_exercise_tags_tag_value_id ON library_exercise_tags(tag_value_id);
+  `);
+}
+
+const TAG_LINK_TABLES = [
+  { table: 'exercise_tags', owner: 'exercise_id' },
+  { table: 'sequence_tags', owner: 'sequence_id' },
+  { table: 'library_exercise_tags', owner: 'library_exercise_id' },
+];
+
+/**
+ * Version 3: tag category names, and value labels within a category, are unique (ignoring case).
+ * Existing duplicates are merged into the oldest copy, keeping every exercise's and sequence's tags.
+ */
+function uniqueTagNames(db: SQLiteDatabase): void {
+  const duplicateCategories = db.getAllSync<{ id: string; keep_id: string }>(
+    `SELECT c.id, (SELECT k.id FROM tag_categories k WHERE k.name = c.name COLLATE NOCASE
+                   ORDER BY k.created_at, k.id LIMIT 1) AS keep_id
+     FROM tag_categories c;`
+  );
+  for (const { id, keep_id } of duplicateCategories) {
+    if (id === keep_id) continue;
+    db.runSync(`UPDATE tag_values SET category_id = ? WHERE category_id = ?;`, [keep_id, id]);
+    db.runSync(`DELETE FROM tag_categories WHERE id = ?;`, [id]);
+  }
+
+  const duplicateValues = db.getAllSync<{ id: string; keep_id: string }>(
+    `SELECT v.id, (SELECT k.id FROM tag_values k
+                   WHERE k.category_id = v.category_id AND k.label = v.label COLLATE NOCASE
+                   ORDER BY k.created_at, k.id LIMIT 1) AS keep_id
+     FROM tag_values v;`
+  );
+  for (const { id, keep_id } of duplicateValues) {
+    if (id === keep_id) continue;
+    for (const { table, owner } of TAG_LINK_TABLES) {
+      db.runSync(
+        `INSERT OR IGNORE INTO ${table} (${owner}, tag_value_id) SELECT ${owner}, ? FROM ${table} WHERE tag_value_id = ?;`,
+        [keep_id, id]
+      );
+    }
+    // Cascades remove the duplicate's remaining links.
+    db.runSync(`DELETE FROM tag_values WHERE id = ?;`, [id]);
+  }
+
+  db.execSync(`
+    CREATE UNIQUE INDEX tag_categories_name ON tag_categories(name COLLATE NOCASE);
+    CREATE UNIQUE INDEX tag_values_category_label ON tag_values(category_id, label COLLATE NOCASE);
   `);
 }

@@ -24,15 +24,27 @@ export function getAllTagCategories(): TagCategory[] {
   return getDb().getAllSync<TagCategory>(`SELECT * FROM tag_categories ORDER BY name;`);
 }
 
+/** Returns the category with this name (ignoring case), creating it if there isn't one. */
 export function createTagCategory(name: string): TagCategory {
+  const existing = getDb().getFirstSync<TagCategory>(`SELECT * FROM tag_categories WHERE name = ? COLLATE NOCASE;`, [
+    name,
+  ]);
+  if (existing) return existing;
   const id = generateId();
   const now = Date.now();
   getDb().runSync(`INSERT INTO tag_categories (id, name, created_at) VALUES (?, ?, ?);`, [id, name, now]);
   return { id, name, created_at: now };
 }
 
-export function updateTagCategory(id: string, name: string): void {
+/** Renames a category. Returns false, changing nothing, if another category already has that name. */
+export function updateTagCategory(id: string, name: string): boolean {
+  const clash = getDb().getFirstSync(`SELECT 1 FROM tag_categories WHERE name = ? COLLATE NOCASE AND id != ?;`, [
+    name,
+    id,
+  ]);
+  if (clash) return false;
   getDb().runSync(`UPDATE tag_categories SET name = ? WHERE id = ?;`, [name, id]);
+  return true;
 }
 
 export function deleteTagCategory(id: string): void {
@@ -52,7 +64,13 @@ export function getAllTagValuesWithCategory(): (TagValue & { categoryName: strin
   );
 }
 
+/** Returns the value with this label (ignoring case) in the category, creating it if there isn't one. */
 export function createTagValue(categoryId: string, label: string): TagValue {
+  const existing = getDb().getFirstSync<TagValue>(
+    `SELECT * FROM tag_values WHERE category_id = ? AND label = ? COLLATE NOCASE;`,
+    [categoryId, label]
+  );
+  if (existing) return existing;
   const id = generateId();
   const now = Date.now();
   getDb().runSync(`INSERT INTO tag_values (id, category_id, label, created_at) VALUES (?, ?, ?, ?);`, [
@@ -64,8 +82,16 @@ export function createTagValue(categoryId: string, label: string): TagValue {
   return { id, category_id: categoryId, label, created_at: now };
 }
 
-export function updateTagValue(id: string, label: string): void {
+/** Renames a value. Returns false, changing nothing, if its category already has a value with that label. */
+export function updateTagValue(id: string, label: string): boolean {
+  const clash = getDb().getFirstSync(
+    `SELECT 1 FROM tag_values v JOIN tag_values self ON self.id = ?
+     WHERE v.category_id = self.category_id AND v.label = ? COLLATE NOCASE AND v.id != self.id;`,
+    [id, label]
+  );
+  if (clash) return false;
   getDb().runSync(`UPDATE tag_values SET label = ? WHERE id = ?;`, [label, id]);
+  return true;
 }
 
 export function deleteTagValue(id: string): void {
