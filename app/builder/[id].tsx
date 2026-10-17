@@ -35,7 +35,7 @@ import {
   getAllTagValuesWithCategory,
   type ExerciseTag,
 } from '@/lib/db/tags';
-import { createLibraryExercise, getLibraryExercise, setLibraryExerciseTags } from '@/lib/db/libraryExercises';
+import { addUnlinkedToLibrary, getLibraryExercise } from '@/lib/db/libraryExercises';
 import { getAllLoadIcons, loadOverride, parseLoad, type LoadIcon } from '@/lib/db/loadIcons';
 import { LoadEditor } from '@/components/LoadEditor';
 import { VariationEditor } from '@/components/VariationEditor';
@@ -48,22 +48,6 @@ interface LocalSection {
   id: string;
   name: string;
   exercises: LocalExercise[];
-}
-
-/**
- * Adds each named, unlinked exercise to the library. Its tags move to the library entry, and so does
- * its left/right flag, since a linked exercise reads that flag from the library.
- */
-function addUnlinkedToLibrary(sections: LocalSection[]): LocalSection[] {
-  return sections.map((s) => ({
-    ...s,
-    exercises: s.exercises.map((ex) => {
-      if (ex.libraryExerciseId || !ex.name.trim()) return ex;
-      const libEx = createLibraryExercise(ex.name.trim(), ex.isBilateral);
-      if (ex.tagValueIds.length > 0) setLibraryExerciseTags(libEx.id, ex.tagValueIds);
-      return { ...ex, libraryExerciseId: libEx.id, tagValueIds: [] };
-    }),
-  }));
 }
 
 export { RouteErrorBoundary as ErrorBoundary } from '@/components/ErrorFallback';

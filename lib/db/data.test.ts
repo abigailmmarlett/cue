@@ -13,7 +13,13 @@ import {
   setExerciseTags,
   setSequenceTags,
 } from './tags.ts';
-import { createLibraryExercise, deleteLibraryExercise, updateLibraryExerciseLoad } from './libraryExercises.ts';
+import {
+  addUnlinkedToLibrary,
+  createLibraryExercise,
+  deleteLibraryExercise,
+  getLibraryExercise,
+  updateLibraryExerciseLoad,
+} from './libraryExercises.ts';
 import { parseLoad } from './loadIcons.ts';
 
 const db = getDb();
@@ -114,14 +120,41 @@ test('deleting a library exercise unlinks its exercises and keeps what they show
   assert.equal(row.load_base, '["x"]');
 });
 
-test('a new library entry keeps the left/right flag of the exercise it was saved from', () => {
-  const seq = createSequence('Sides');
-  const sec = createSection(seq.id, 'Main');
-  const ex = createExercise(seq.id, sec.id, 'Lunge', 30, undefined, null, null, 'left', null, undefined, true);
-  // What the builders do when an unlinked exercise is saved to the library.
-  const entry = createLibraryExercise(ex.name, true);
-  db.runSync('UPDATE exercises SET library_exercise_id = ? WHERE id = ?;', [entry.id, ex.id]);
-  assert.equal(getExercisesBySequenceId(seq.id)[0].is_bilateral, 1);
+test('saving unlinked exercises to the library carries their left/right flag and tags', () => {
+  const tag = createTagValue(createTagCategory('Area').id, 'Glutes');
+  const existing = createLibraryExercise('Bridge');
+  const exercise = (name: string, isBilateral: boolean, libraryExerciseId: string | null = null) => ({
+    id: name,
+    name,
+    libraryExerciseId,
+    tagValueIds: [tag.id],
+    isBilateral,
+  });
+  const [section] = addUnlinkedToLibrary([
+    {
+      name: 'Main',
+      exercises: [
+        exercise('Side lunge', true),
+        exercise('Squat', false),
+        exercise('Bridge', true, existing.id),
+        exercise('  ', true),
+      ],
+    },
+  ]);
+  const [sideLunge, squat, bridge, blank] = section.exercises;
+
+  const sideLungeEntry = getLibraryExercise(sideLunge.libraryExerciseId!)!;
+  assert.equal(sideLungeEntry.name, 'Side lunge');
+  assert.equal(sideLungeEntry.is_bilateral, 1);
+  assert.deepEqual(
+    sideLungeEntry.tags.map((t) => t.tagValueId),
+    [tag.id],
+    'its tags move to the library entry'
+  );
+  assert.deepEqual(sideLunge.tagValueIds, []);
+  assert.equal(getLibraryExercise(squat.libraryExerciseId!)!.is_bilateral, 0);
+  assert.equal(bridge.libraryExerciseId, existing.id, 'already linked: left alone');
+  assert.equal(blank.libraryExerciseId, null, 'no name: left alone');
 });
 
 test('stored variation sets and loads that are corrupt read as empty', () => {

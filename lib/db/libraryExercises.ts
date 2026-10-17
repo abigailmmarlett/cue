@@ -161,3 +161,28 @@ export function getLinkedCount(libraryExerciseId: string): number {
   );
   return row?.count ?? 0;
 }
+
+/** The parts of a builder's unsaved exercise that saving it to the library needs. */
+interface UnsavedExercise {
+  name: string;
+  libraryExerciseId?: string | null;
+  tagValueIds: string[];
+  isBilateral: boolean;
+}
+
+/**
+ * Adds each named, unlinked exercise in the builder's sections to the library and links it. Its tags
+ * move to the library entry, and so does its left/right flag, since a linked exercise reads that flag
+ * from the library.
+ */
+export function addUnlinkedToLibrary<E extends UnsavedExercise, S extends { exercises: E[] }>(sections: S[]): S[] {
+  return sections.map((s) => ({
+    ...s,
+    exercises: s.exercises.map((ex) => {
+      if (ex.libraryExerciseId || !ex.name.trim()) return ex;
+      const entry = createLibraryExercise(ex.name.trim(), ex.isBilateral);
+      if (ex.tagValueIds.length > 0) setLibraryExerciseTags(entry.id, ex.tagValueIds);
+      return { ...ex, libraryExerciseId: entry.id, tagValueIds: [] };
+    }),
+  }));
+}
