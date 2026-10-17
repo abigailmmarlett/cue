@@ -95,9 +95,9 @@ export function duplicateSequence(id: string): Sequence {
         // Copy every exercise column so the duplicate is identical apart from its ids.
         getDb().runSync(
           `INSERT INTO exercises (id, sequence_id, section_id, name, duration, order_index, notes, created_at,
-             library_exercise_id, load_modified, load_base, load_amplified, variation, variation_sets, side)
+             library_exercise_id, load_modified, load_base, load_amplified, variation, variation_sets, side, is_bilateral)
            SELECT ?, ?, ?, name, duration, order_index, notes, ?,
-             library_exercise_id, load_modified, load_base, load_amplified, variation, variation_sets, side
+             library_exercise_id, load_modified, load_base, load_amplified, variation, variation_sets, side, is_bilateral
            FROM exercises WHERE id = ?;`,
           [newExerciseId, newId, newSectionId, now, ex.id]
         );

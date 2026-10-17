@@ -13,6 +13,7 @@ const MIGRATIONS: { version: number; up: (db: SQLiteDatabase) => void }[] = [
   { version: 1, up: baselineSchema },
   { version: 2, up: addLinkIndexes },
   { version: 3, up: uniqueTagNames },
+  { version: 4, up: exerciseBilateralFlag },
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;
@@ -250,4 +251,14 @@ function uniqueTagNames(db: SQLiteDatabase): void {
     CREATE UNIQUE INDEX tag_categories_name ON tag_categories(name COLLATE NOCASE);
     CREATE UNIQUE INDEX tag_values_category_label ON tag_values(category_id, label COLLATE NOCASE);
   `);
+}
+
+/**
+ * Version 4: exercises keep their own "has left/right sides" flag. Linked exercises still follow
+ * their library entry; this copy is what's used once they're unlinked (e.g. the entry is deleted).
+ */
+function exerciseBilateralFlag(db: SQLiteDatabase): void {
+  db.execSync(`ALTER TABLE exercises ADD COLUMN is_bilateral INTEGER NOT NULL DEFAULT 0;`);
+  // Unlinked exercises whose library entry was deleted lost the flag; a chosen side means they had it.
+  db.execSync(`UPDATE exercises SET is_bilateral = 1 WHERE library_exercise_id IS NULL AND side IS NOT NULL;`);
 }

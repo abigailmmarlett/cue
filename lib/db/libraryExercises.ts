@@ -118,15 +118,16 @@ export function updateLibraryExercise(id: string, name: string): void {
 
 export function deleteLibraryExercise(id: string): void {
   transaction(() => {
-    // Linked exercises read any load or tags they don't override from the library entry,
-    // so copy those onto them before unlinking. Their own loads and tags are kept.
+    // Linked exercises read their bilateral flag, and any load or tags they don't override, from
+    // the library entry, so copy those onto them before unlinking. Their own loads and tags are kept.
     getDb().runSync(
       `UPDATE exercises SET
          load_modified  = COALESCE(load_modified,  (SELECT load_modified  FROM library_exercises WHERE id = ?)),
          load_base      = COALESCE(load_base,      (SELECT load_base      FROM library_exercises WHERE id = ?)),
-         load_amplified = COALESCE(load_amplified, (SELECT load_amplified FROM library_exercises WHERE id = ?))
+         load_amplified = COALESCE(load_amplified, (SELECT load_amplified FROM library_exercises WHERE id = ?)),
+         is_bilateral   = (SELECT is_bilateral FROM library_exercises WHERE id = ?)
        WHERE library_exercise_id = ?;`,
-      [id, id, id, id]
+      [id, id, id, id, id]
     );
     getDb().runSync(
       `INSERT INTO exercise_tags (exercise_id, tag_value_id)

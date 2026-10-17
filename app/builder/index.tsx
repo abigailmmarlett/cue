@@ -230,7 +230,8 @@ export default function NewSequenceScreen() {
                   modified: loadOverride(ex.loadModified, libEx?.load_modified),
                   base: loadOverride(ex.loadBase, libEx?.load_base),
                   amplified: loadOverride(ex.loadAmplified, libEx?.load_amplified),
-                }
+                },
+                ex.isBilateral
               );
               // Own tags; linked exercises without them inherit their library tags.
               if (ex.tagValueIds.length > 0) setExerciseTags(created.id, ex.tagValueIds);

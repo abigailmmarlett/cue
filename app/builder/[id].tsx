@@ -301,7 +301,8 @@ export default function EditSequenceScreen() {
                 loadOverride(ex.loadAmplified, libEx?.load_amplified),
                 ex.variation ?? null,
                 ex.side ?? null,
-                ex.variationSets?.length ? ex.variationSets : null
+                ex.variationSets?.length ? ex.variationSets : null,
+                ex.isBilateral
               );
               setExerciseTags(ex.id, ex.tagValueIds);
             }
