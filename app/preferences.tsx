@@ -304,8 +304,8 @@ export default function PreferencesScreen() {
   const {
     hapticSettings,
     setHapticSettings,
-    showExerciseNotes,
-    setShowExerciseNotes,
+    showTimerTags,
+    setShowTimerTags,
     actionButtonSize,
     setActionButtonSize,
     textSize,
@@ -577,8 +577,8 @@ export default function PreferencesScreen() {
             <View style={[styles.row, styles.rowBorder]}>
               <Text style={styles.rowLabel}>Show Tags in Timer</Text>
               <Switch
-                value={showExerciseNotes}
-                onValueChange={setShowExerciseNotes}
+                value={showTimerTags}
+                onValueChange={setShowTimerTags}
                 trackColor={{ false: colors.borderMid, true: colors.accent }}
                 thumbColor={colors.surfaceSolid}
               />

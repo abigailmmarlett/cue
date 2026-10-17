@@ -33,6 +33,7 @@ import {
 } from '@/lib/db/libraryExercises';
 import { getAllLoadIcons, parseLoad, serializeLoad, type LoadIcon } from '@/lib/db/loadIcons';
 import type { ExerciseTag } from '@/lib/db/tags';
+import { hasAllTags } from '@/lib/utils/tagFilter';
 
 function buildCatColors(accent: string, deep: string): string[] {
   return [accent, deep, `${accent}dd`, `${deep}dd`, `${accent}bb`, `${deep}bb`, `${accent}99`, `${deep}99`];
@@ -217,10 +218,7 @@ export default function LibraryScreen() {
   const filtered = useMemo(() => {
     return exercises.filter((ex) => {
       const matchSearch = !search.trim() || ex.name.toLowerCase().includes(search.toLowerCase());
-      const matchTag =
-        activeFilterTags.length === 0 ||
-        ex.tags.some((t) => activeFilterTags.some((f) => f.tagValueId === t.tagValueId));
-      return matchSearch && matchTag;
+      return matchSearch && hasAllTags(ex.tags, activeFilterTags);
     });
   }, [exercises, search, activeFilterTags]);
 

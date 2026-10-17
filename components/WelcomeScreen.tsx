@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Animated, {
   Easing,
   runOnJS,
@@ -42,6 +42,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
 
   const [labelWidth, setLabelWidth] = useState(0);
   const mountTimeRef = useRef(Date.now());
+  const skippedRef = useRef(false);
 
   const heyClipStyle = useAnimatedStyle(() => ({
     width: heyClipWidth.value,
@@ -69,6 +70,16 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
     );
   }, []);
 
+  // A tap fades out early. Replacing the delayed fade-out cancels it, so onComplete still runs once.
+  const skip = () => {
+    if (skippedRef.current) return;
+    skippedRef.current = true;
+    screenOpacity.value = withTiming(0, { duration: 200 }, (finished) => {
+      'worklet';
+      if (finished) runOnJS(onComplete)();
+    });
+  };
+
   useEffect(() => {
     if (labelWidth <= 0) return;
     const elapsed = Date.now() - mountTimeRef.current;
@@ -77,38 +88,46 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
   }, [labelWidth]);
 
   return (
-    <Animated.View
-      style={[StyleSheet.absoluteFill, styles.container, { backgroundColor: colors.background }, screenStyle]}
-    >
-      {/* "hey, coach!" — overflow clip grows left→right, revealing filled Pacifico path */}
-      <View style={{ width: screenWidth, height: SVG_HEIGHT }}>
-        <Animated.View style={[styles.heyClip, { left: textLeft, top: 0 }, heyClipStyle]}>
-          <Svg height={SVG_HEIGHT} width={PATH_WIDTH}>
-            <G transform={`translate(${(-PATH_X1).toFixed(2)}, ${BASELINE_Y.toFixed(2)})`}>
-              <Path d={HEY_COACH_PATH} fill={colors.accent} />
-            </G>
-          </Svg>
-        </Animated.View>
-      </View>
+    <Animated.View style={[StyleSheet.absoluteFill, styles.overlay, screenStyle]}>
+      <Pressable
+        style={[StyleSheet.absoluteFill, styles.container, { backgroundColor: colors.background }]}
+        onPress={skip}
+        accessibilityRole="button"
+        accessibilityLabel="Welcome to Cue"
+        accessibilityHint="Tap to skip"
+      >
+        {/* "hey, coach!" — overflow clip grows left→right, revealing filled Pacifico path */}
+        <View style={{ width: screenWidth, height: SVG_HEIGHT }}>
+          <Animated.View style={[styles.heyClip, { left: textLeft, top: 0 }, heyClipStyle]}>
+            <Svg height={SVG_HEIGHT} width={PATH_WIDTH}>
+              <G transform={`translate(${(-PATH_X1).toFixed(2)}, ${BASELINE_Y.toFixed(2)})`}>
+                <Path d={HEY_COACH_PATH} fill={colors.accent} />
+              </G>
+            </Svg>
+          </Animated.View>
+        </View>
 
-      {/* "cue with confidence" — same clip technique */}
-      <View style={styles.subtitleWrap}>
-        <Text onLayout={(e) => setLabelWidth(e.nativeEvent.layout.width)} style={[styles.subtitle, styles.invisible]}>
-          cue with confidence
-        </Text>
-        <Animated.View style={[styles.clipReveal, subClipStyle]}>
-          <Text style={[styles.subtitle, { color: colors.text.secondary }]} numberOfLines={1}>
+        {/* "cue with confidence" — same clip technique */}
+        <View style={styles.subtitleWrap}>
+          <Text onLayout={(e) => setLabelWidth(e.nativeEvent.layout.width)} style={[styles.subtitle, styles.invisible]}>
             cue with confidence
           </Text>
-        </Animated.View>
-      </View>
+          <Animated.View style={[styles.clipReveal, subClipStyle]}>
+            <Text style={[styles.subtitle, { color: colors.text.secondary }]} numberOfLines={1}>
+              cue with confidence
+            </Text>
+          </Animated.View>
+        </View>
+      </Pressable>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  overlay: {
     zIndex: 999,
+  },
+  container: {
     justifyContent: 'center',
     alignItems: 'center',
   },

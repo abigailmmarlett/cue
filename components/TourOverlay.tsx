@@ -9,22 +9,32 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import Svg, { Rect } from 'react-native-svg';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Text } from '@/components/ui/Text';
 import { useTheme } from '@/lib/contexts/ThemeContext';
-import { useTour } from '@/lib/contexts/TourContext';
+import { useTour, type HighlightLayout, type TourStep } from '@/lib/contexts/TourContext';
 import { Radius, Spacing } from '@/constants/theme';
 
 const AnimatedRect = Animated.createAnimatedComponent(Rect);
 const PAD = 10;
 
+interface Shown {
+  index: number;
+  step: TourStep | null;
+  layout: HighlightLayout | null;
+}
+
 export function TourOverlay() {
-  const { isActive, currentStepIndex, totalSteps, currentStep, highlightLayout, nextStep, skipTour } = useTour();
+  const { isActive, currentStepIndex, totalSteps, currentStep, highlightLayout, readyStepIndex, nextStep, skipTour } =
+    useTour();
   const { colors } = useTheme();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
 
   const [visible, setVisible] = useState(false);
-  const [tooltipKey, setTooltipKey] = useState(0);
+  // What the tooltip and highlight show. It only changes while they're faded out, and stays put
+  // while the tour closes, so the text never changes in view.
+  const [shown, setShown] = useState<Shown>({ index: -1, step: null, layout: null });
+  const shownIndexRef = useRef(-1);
 
   const dimOpacity = useSharedValue(0);
   const svgOpacity = useSharedValue(0);
@@ -32,15 +42,13 @@ export function TourOverlay() {
   const tooltipOpacity = useSharedValue(0);
   const tooltipTranslateY = useSharedValue(12);
 
-  // Mount / unmount the overlay with entrance/exit animations.
+  // Mount / unmount the overlay with entrance/exit animations. The tooltip fades in once its step is ready.
   useEffect(() => {
     if (isActive) {
       setVisible(true);
       dimOpacity.value = withTiming(1, { duration: 300 });
-      tooltipOpacity.value = withDelay(250, withTiming(1, { duration: 300 }));
-      tooltipTranslateY.value = 12;
-      tooltipTranslateY.value = withDelay(250, withTiming(0, { duration: 300, easing: Easing.out(Easing.quad) }));
     } else {
+      shownIndexRef.current = -1;
       dimOpacity.value = withTiming(0, { duration: 250 }, (finished) => {
         'worklet';
         if (finished) runOnJS(setVisible)(false);
@@ -48,34 +56,37 @@ export function TourOverlay() {
       svgOpacity.value = withTiming(0, { duration: 150 });
       tooltipOpacity.value = withTiming(0, { duration: 150 });
     }
-  }, [isActive]);
+  }, [isActive, dimOpacity, svgOpacity, tooltipOpacity]);
 
-  // Animate the SVG border when the highlight target changes.
+  // Leaving a step: fade the tooltip and highlight out while the next step's target is measured.
   useEffect(() => {
-    if (!highlightLayout) {
-      svgOpacity.value = withTiming(0, { duration: 150 });
-      return;
-    }
-    const rw = highlightLayout.width + PAD * 2;
-    const rh = highlightLayout.height + PAD * 2;
-    const perimeter = 2 * (rw + rh);
-    dashOffset.value = perimeter;
+    if (!isActive) return;
+    tooltipOpacity.value = withTiming(0, { duration: 120 });
+    svgOpacity.value = withTiming(0, { duration: 120 });
+  }, [isActive, currentStepIndex, svgOpacity, tooltipOpacity]);
+
+  // The step is ready: swap in its content while hidden, then fade it in. A re-measure of the
+  // step already showing only moves it.
+  useEffect(() => {
+    if (!isActive || readyStepIndex !== currentStepIndex) return;
+    setShown({ index: currentStepIndex, step: currentStep, layout: highlightLayout });
+    if (shownIndexRef.current === currentStepIndex) return;
+    const first = shownIndexRef.current === -1;
+    shownIndexRef.current = currentStepIndex;
+    // The first step waits for the dim layer to fade in.
+    const delay = first ? 250 : 60;
+    tooltipTranslateY.value = first ? 12 : 8;
+    tooltipOpacity.value = withDelay(delay, withTiming(1, { duration: 280 }));
+    tooltipTranslateY.value = withDelay(delay, withTiming(0, { duration: 280, easing: Easing.out(Easing.quad) }));
+  }, [isActive, readyStepIndex, currentStepIndex, currentStep, highlightLayout, tooltipOpacity, tooltipTranslateY]);
+
+  // Draw the highlight border around the shown step's target.
+  useEffect(() => {
+    if (!shown.layout) return;
+    dashOffset.value = 2 * (shown.layout.width + shown.layout.height + PAD * 4);
     svgOpacity.value = withTiming(1, { duration: 150 });
     dashOffset.value = withDelay(100, withTiming(0, { duration: 480, easing: Easing.out(Easing.cubic) }));
-  }, [highlightLayout]);
-
-  // Fade the tooltip out/in on step changes so content updates smoothly.
-  useEffect(() => {
-    tooltipOpacity.value = withTiming(0, { duration: 120 }, (finished) => {
-      'worklet';
-      if (finished) {
-        runOnJS(setTooltipKey)((k) => k + 1);
-        tooltipTranslateY.value = 8;
-        tooltipOpacity.value = withDelay(60, withTiming(1, { duration: 280 }));
-        tooltipTranslateY.value = withDelay(60, withTiming(0, { duration: 280, easing: Easing.out(Easing.quad) }));
-      }
-    });
-  }, [currentStepIndex]);
+  }, [shown.layout, dashOffset, svgOpacity]);
 
   const dimStyle = useAnimatedStyle(() => ({ opacity: dimOpacity.value }));
   const svgLayerStyle = useAnimatedStyle(() => ({ opacity: svgOpacity.value }));
@@ -84,7 +95,8 @@ export function TourOverlay() {
     transform: [{ translateY: tooltipTranslateY.value }],
   }));
 
-  const perimeter = highlightLayout ? 2 * (highlightLayout.width + PAD * 2 + highlightLayout.height + PAD * 2) : 0;
+  const highlight = shown.layout;
+  const perimeter = highlight ? 2 * (highlight.width + PAD * 2 + highlight.height + PAD * 2) : 0;
 
   const animatedRectProps = useAnimatedProps(() => ({
     strokeDashoffset: dashOffset.value,
@@ -92,18 +104,18 @@ export function TourOverlay() {
 
   // Tooltip positioning: below highlight in top half, above in bottom half.
   const TOOLTIP_MARGIN = 20;
-  const isBottomHalf = highlightLayout ? highlightLayout.y + highlightLayout.height / 2 > screenHeight * 0.5 : false;
+  const isBottomHalf = highlight ? highlight.y + highlight.height / 2 > screenHeight * 0.5 : false;
 
   const tooltipMaxWidth = screenWidth - Spacing.lg * 2;
 
-  const tooltipPositionStyle = highlightLayout
+  const tooltipPositionStyle = highlight
     ? isBottomHalf
-      ? { bottom: screenHeight - highlightLayout.y + TOOLTIP_MARGIN, left: Spacing.lg, right: Spacing.lg }
-      : { top: highlightLayout.y + highlightLayout.height + PAD + TOOLTIP_MARGIN, left: Spacing.lg, right: Spacing.lg }
+      ? { bottom: screenHeight - highlight.y + TOOLTIP_MARGIN, left: Spacing.lg, right: Spacing.lg }
+      : { top: highlight.y + highlight.height + PAD + TOOLTIP_MARGIN, left: Spacing.lg, right: Spacing.lg }
     : { top: screenHeight * 0.3, left: Spacing.lg, right: Spacing.lg };
 
-  const isDone = currentStep?.id === 'done';
-  const isLastStep = currentStepIndex === totalSteps - 1;
+  const isDone = shown.step?.id === 'done';
+  const isLastStep = shown.index === totalSteps - 1;
 
   if (!visible) return null;
 
@@ -115,14 +127,14 @@ export function TourOverlay() {
       />
 
       {/* SVG highlight border */}
-      {highlightLayout && (
+      {highlight && (
         <Animated.View style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }, svgLayerStyle]}>
           <Svg width={screenWidth} height={screenHeight} style={StyleSheet.absoluteFill}>
             <AnimatedRect
-              x={highlightLayout.x - PAD}
-              y={highlightLayout.y - PAD}
-              width={highlightLayout.width + PAD * 2}
-              height={highlightLayout.height + PAD * 2}
+              x={highlight.x - PAD}
+              y={highlight.y - PAD}
+              width={highlight.width + PAD * 2}
+              height={highlight.height + PAD * 2}
               rx={Radius.md}
               ry={Radius.md}
               stroke={colors.accent}
@@ -137,14 +149,14 @@ export function TourOverlay() {
 
       {/* Tooltip card */}
       <Animated.View
-        key={tooltipKey}
         style={[
           styles.tooltip,
           {
             backgroundColor: colors.surfaceSolid,
             borderColor: colors.border,
             maxWidth: tooltipMaxWidth,
-            pointerEvents: 'auto',
+            // Hidden between steps, so it mustn't take taps until the next one shows.
+            pointerEvents: shown.index === currentStepIndex ? 'auto' : 'none',
           },
           tooltipPositionStyle,
           tooltipStyle,
@@ -157,18 +169,18 @@ export function TourOverlay() {
               key={i}
               style={[
                 styles.dot,
-                { backgroundColor: i === currentStepIndex ? colors.accent : colors.borderMid },
-                i === currentStepIndex && styles.dotActive,
+                { backgroundColor: i === shown.index ? colors.accent : colors.borderMid },
+                i === shown.index && styles.dotActive,
               ]}
             />
           ))}
         </View>
 
         <Text style={[styles.title, { color: colors.accent }]} numberOfLines={1}>
-          {currentStep?.title ?? ''}
+          {shown.step?.title ?? ''}
         </Text>
 
-        <Text style={[styles.description, { color: colors.text.secondary }]}>{currentStep?.description ?? ''}</Text>
+        <Text style={[styles.description, { color: colors.text.secondary }]}>{shown.step?.description ?? ''}</Text>
 
         <View style={styles.actions}>
           <TouchableOpacity onPress={skipTour} hitSlop={8} activeOpacity={0.6}>

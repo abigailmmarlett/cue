@@ -107,7 +107,7 @@ export default function TimerScreen() {
     ]);
   const timerControls = inProgress ? { ...controls, reset: confirmReset } : controls;
 
-  const { hapticSettings } = usePreferences();
+  const { hapticSettings, showTimerTags } = usePreferences();
   useHapticFeedback(
     { status, exerciseIndex, timeRemaining, currentExercise, nextExercise, currentSectionIndex, runId },
     hapticSettings
@@ -296,7 +296,7 @@ export default function TimerScreen() {
                 {currentExercise.name}
               </Text>
               <Text style={styles.countdown}>{formatSeconds(timeRemaining)}</Text>
-              <TagChips tags={currentExercise.tags} style={styles.timerTagChips} />
+              {showTimerTags && <TagChips tags={currentExercise.tags} style={styles.timerTagChips} />}
               {allLoadIcons.length > 0 && hasLoadData && (
                 <View style={styles.loadRows}>
                   <LoadDotRow
