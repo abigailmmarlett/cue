@@ -44,8 +44,32 @@ export interface SharePayload {
   sections: ShareSection[];
 }
 
+/**
+ * The payload goes in the link as URL-safe base64. Percent-encoded JSON broke whenever the content
+ * contained "#" or "&" (in a name, a note or an icon color), because the link is decoded before
+ * it's split into parts, so everything after them was lost.
+ */
 export function buildShareUrl(payload: SharePayload): string {
-  return `cue://import?data=${encodeURIComponent(JSON.stringify(payload))}`;
+  return `cue://import?data=${toBase64Url(JSON.stringify(payload))}`;
+}
+
+function toBase64Url(text: string): string {
+  // UTF-8 bytes as a binary string, which is what btoa expects.
+  const bytes = encodeURIComponent(text).replace(/%([0-9A-F]{2})/g, (_, hex: string) =>
+    String.fromCharCode(parseInt(hex, 16))
+  );
+  return btoa(bytes).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function fromBase64Url(value: string): string | null {
+  if (!/^[A-Za-z0-9_-]+$/.test(value)) return null;
+  try {
+    const base64 = value.replace(/-/g, '+').replace(/_/g, '/');
+    const bytes = atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, '='));
+    return decodeURIComponent(Array.from(bytes, (c) => `%${c.charCodeAt(0).toString(16).padStart(2, '0')}`).join(''));
+  } catch {
+    return null;
+  }
 }
 
 // Limits for untrusted share payloads; generous for real sequences, small enough to reject junk.
@@ -217,7 +241,9 @@ function safeDecodeURIComponent(value: string): string | null {
   }
 }
 
-function parsePayload(json: string | null): SharePayload | null {
+/** Parses link data: base64 from current links, or the plain JSON that older links used. */
+function parsePayload(data: string | null): SharePayload | null {
+  const json = data?.startsWith('{') ? data : data ? fromBase64Url(data) : null;
   if (!json) return null;
   try {
     return validateSharePayload(JSON.parse(json));
@@ -239,7 +265,7 @@ export function decodeShareData(data: string | undefined): SharePayload | null {
     candidate = decoded;
   }
 
-  // Try direct JSON parse (expo-router already decoded the param, or we decoded above),
-  // then fall back to decoding first in case the param arrived still-encoded.
+  // Try it as-is (expo-router already decoded the param, or we decoded above), then fall back to
+  // decoding first in case an older, percent-encoded link arrived still encoded.
   return parsePayload(candidate) ?? parsePayload(safeDecodeURIComponent(candidate));
 }

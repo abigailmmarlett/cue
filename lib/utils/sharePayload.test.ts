@@ -33,8 +33,25 @@ describe('share links', () => {
     assert.deepEqual(decodeShareData(buildShareUrl(v2)), v2);
   });
 
-  test('decodes a link whose data is still percent-encoded', () => {
+  test('link data is URL-safe base64, so "#", "&", "%" and emoji in the content survive', () => {
+    const tricky: SharePayload = {
+      v: 2,
+      name: 'Set #2 & 50% 💪',
+      icons: [{ color: '#FFFFFF', label: 'Ball #1' }],
+      sections: [
+        { name: 'Café', exercises: [{ name: 'Plié?', duration: 30, notes: 'a=b&c=d#e', loads: { base: [0] } }] },
+      ],
+    };
+    const url = buildShareUrl(tricky);
+    assert.match(url, /^cue:\/\/import\?data=[A-Za-z0-9_-]+$/);
+    assert.deepEqual(decodeShareData(url), tricky);
+    assert.deepEqual(decodeShareData(url.slice('cue://import?data='.length)), tricky, 'just the data param');
+  });
+
+  test('older links with percent-encoded or plain JSON data still decode', () => {
+    assert.deepEqual(decodeShareData(`cue://import?data=${encodeURIComponent(JSON.stringify(v2))}`), v2);
     assert.deepEqual(decodeShareData(encodeURIComponent(JSON.stringify(v2))), v2);
+    assert.deepEqual(decodeShareData(JSON.stringify(v2)), v2);
   });
 
   test('version 1 links still import, with their loads kept as legacy icon ids', () => {
@@ -62,6 +79,8 @@ describe('share links', () => {
       'cue://import?data=%E0%A4%A',
       'cue://import?data=',
       'not json',
+      'cue://import?data=bm90IGpzb24',
+      'cue://import?data=!!!',
       JSON.stringify(null),
       JSON.stringify({ v: 3, name: 'x', sections: [{ exercises: [] }] }),
       JSON.stringify({ v: 2, name: 'x', sections: [] }),
