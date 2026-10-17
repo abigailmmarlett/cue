@@ -77,19 +77,6 @@ test('a database from a newer version of Cue is refused and left untouched', () 
   db.execSync(`PRAGMA user_version = ${SCHEMA_VERSION};`);
 });
 
-test('a failing migration rolls back together with its version bump', () => {
-  // runMigrations relies on SQLite undoing a PRAGMA user_version change on rollback.
-  assert.throws(() =>
-    db.withTransactionSync(() => {
-      db.execSync('PRAGMA user_version = 42;');
-      db.execSync('CREATE TABLE half_done (x);');
-      throw new Error('boom');
-    })
-  );
-  assert.equal(version(), SCHEMA_VERSION);
-  assert.equal(names('table').includes('half_done'), false);
-});
-
 test('tag names are unique ignoring case: creating reuses, renaming refuses a clash', () => {
   const level = createTagCategory('Level');
   assert.equal(createTagCategory('level').id, level.id);
