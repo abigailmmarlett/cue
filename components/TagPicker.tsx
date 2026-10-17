@@ -1,4 +1,5 @@
-import { View, Modal, ScrollView, TouchableOpacity, TextInput, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Modal, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+import { TextInput } from '@/components/ui/TextInput';
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'expo-router';
 import { Text } from './ui/Text';

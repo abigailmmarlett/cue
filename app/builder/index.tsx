@@ -1,17 +1,9 @@
 import { useState, useCallback, useRef } from 'react';
-import {
-  View,
-  TextInput,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  Alert,
-} from 'react-native';
+import { View, ScrollView, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { TextInput } from '@/components/ui/TextInput';
 import { useRouter, useNavigation } from 'expo-router';
 import { usePreventRemove } from '@react-navigation/native';
-import { Text } from '@/components/ui/Text';
+import { DISPLAY_MAX_MULTIPLIER, Text } from '@/components/ui/Text';
 import { DraggableList } from '@/components/DraggableList';
 import { ExerciseRow, type LocalExercise } from '@/components/ExerciseRow';
 import { SectionGroup } from '@/components/SectionGroup';
@@ -272,6 +264,7 @@ export default function NewSequenceScreen() {
       >
         <TextInput
           style={styles.nameInput}
+          maxFontSizeMultiplier={DISPLAY_MAX_MULTIPLIER}
           value={name}
           onChangeText={(v) => {
             setIsDirty(true);

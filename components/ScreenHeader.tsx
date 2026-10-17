@@ -1,4 +1,5 @@
-import { View, ScrollView, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
+import { View, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { TextInput } from '@/components/ui/TextInput';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SymbolView } from 'expo-symbols';
 import { Text } from '@/components/ui/Text';
@@ -178,7 +179,10 @@ export function ScreenHeader({
         <View style={styles.wordmarkLeft}>
           <View style={[styles.accentBar, { backgroundColor: colors.accent }]} />
           <View>
-            <Text style={styles.wordmark}>{title}</Text>
+            {/* The wordmark is already huge, so it ignores Dynamic Type and shrinks to fit. */}
+            <Text style={styles.wordmark} maxFontSizeMultiplier={1} numberOfLines={1} adjustsFontSizeToFit>
+              {title}
+            </Text>
             {countLabel ? <Text style={styles.countLabel}>{countLabel}</Text> : null}
           </View>
         </View>

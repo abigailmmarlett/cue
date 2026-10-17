@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { usePreventRemove } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import { useKeepAwake } from 'expo-keep-awake';
-import { Text } from '@/components/ui/Text';
+import { DISPLAY_MAX_MULTIPLIER, Text } from '@/components/ui/Text';
 import { TagChips } from '@/components/TagChips';
 import { LoadDotRow } from '@/components/LoadDotRow';
 import { TimerControls } from '@/components/timer/TimerControls';
@@ -240,6 +240,7 @@ export default function TimerScreen() {
           </Text>
           <Text
             style={[styles.completeTotalTime, { color: colors.accentText }]}
+            maxFontSizeMultiplier={DISPLAY_MAX_MULTIPLIER}
             accessibilityLabel={`Total time ${spokenDuration(totalDuration)}`}
           >
             {formatSeconds(totalDuration)}
@@ -287,12 +288,19 @@ export default function TimerScreen() {
         >
           <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
-        <Text variant="caption" color="tertiary" style={styles.sequenceTitle} numberOfLines={1}>
+        <Text
+          variant="caption"
+          color="tertiary"
+          style={styles.sequenceTitle}
+          numberOfLines={1}
+          maxFontSizeMultiplier={DISPLAY_MAX_MULTIPLIER}
+        >
           {sequence.name}
         </Text>
         <View style={[styles.totalTimeBadge, { backgroundColor: colors.accentDim, borderColor: colors.pill.border }]}>
           <Text
             style={[styles.totalTimeBadgeText, { color: colors.accentText }]}
+            maxFontSizeMultiplier={DISPLAY_MAX_MULTIPLIER}
             accessibilityLabel={`${spokenDuration(totalTimeRemaining)} left in workout`}
           >
             {formatSeconds(totalTimeRemaining)}
@@ -311,13 +319,24 @@ export default function TimerScreen() {
         >
           {currentExercise && (
             <View style={styles.ringContent}>
-              <Text variant="label" color="tertiary" style={styles.position}>
+              <Text
+                variant="label"
+                color="tertiary"
+                style={styles.position}
+                maxFontSizeMultiplier={DISPLAY_MAX_MULTIPLIER}
+              >
                 {exerciseIndex + 1} of {totalExercises}
               </Text>
-              <Text style={styles.exerciseName} numberOfLines={2}>
+              <Text style={styles.exerciseName} numberOfLines={2} maxFontSizeMultiplier={DISPLAY_MAX_MULTIPLIER}>
                 {currentExercise.name}
               </Text>
-              <Text style={styles.countdown} accessibilityLabel={`${spokenDuration(timeRemaining)} left`}>
+              <Text
+                style={styles.countdown}
+                accessibilityLabel={`${spokenDuration(timeRemaining)} left`}
+                maxFontSizeMultiplier={1}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+              >
                 {formatSeconds(timeRemaining)}
               </Text>
               {showTimerTags && <TagChips tags={currentExercise.tags} style={styles.timerTagChips} />}

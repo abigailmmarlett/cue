@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { View, TextInput, TouchableOpacity, StyleSheet, Alert, Platform } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Alert, Platform } from 'react-native';
+import { TextInput } from '@/components/ui/TextInput';
 import { Text } from './ui/Text';
 import { IconButton } from './ui/IconButton';
 import { TagChips } from './TagChips';

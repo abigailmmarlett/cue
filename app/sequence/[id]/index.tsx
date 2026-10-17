@@ -108,7 +108,7 @@ export default function SequenceDetailScreen() {
                       <View key={ex.id}>
                         <View style={styles.exerciseRow}>
                           <View style={styles.exerciseIndex}>
-                            <Text variant="caption" color="tertiary">
+                            <Text variant="caption" color="tertiary" numberOfLines={1} adjustsFontSizeToFit>
                               {String(globalIndex + 1).padStart(2, '0')}
                             </Text>
                           </View>

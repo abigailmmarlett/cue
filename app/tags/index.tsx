@@ -1,4 +1,5 @@
-import { View, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert } from 'react-native';
+import { View, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { TextInput } from '@/components/ui/TextInput';
 import { useState, useCallback, useEffect } from 'react';
 import { Text } from '@/components/ui/Text';
 import { Colors, Spacing, FontSize } from '@/constants/theme';

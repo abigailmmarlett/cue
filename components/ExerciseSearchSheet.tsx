@@ -1,7 +1,6 @@
 import {
   View,
   Modal,
-  TextInput,
   FlatList,
   TouchableOpacity,
   StyleSheet,
@@ -9,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { TextInput } from '@/components/ui/TextInput';
 import { useState, useEffect, useMemo } from 'react';
 import { Text } from './ui/Text';
 import { TagChips } from './TagChips';

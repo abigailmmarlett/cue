@@ -1,14 +1,5 @@
-import {
-  View,
-  Modal,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-  Alert,
-  Platform,
-} from 'react-native';
+import { View, Modal, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Platform } from 'react-native';
+import { TextInput } from '@/components/ui/TextInput';
 import { useState, useEffect, useRef } from 'react';
 import { Text } from './ui/Text';
 import { Colors, Spacing, Radius, FontSize } from '@/constants/theme';
