@@ -14,6 +14,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ExerciseTag } from '@/lib/db/tags';
+import { hasAllTags } from '@/lib/utils/tagFilter';
 import { useTour } from '@/lib/contexts/TourContext';
 
 function makeStyles(c: typeof Colors) {
@@ -91,7 +92,7 @@ export default function SequencesScreen() {
   const filteredSequences = useMemo(() => {
     let result = sequences;
     if (activeFilterTags.length > 0) {
-      result = result.filter((s) => activeFilterTags.every((f) => s.tags.some((t) => t.tagValueId === f.tagValueId)));
+      result = result.filter((s) => hasAllTags(s.tags, activeFilterTags));
     }
     if (search.trim()) {
       const q = search.toLowerCase();
