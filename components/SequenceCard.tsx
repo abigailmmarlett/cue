@@ -170,7 +170,17 @@ export function SequenceCard({ sequence, onPress, onEdit, onPlay, onDuplicate, o
     onFavorite();
   };
 
-  // VoiceOver reads the card as one button, so its inner buttons are offered as actions instead.
+  // VoiceOver reads the card as one button: everything it shows goes in the label, and its inner
+  // buttons are offered as actions instead.
+  const accessibilityLabel = [
+    sequence.is_favorited ? 'Favorite' : null,
+    sequence.name,
+    totalTime,
+    sequence.exercise_count === 1 ? '1 exercise' : `${sequence.exercise_count} exercises`,
+    sequence.tags.length > 0 ? `tags: ${sequence.tags.map((t) => t.label).join(', ')}` : null,
+  ]
+    .filter(Boolean)
+    .join(', ');
   const accessibilityActions = [
     { name: 'play', label: 'Start workout' },
     { name: 'favorite', label: sequence.is_favorited ? 'Remove from favorites' : 'Add to favorites' },
@@ -190,7 +200,7 @@ export function SequenceCard({ sequence, onPress, onEdit, onPlay, onDuplicate, o
       onLongPress={openMenu}
       activeOpacity={0.8}
       accessibilityRole="button"
-      accessibilityLabel={`${sequence.is_favorited ? 'Favorite, ' : ''}${sequence.name}, ${totalTime}, ${sequence.exercise_count} ${sequence.exercise_count === 1 ? 'exercise' : 'exercises'}`}
+      accessibilityLabel={accessibilityLabel}
       accessibilityActions={accessibilityActions}
       onAccessibilityAction={onAccessibilityAction}
     >
