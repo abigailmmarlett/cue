@@ -1,6 +1,12 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildShareUrl, decodeShareData, validateSharePayload, type SharePayload } from './sharePayload.ts';
+import {
+  buildShareUrl,
+  decodeShareData,
+  importRouteData,
+  validateSharePayload,
+  type SharePayload,
+} from './sharePayload.ts';
 
 const v2: SharePayload = {
   v: 2,
@@ -55,13 +61,15 @@ describe('share links', () => {
   });
 
   test('version 1 links still import, with their loads kept as legacy icon ids', () => {
-    const p = validateSharePayload({
+    const v1 = {
       v: 1,
       name: 'Old',
       sections: [
         { name: 'Main', exercises: [{ name: 'Squat', duration: 30, load_base: '["id-1","id-2"]', is_bilateral: 1 }] },
       ],
-    });
+    };
+    const p = validateSharePayload(v1);
+    assert.deepEqual(decodeShareData(`cue://import?data=${encodeURIComponent(JSON.stringify(v1))}`), p);
     assert.deepEqual(p, {
       v: 2,
       name: 'Old',
@@ -72,6 +80,21 @@ describe('share links', () => {
         },
       ],
     });
+  });
+
+  test('a pasted link becomes route-safe data that reads back the same, version 1 loads included', () => {
+    const v1 = {
+      v: 1,
+      name: 'Set #2 & more',
+      sections: [{ name: 'Main', exercises: [{ name: 'Row', duration: 20, load_base: '["id-1"]' }] }],
+    };
+    for (const link of [`cue://import?data=${encodeURIComponent(JSON.stringify(v1))}`, buildShareUrl(v2)]) {
+      const data = importRouteData(`  ${link}\n`);
+      assert.match(data ?? '', /^[A-Za-z0-9_-]+$/);
+      assert.deepEqual(decodeShareData(data!), decodeShareData(link));
+    }
+    assert.deepEqual(decodeShareData(importRouteData(buildShareUrl(v2))!), v2);
+    assert.equal(importRouteData('not a link'), null);
   });
 
   test('rejects malformed input without throwing', () => {

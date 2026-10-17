@@ -8,7 +8,7 @@ import { Colors, Spacing } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
 import { useSequences } from '@/lib/hooks/useSequences';
 import { deleteSequence, duplicateSequence, updateSequenceFavorite } from '@/lib/db/sequences';
-import { serializeSequence, buildShareUrl, decodeShareData } from '@/lib/utils/shareSequence';
+import { serializeSequence, buildShareUrl, importRouteData } from '@/lib/utils/shareSequence';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
@@ -115,12 +115,12 @@ export default function SequencesScreen() {
     } catch {
       // Treated the same as an empty clipboard below.
     }
-    const payload = decodeShareData(text.trim());
-    if (!payload) {
+    const data = importRouteData(text);
+    if (!data) {
       Alert.alert('Nothing to Import', 'Copy a shared sequence link first, then tap Import.');
       return;
     }
-    router.push(`/import?data=${encodeURIComponent(JSON.stringify(payload))}`);
+    router.push(`/import?data=${data}`);
   };
 
   return (

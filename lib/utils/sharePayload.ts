@@ -241,18 +241,20 @@ function safeDecodeURIComponent(value: string): string | null {
   }
 }
 
-/** Parses link data: base64 from current links, or the plain JSON that older links used. */
-function parsePayload(data: string | null): SharePayload | null {
+/** Reads link data: base64 from current links, or the plain JSON that older links used. */
+function readData(data: string | null): { json: string; payload: SharePayload } | null {
   const json = data?.startsWith('{') ? data : data ? fromBase64Url(data) : null;
   if (!json) return null;
   try {
-    return validateSharePayload(JSON.parse(json));
+    const payload = validateSharePayload(JSON.parse(json));
+    return payload ? { json, payload } : null;
   } catch {
     return null;
   }
 }
 
-export function decodeShareData(data: string | undefined): SharePayload | null {
+/** Reads a full link or just its data, returning the payload as sent and its validated copy. */
+function readShareData(data: string | undefined): { json: string; payload: SharePayload } | null {
   if (!data) return null;
 
   let candidate = data.trim();
@@ -267,5 +269,19 @@ export function decodeShareData(data: string | undefined): SharePayload | null {
 
   // Try it as-is (expo-router already decoded the param, or we decoded above), then fall back to
   // decoding first in case an older, percent-encoded link arrived still encoded.
-  return parsePayload(candidate) ?? parsePayload(safeDecodeURIComponent(candidate));
+  return readData(candidate) ?? readData(safeDecodeURIComponent(candidate));
+}
+
+export function decodeShareData(data: string | undefined): SharePayload | null {
+  return readShareData(data)?.payload ?? null;
+}
+
+/**
+ * Turns a pasted link into data for the import screen's route, or null if it isn't a valid link.
+ * The payload is passed on as sent, so a version 1 link keeps its loads, and as base64, because
+ * the router doesn't escape "&", "=" or "#" in params.
+ */
+export function importRouteData(link: string): string | null {
+  const read = readShareData(link);
+  return read ? toBase64Url(read.json) : null;
 }

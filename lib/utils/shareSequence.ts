@@ -6,7 +6,13 @@ import { findOrCreateLoadIcon, getAllLoadIcons, parseLoad, serializeLoad } from 
 import { transaction } from '../db/client';
 import type { LoadKind, ShareExercise, ShareLoadIcon, SharePayload } from './sharePayload';
 
-export { buildShareUrl, decodeShareData, validateSharePayload, type SharePayload } from './sharePayload';
+export {
+  buildShareUrl,
+  decodeShareData,
+  importRouteData,
+  validateSharePayload,
+  type SharePayload,
+} from './sharePayload';
 
 /** Builds a version 2 share payload for a sequence, with each exercise's effective loads and tags. */
 export function serializeSequence(id: string): SharePayload {
