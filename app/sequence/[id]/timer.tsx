@@ -83,6 +83,7 @@ export default function TimerScreen() {
     currentSectionIndex,
     currentSection,
     sectionTimeRemaining,
+    runId,
     controls,
   } = useTimer(timerExercises, timerSections);
   const styles = makeStyles(colors);
@@ -100,7 +101,7 @@ export default function TimerScreen() {
 
   const { hapticSettings } = usePreferences();
   useHapticFeedback(
-    { status, exerciseIndex, timeRemaining, currentExercise, nextExercise, currentSectionIndex },
+    { status, exerciseIndex, timeRemaining, currentExercise, nextExercise, currentSectionIndex, runId },
     hapticSettings
   );
 

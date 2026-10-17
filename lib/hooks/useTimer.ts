@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { AppState } from 'react-native';
 import type { VariationItem } from '@/lib/db/exercises';
+import { positionAfter } from '@/lib/utils/time';
 
 export interface TimerExercise {
   id: string;
@@ -36,6 +37,8 @@ export interface TimerState {
   currentSectionIndex: number;
   currentSection: TimerSection | null;
   sectionTimeRemaining: number;
+  /** Changes whenever an exercise starts over from the top (Start, Skip, Back), but not on Resume. */
+  runId: number;
 }
 
 export interface TimerControls {
@@ -57,24 +60,6 @@ function computeSectionTimeRemaining(exercises: TimerExercise[], exerciseIndex: 
   return total;
 }
 
-/**
- * Where the timer should be once `elapsedMs` has passed since exercise `index` started, moving on
- * through any exercises that have already run out. Returns null when the whole sequence is over.
- */
-export function positionAfter(
-  exercises: { duration: number }[],
-  index: number,
-  elapsedMs: number
-): { index: number; elapsedMs: number } | null {
-  let i = index;
-  let ms = Math.max(0, elapsedMs);
-  while (i < exercises.length && ms >= exercises[i].duration * 1000) {
-    ms -= exercises[i].duration * 1000;
-    i++;
-  }
-  return i < exercises.length ? { index: i, elapsedMs: ms } : null;
-}
-
 export function useTimer(
   exercises: TimerExercise[],
   sections: TimerSection[]
@@ -82,6 +67,7 @@ export function useTimer(
   const [status, setStatus] = useState<TimerStatus>('idle');
   const [exerciseIndex, setExerciseIndex] = useState(0);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [runId, setRunId] = useState(0);
 
   const exercisesRef = useRef(exercises);
   const statusRef = useRef<TimerStatus>('idle');
@@ -159,6 +145,7 @@ export function useTimer(
 
   const start = useCallback(() => {
     if (exercisesRef.current.length === 0) return;
+    setRunId((n) => n + 1);
     runFrom(0, 0);
   }, [runFrom]);
 
@@ -179,8 +166,12 @@ export function useTimer(
     sync();
     if (statusRef.current !== 'running' && statusRef.current !== 'paused') return;
     const nextIndex = indexRef.current + 1;
-    if (nextIndex >= exercisesRef.current.length) finish();
-    else runFrom(nextIndex, 0);
+    if (nextIndex >= exercisesRef.current.length) {
+      finish();
+      return;
+    }
+    setRunId((n) => n + 1);
+    runFrom(nextIndex, 0);
   }, [finish, runFrom, sync]);
 
   // Restarts the current exercise, or goes to the previous one if the current one only just began.
@@ -190,6 +181,7 @@ export function useTimer(
     if (current !== 'running' && current !== 'paused') return;
     const elapsedMs = current === 'running' ? Date.now() - startedAtRef.current : pausedMsRef.current;
     const targetIndex = elapsedMs < 4000 && indexRef.current > 0 ? indexRef.current - 1 : indexRef.current;
+    setRunId((n) => n + 1);
     if (current === 'running') {
       runFrom(targetIndex, 0);
     } else {
@@ -221,6 +213,7 @@ export function useTimer(
     currentSectionIndex,
     currentSection: sections[currentSectionIndex] ?? null,
     sectionTimeRemaining: computeSectionTimeRemaining(exercises, exerciseIndex, timeRemaining),
+    runId,
     controls: { start, pause, resume, skip, goBack, reset },
   };
 }

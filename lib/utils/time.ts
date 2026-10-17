@@ -14,3 +14,21 @@ export function splitDuration(total: number, count: number): number[] {
   const each = Math.floor(safeTotal / count);
   return Array.from({ length: count }, (_, i) => (i === count - 1 ? safeTotal - each * (count - 1) : each));
 }
+
+/**
+ * Where the timer should be once `elapsedMs` has passed since exercise `index` started, moving on
+ * through any exercises that have already run out. Returns null when the whole sequence is over.
+ */
+export function positionAfter(
+  exercises: { duration: number }[],
+  index: number,
+  elapsedMs: number
+): { index: number; elapsedMs: number } | null {
+  let i = index;
+  let ms = Math.max(0, elapsedMs);
+  while (i < exercises.length && ms >= exercises[i].duration * 1000) {
+    ms -= exercises[i].duration * 1000;
+    i++;
+  }
+  return i < exercises.length ? { index: i, elapsedMs: ms } : null;
+}
