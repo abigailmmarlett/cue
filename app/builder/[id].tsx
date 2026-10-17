@@ -404,9 +404,10 @@ export default function EditSequenceScreen() {
             {section.exercises.length > 0 && (
               <DraggableList
                 data={section.exercises}
-                renderItem={(item) => (
+                renderItem={(item, _index, mover) => (
                   <ExerciseRow
                     exercise={item}
+                    mover={mover}
                     onNameChange={(n) => updateExercise(section.id, item.id, { name: n })}
                     onDurationChange={(d) => updateExercise(section.id, item.id, { duration: d })}
                     onDelete={() => removeExercise(section.id, item.id)}

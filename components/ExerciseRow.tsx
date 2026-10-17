@@ -11,6 +11,7 @@ import { formatSeconds, spokenDuration } from '@/lib/utils/time';
 import { DRAG_ITEM_HEIGHT } from './DraggableList';
 import type { ExerciseTag } from '@/lib/db/tags';
 import type { VariationItem } from '@/lib/db/exercises';
+import type { ItemMover } from './DraggableList';
 
 export interface LocalExercise {
   id: string;
@@ -38,6 +39,8 @@ interface Props {
   onEditLoad?: () => void;
   onEditVariation?: () => void;
   onSideChange?: (side: 'left' | 'right' | null) => void;
+  /** Lets VoiceOver users reorder with Move up / Move down instead of dragging. */
+  mover?: ItemMover;
 }
 
 const HANDLE_WIDTH = 32;
@@ -158,6 +161,7 @@ export function ExerciseRow({
   onEditLoad,
   onEditVariation,
   onSideChange,
+  mover,
 }: Props) {
   const { colors } = useTheme();
   const actionButtonSize = useActionButtonSize();
@@ -189,7 +193,19 @@ export function ExerciseRow({
   return (
     <View style={styles.outer}>
       <View style={styles.mainRow}>
-        <View style={styles.handle}>
+        <View
+          style={styles.handle}
+          accessible={!!mover}
+          accessibilityLabel={`Reorder ${exercise.name || 'exercise'}`}
+          accessibilityActions={[
+            ...(mover?.canMove(-1) ? [{ name: 'moveUp', label: 'Move up' }] : []),
+            ...(mover?.canMove(1) ? [{ name: 'moveDown', label: 'Move down' }] : []),
+          ]}
+          onAccessibilityAction={({ nativeEvent }) => {
+            if (nativeEvent.actionName === 'moveUp') mover?.move(-1);
+            if (nativeEvent.actionName === 'moveDown') mover?.move(1);
+          }}
+        >
           <Text color="tertiary" style={styles.handleIcon}>
             ≡
           </Text>

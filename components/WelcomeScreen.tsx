@@ -92,7 +92,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
   }, [labelWidth]);
 
   return (
-    <Animated.View style={[StyleSheet.absoluteFill, styles.overlay, screenStyle]}>
+    <Animated.View style={[StyleSheet.absoluteFill, styles.overlay, screenStyle]} accessibilityViewIsModal>
       <Pressable
         style={[StyleSheet.absoluteFill, styles.container, { backgroundColor: colors.background }]}
         onPress={skip}

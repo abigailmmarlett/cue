@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { View } from 'react-native';
+import { AccessibilityInfo, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
@@ -13,9 +13,15 @@ export const DRAG_ITEM_HEIGHT = 88;
 
 const SPRING = { damping: 20, stiffness: 200, mass: 0.5 };
 
+/** Moves an item one place up (-1) or down (+1), for VoiceOver users who can't drag. */
+export interface ItemMover {
+  canMove: (direction: -1 | 1) => boolean;
+  move: (direction: -1 | 1) => void;
+}
+
 interface Props<T extends { id: string }> {
   data: T[];
-  renderItem: (item: T, index: number) => React.ReactNode;
+  renderItem: (item: T, index: number, mover: ItemMover) => React.ReactNode;
   onReorder: (from: number, to: number) => void;
   onDragStart?: () => void;
   onDragEnd?: () => void;
@@ -56,7 +62,18 @@ export function DraggableList<T extends { id: string }>({
           onDragStart={handleDragStart}
           onReorder={handleReorder}
         >
-          {renderItem(item, index)}
+          {renderItem(item, index, {
+            canMove: (direction) => index + direction >= 0 && index + direction < total,
+            move: (direction) => {
+              const to = index + direction;
+              if (to < 0 || to >= total) return;
+              onReorder(index, to);
+              // Queued, so VoiceOver re-reading the moved handle doesn't cut it off.
+              AccessibilityInfo.announceForAccessibilityWithOptions(`Moved to position ${to + 1} of ${total}`, {
+                queue: true,
+              });
+            },
+          })}
         </DraggableItem>
       ))}
     </View>
