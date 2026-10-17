@@ -32,7 +32,8 @@ import {
   getAllTagValuesWithCategory,
   type ExerciseTag,
 } from '@/lib/db/tags';
-import { createLibraryExercise, setLibraryExerciseTags } from '@/lib/db/libraryExercises';
+import { createLibraryExercise, getLibraryExercise, setLibraryExerciseTags } from '@/lib/db/libraryExercises';
+import { loadOverride } from '@/lib/db/loadIcons';
 import { generateId } from '@/lib/utils/id';
 import { useTextSize, TEXT_SCALE } from '@/lib/hooks/usePreferences';
 import { emitSequenceChange } from '@/lib/sequenceEvents';
@@ -216,6 +217,7 @@ export default function NewSequenceScreen() {
           for (const section of sectionsToSave) {
             const dbSection = createSection(seq.id, section.name.trim() || 'Section');
             for (const ex of section.exercises) {
+              const libEx = ex.libraryExerciseId ? getLibraryExercise(ex.libraryExerciseId) : null;
               const created = createExercise(
                 seq.id,
                 dbSection.id,
@@ -225,7 +227,12 @@ export default function NewSequenceScreen() {
                 ex.libraryExerciseId ?? null,
                 ex.variation ?? null,
                 ex.side ?? null,
-                ex.variationSets ?? null
+                ex.variationSets ?? null,
+                {
+                  modified: loadOverride(ex.loadModified, libEx?.load_modified),
+                  base: loadOverride(ex.loadBase, libEx?.load_base),
+                  amplified: loadOverride(ex.loadAmplified, libEx?.load_amplified),
+                }
               );
               // Own tags; linked exercises without them inherit their library tags.
               if (ex.tagValueIds.length > 0) setExerciseTags(created.id, ex.tagValueIds);

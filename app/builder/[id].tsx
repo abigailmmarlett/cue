@@ -36,7 +36,7 @@ import {
   type ExerciseTag,
 } from '@/lib/db/tags';
 import { createLibraryExercise, getLibraryExercise, setLibraryExerciseTags } from '@/lib/db/libraryExercises';
-import { getAllLoadIcons, parseLoad, serializeLoad, type LoadIcon } from '@/lib/db/loadIcons';
+import { getAllLoadIcons, loadOverride, parseLoad, type LoadIcon } from '@/lib/db/loadIcons';
 import { LoadEditor } from '@/components/LoadEditor';
 import { VariationEditor } from '@/components/VariationEditor';
 import { generateId } from '@/lib/utils/id';
@@ -60,15 +60,6 @@ function addUnlinkedToLibrary(sections: LocalSection[]): LocalSection[] {
       return { ...ex, libraryExerciseId: libEx.id, tagValueIds: [] };
     }),
   }));
-}
-
-/**
- * The editor shows a linked exercise's effective loads (its own, else the library's).
- * Store only a load that differs from the library's so later library edits still apply.
- */
-function loadOverride(load: string[] | null, libraryLoad: string | null | undefined): string | null {
-  const own = serializeLoad(load);
-  return own === serializeLoad(parseLoad(libraryLoad ?? null)) ? null : own;
 }
 
 export { RouteErrorBoundary as ErrorBoundary } from '@/components/ErrorFallback';

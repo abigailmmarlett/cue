@@ -55,3 +55,12 @@ export function serializeLoad(ids: string[] | null): string | null {
   if (!ids || ids.length === 0) return null;
   return JSON.stringify(ids);
 }
+
+/**
+ * The builders show a linked exercise's effective loads (its own, else the library's).
+ * Store only a load that differs from the library's so later library edits still apply.
+ */
+export function loadOverride(load: string[] | null, libraryLoad: string | null | undefined): string | null {
+  const own = serializeLoad(load);
+  return own === serializeLoad(parseLoad(libraryLoad ?? null)) ? null : own;
+}

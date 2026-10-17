@@ -82,6 +82,13 @@ export function getExercisesBySectionId(sectionId: string): Exercise[] {
   );
 }
 
+/** Serialized load columns for an exercise row; null means "none" (or "use the library's" when linked). */
+export interface ExerciseLoads {
+  modified: string | null;
+  base: string | null;
+  amplified: string | null;
+}
+
 export function createExercise(
   sequenceId: string,
   sectionId: string,
@@ -91,7 +98,8 @@ export function createExercise(
   libraryExerciseId?: string | null,
   variation?: string | null,
   side?: 'left' | 'right' | null,
-  variationSets?: VariationItem[] | null
+  variationSets?: VariationItem[] | null,
+  loads: ExerciseLoads = { modified: null, base: null, amplified: null }
 ): Exercise {
   const id = generateId();
   const now = Date.now();
@@ -103,8 +111,8 @@ export function createExercise(
   const variationSetsJson = variationSets?.length ? JSON.stringify(variationSets) : null;
 
   db.runSync(
-    `INSERT INTO exercises (id, sequence_id, section_id, name, duration, order_index, notes, created_at, library_exercise_id, variation, variation_sets, side)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+    `INSERT INTO exercises (id, sequence_id, section_id, name, duration, order_index, notes, created_at, library_exercise_id, load_modified, load_base, load_amplified, variation, variation_sets, side)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
     [
       id,
       sequenceId,
@@ -115,6 +123,9 @@ export function createExercise(
       notes ?? null,
       now,
       libraryExerciseId ?? null,
+      loads.modified,
+      loads.base,
+      loads.amplified,
       variation ?? null,
       variationSetsJson,
       side ?? null,
@@ -131,9 +142,9 @@ export function createExercise(
     notes: notes ?? null,
     created_at: now,
     library_exercise_id: libraryExerciseId ?? null,
-    load_modified: null,
-    load_base: null,
-    load_amplified: null,
+    load_modified: loads.modified,
+    load_base: loads.base,
+    load_amplified: loads.amplified,
     variation: variation ?? null,
     variation_sets: variationSetsJson,
     side: side ?? null,
