@@ -5,9 +5,13 @@ on:
   push:
     branches: [master]
 
+permissions:
+  contents: read
+
+# A new push to a PR replaces its running checks; every master commit gets a full run.
 concurrency:
   group: checks-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   checks:
@@ -16,10 +20,10 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      # The database tests use Node's built-in SQLite.
+      # The database tests use Node's built-in SQLite, so .nvmrc pins a Node that has it.
       - uses: actions/setup-node@v5
         with:
-          node-version: 24
+          node-version-file: .nvmrc
           cache: npm
 
       - run: npm ci
