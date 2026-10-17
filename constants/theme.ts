@@ -10,11 +10,16 @@ export const Colors = {
   borderStrong: 'rgba(0,0,0,0.2)',
   text: {
     primary: '#0d1a0d',
-    secondary: 'rgba(13,26,13,0.5)',
-    tertiary: 'rgba(13,26,13,0.28)',
+    // Both pass 4.5:1 on every light background and header (lib/utils/themeContrast.test.ts).
+    secondary: 'rgba(13,26,13,0.72)',
+    tertiary: 'rgba(13,26,13,0.62)',
     inverse: '#ffffff',
+    /** Text on fill.primary (buttons and selected chips). Set per theme in buildColors. */
+    onFill: '#ffffff',
   },
   accent: '#16a34a',
+  /** The accent as a text color: adjusted per theme in buildColors so it's readable. */
+  accentText: '#15803d',
   accentDeep: '#15803d',
   accentDim: 'rgba(22,163,74,0.1)',
   accentBorder: 'rgba(22,163,74,0.27)',
@@ -48,11 +53,14 @@ export const DarkBaseColors = {
   borderStrong: 'rgba(255,255,255,0.22)',
   text: {
     primary: '#eef2ee',
-    secondary: 'rgba(238,242,238,0.55)',
-    tertiary: 'rgba(238,242,238,0.35)',
+    // Both pass 4.5:1 on every dark background (lib/utils/themeContrast.test.ts).
+    secondary: 'rgba(238,242,238,0.68)',
+    tertiary: 'rgba(238,242,238,0.55)',
     inverse: '#111214',
+    onFill: '#111214',
   },
   accent: '#16a34a',
+  accentText: '#16a34a',
   accentDeep: '#15803d',
   accentDim: 'rgba(22,163,74,0.15)',
   accentBorder: 'rgba(22,163,74,0.3)',

@@ -322,7 +322,7 @@ export default function LibraryScreen() {
                   onSubmitEditing={handleAdd}
                 />
                 <TouchableOpacity onPress={handleAdd} style={styles.actionBtn} hitSlop={8}>
-                  <Text style={[styles.actionAdd, { color: colors.accent }]}>Add</Text>
+                  <Text style={[styles.actionAdd, { color: colors.accentText }]}>Add</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => {
@@ -475,7 +475,7 @@ function ExerciseItem({
               onBlur={onFinishEdit}
             />
             <TouchableOpacity onPress={onFinishEdit} hitSlop={8}>
-              <Text style={[styles.actionAdd, { color: colors.accent }]}>Done</Text>
+              <Text style={[styles.actionAdd, { color: colors.accentText }]}>Done</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={onCancelEdit} hitSlop={8}>
               <Text style={styles.actionCancel}>Cancel</Text>
@@ -485,7 +485,9 @@ function ExerciseItem({
           <View style={styles.exNameRow}>
             <Text style={styles.exName}>{ex.name}</Text>
             <TouchableOpacity onPress={onToggleBilateral} hitSlop={8} style={styles.iconBtn}>
-              <Text style={[styles.editIcon, { color: isBilateral ? colors.accent : colors.text.tertiary }]}>⇌</Text>
+              <Text style={[styles.editIcon, { color: isBilateral ? colors.accentText : colors.text.tertiary }]}>
+                ⇌
+              </Text>
             </TouchableOpacity>
             {onEditLoad && (
               <TouchableOpacity onPress={onEditLoad} hitSlop={8} style={styles.iconBtn}>

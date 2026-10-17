@@ -176,7 +176,7 @@ export function TourOverlay() {
           ))}
         </View>
 
-        <Text style={[styles.title, { color: colors.accent }]} numberOfLines={1}>
+        <Text style={[styles.title, { color: colors.accentText }]} numberOfLines={1}>
           {shown.step?.title ?? ''}
         </Text>
 
@@ -192,7 +192,7 @@ export function TourOverlay() {
             onPress={nextStep}
             activeOpacity={0.8}
           >
-            <Text style={[styles.nextLabel, { color: colors.text.inverse }]}>{isLastStep ? 'Done' : 'Next'}</Text>
+            <Text style={[styles.nextLabel, { color: colors.text.onFill }]}>{isLastStep ? 'Done' : 'Next'}</Text>
           </TouchableOpacity>
         </View>
       </Animated.View>

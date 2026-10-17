@@ -207,7 +207,7 @@ export default function TimerScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => router.replace(`/builder/${id}`)}
-              style={[styles.exitButton, { backgroundColor: colors.accent }]}
+              style={[styles.exitButton, { backgroundColor: colors.fill.primary }]}
               activeOpacity={0.8}
             >
               <Text variant="label" color="inverse">
@@ -232,7 +232,7 @@ export default function TimerScreen() {
           <Text variant="body" color="secondary" style={styles.completeSubtitle}>
             {sequence.name}
           </Text>
-          <Text style={[styles.completeTotalTime, { color: colors.accent }]}>{formatSeconds(totalDuration)}</Text>
+          <Text style={[styles.completeTotalTime, { color: colors.accentText }]}>{formatSeconds(totalDuration)}</Text>
 
           <View style={styles.completionActions}>
             <TouchableOpacity onPress={controls.reset} style={styles.restartButton} activeOpacity={0.8}>
@@ -242,7 +242,7 @@ export default function TimerScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               onPress={leave}
-              style={[styles.exitButton, { backgroundColor: colors.accent }]}
+              style={[styles.exitButton, { backgroundColor: colors.fill.primary }]}
               activeOpacity={0.8}
             >
               <Text variant="label" color="inverse">
@@ -274,7 +274,9 @@ export default function TimerScreen() {
           {sequence.name}
         </Text>
         <View style={[styles.totalTimeBadge, { backgroundColor: colors.accentDim, borderColor: colors.pill.border }]}>
-          <Text style={[styles.totalTimeBadgeText, { color: colors.accent }]}>{formatSeconds(totalTimeRemaining)}</Text>
+          <Text style={[styles.totalTimeBadgeText, { color: colors.accentText }]}>
+            {formatSeconds(totalTimeRemaining)}
+          </Text>
         </View>
       </View>
 
@@ -345,7 +347,7 @@ export default function TimerScreen() {
         <View style={styles.variationIndicator}>
           {hasSide && sideLabel && (
             <>
-              <Text style={[styles.variationIcon, { color: colors.accent }]}>⇌</Text>
+              <Text style={[styles.variationIcon, { color: colors.accentText }]}>⇌</Text>
               <Text variant="caption" color="secondary" style={styles.variationText}>
                 {sideLabel}
               </Text>
@@ -358,7 +360,7 @@ export default function TimerScreen() {
                   ·
                 </Text>
               )}
-              <Text style={[styles.variationIcon, { color: colors.accent }]}>◈</Text>
+              <Text style={[styles.variationIcon, { color: colors.accentText }]}>◈</Text>
               <Text variant="caption" color="secondary" style={styles.variationText}>
                 {activeVariationLabel}
               </Text>

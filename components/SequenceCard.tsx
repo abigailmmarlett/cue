@@ -224,7 +224,7 @@ export function SequenceCard({ sequence, onPress, onEdit, onPlay, onDuplicate, o
             </Text>
           </View>
           <View style={styles.meta}>
-            <Text style={[styles.metaTime, { color: colors.accent }]}>{totalTime}</Text>
+            <Text style={[styles.metaTime, { color: colors.accentText }]}>{totalTime}</Text>
             <Text style={styles.metaDot}>·</Text>
             <Text style={styles.metaSub}>{exLabel}</Text>
           </View>

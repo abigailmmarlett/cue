@@ -60,7 +60,8 @@ function makeStyles(c: typeof Colors, textScale = 1.0) {
     countLabel: {
       fontSize: Math.round(10 * textScale),
       fontWeight: '600',
-      color: c.text.tertiary,
+      // Secondary, not tertiary: it sits on the header's gradient.
+      color: c.text.secondary,
       textTransform: 'uppercase',
       letterSpacing: 1.5,
       marginTop: 8,
@@ -195,7 +196,7 @@ export function ScreenHeader({
                   onPress={onAdd}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.addButtonText, { color: colors.accent }]}>+</Text>
+                  <Text style={[styles.addButtonText, { color: colors.accentText }]}>+</Text>
                 </TouchableOpacity>
               </View>
             )}

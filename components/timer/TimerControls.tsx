@@ -51,7 +51,7 @@ function makeStyles(c: typeof Colors) {
       fontSize: 26,
     },
     controlIconPrimary: {
-      color: c.text.inverse,
+      color: c.text.onFill,
     },
     controlIconDisabled: {
       color: c.text.tertiary,
@@ -88,7 +88,7 @@ export function TimerControls({ status, controls, onMark }: Props) {
           onPress={isRunning ? controls.pause : isPaused ? controls.resume : controls.start}
           size="lg"
           primary
-          accentColor={colors.accent}
+          accentColor={colors.fill.primary}
           styles={styles}
         />
 

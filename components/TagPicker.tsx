@@ -74,7 +74,7 @@ function makeStyles(c: typeof Colors, textScale = 1.0) {
     },
     checkmark: {
       fontSize: Math.round(13 * textScale),
-      color: c.text.inverse,
+      color: c.text.onFill,
       lineHeight: 16,
     },
     addValueRow: {

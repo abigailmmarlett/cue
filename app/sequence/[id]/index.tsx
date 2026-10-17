@@ -37,12 +37,12 @@ export default function SequenceDetailScreen() {
             hitSlop={12}
             style={{ marginRight: 4 }}
           >
-            <SymbolView name="square.and.arrow.up" size={22} tintColor={colors.accent} />
+            <SymbolView name="square.and.arrow.up" size={22} tintColor={colors.accentText} />
           </TouchableOpacity>
         ),
       });
     }
-  }, [navigation, sequence, id, colors.accent]);
+  }, [navigation, sequence, id, colors.accentText]);
 
   if (loading) {
     return (

@@ -131,7 +131,7 @@ function makeStyles(c: typeof Colors, scale: number, textScale: number) {
       paddingVertical: Math.round(3 * scale),
     },
     sideBtnActive: {
-      backgroundColor: c.accent,
+      backgroundColor: c.fill.primary,
     },
     sideBtnText: {
       fontSize: Math.round(11 * scale),
@@ -139,7 +139,7 @@ function makeStyles(c: typeof Colors, scale: number, textScale: number) {
       color: c.text.tertiary,
     },
     sideBtnTextActive: {
-      color: c.text.inverse,
+      color: c.text.onFill,
     },
   });
 }

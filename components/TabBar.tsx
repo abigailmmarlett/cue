@@ -95,7 +95,7 @@ export function TabBar() {
     <View style={[styles.bar, { paddingBottom: bottom + 4 }]}>
       {tabs.map((tab) => {
         const active = tab.match(pathname);
-        const color = active ? colors.accent : colors.text.tertiary;
+        const color = active ? colors.accentText : colors.text.tertiary;
         return (
           <TouchableOpacity
             key={tab.href}
@@ -104,7 +104,7 @@ export function TabBar() {
             activeOpacity={0.7}
           >
             <tab.Icon color={color} />
-            <Text style={[styles.label, active && { color: colors.accent, fontWeight: '700' }]}>{tab.label}</Text>
+            <Text style={[styles.label, active && { color: colors.accentText, fontWeight: '700' }]}>{tab.label}</Text>
           </TouchableOpacity>
         );
       })}

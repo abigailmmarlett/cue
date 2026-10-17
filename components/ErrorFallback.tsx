@@ -2,7 +2,8 @@ import { useEffect } from 'react';
 import { StyleSheet, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
 import { useRouter, type ErrorBoundaryProps } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { Colors, DarkBaseColors, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
+import { FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
+import { THEME_PRESETS, buildColors } from '@/constants/themes';
 
 interface Action {
   label: string;
@@ -21,7 +22,8 @@ interface Props {
  * so it can render even when the app failed before those were set up.
  */
 export function ErrorFallback({ title, message, actions, error }: Props) {
-  const c = useColorScheme() === 'dark' ? DarkBaseColors : Colors;
+  // The default theme's colors, built here because the theme may not have loaded.
+  const c = buildColors(THEME_PRESETS[0], useColorScheme() === 'dark');
 
   useEffect(() => {
     // The app may have failed before it hid the native splash screen.
@@ -50,7 +52,7 @@ export function ErrorFallback({ title, message, actions, error }: Props) {
               i === 0 ? { backgroundColor: c.fill.primary } : { borderColor: c.border, borderWidth: 1 },
             ]}
           >
-            <Text style={[styles.buttonLabel, { color: i === 0 ? c.text.inverse : c.text.primary }]}>
+            <Text style={[styles.buttonLabel, { color: i === 0 ? c.text.onFill : c.text.primary }]}>
               {action.label}
             </Text>
           </TouchableOpacity>

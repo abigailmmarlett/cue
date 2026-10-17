@@ -87,7 +87,7 @@ function makeStyles(c: typeof Colors) {
     },
     addLabel: {
       fontSize: FontSize.sm,
-      color: c.accent,
+      color: c.accentText,
     },
     empty: {
       paddingHorizontal: Spacing.md,

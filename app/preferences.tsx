@@ -3,7 +3,8 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { TabBar } from '@/components/TabBar';
 import { Text } from '@/components/ui/Text';
 import { Colors, Radius, Spacing } from '@/constants/theme';
-import { Mode, ThemeId, THEME_PRESETS, useTheme } from '@/lib/contexts/ThemeContext';
+import { useTheme } from '@/lib/contexts/ThemeContext';
+import { THEME_PRESETS, type Mode, type ThemeId } from '@/constants/themes';
 import { useTour } from '@/lib/contexts/TourContext';
 import { createLoadIcon, deleteLoadIcon, getAllLoadIcons, LoadIcon } from '@/lib/db/loadIcons';
 import { fireHaptic } from '@/lib/hooks/useHapticFeedback';
@@ -141,7 +142,7 @@ function makeStyles(c: typeof Colors) {
       letterSpacing: 0.2,
     },
     modeLabelActive: {
-      color: '#ffffff',
+      color: c.text.onFill,
     },
     iconListRow: {
       flexDirection: 'row',
@@ -202,7 +203,7 @@ function makeStyles(c: typeof Colors) {
       color: c.text.secondary,
     },
     sizePillTextActive: {
-      color: c.accent,
+      color: c.accentText,
     },
     previewRow: {
       flexDirection: 'row',
@@ -219,7 +220,7 @@ function makeStyles(c: typeof Colors) {
     addIconBtnText: {
       fontSize: 14,
       fontWeight: '600',
-      color: c.text.inverse,
+      color: c.text.onFill,
     },
     addTriggerRow: {
       flexDirection: 'row',
@@ -449,7 +450,7 @@ export default function PreferencesScreen() {
                     <View style={[styles.swatch, { backgroundColor: preset.accent }, active && styles.swatchActive]}>
                       {active && <Text style={styles.swatchCheck}>✓</Text>}
                     </View>
-                    <Text style={[styles.swatchName, active && { color: colors.accent }]}>{preset.name}</Text>
+                    <Text style={[styles.swatchName, active && { color: colors.accentText }]}>{preset.name}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -464,7 +465,7 @@ export default function PreferencesScreen() {
                   key={m}
                   onPress={() => setMode(m)}
                   activeOpacity={0.75}
-                  style={[styles.modeOption, active && { backgroundColor: colors.accent }]}
+                  style={[styles.modeOption, active && { backgroundColor: colors.fill.primary }]}
                 >
                   <Text style={[styles.modeLabel, active && styles.modeLabelActive]}>
                     {m.charAt(0).toUpperCase() + m.slice(1)}
@@ -603,7 +604,7 @@ export default function PreferencesScreen() {
                       onPress={() => setTextSize(opt)}
                       activeOpacity={0.7}
                     >
-                      <Text style={[styles.timingChipText, active && { color: colors.text.inverse }]}>
+                      <Text style={[styles.timingChipText, active && { color: colors.text.onFill }]}>
                         {opt === 'small' ? 'S' : opt === 'default' ? 'M' : 'L'}
                       </Text>
                     </TouchableOpacity>
@@ -626,7 +627,7 @@ export default function PreferencesScreen() {
                       onPress={() => setActionButtonSize(opt)}
                       activeOpacity={0.7}
                     >
-                      <Text style={[styles.timingChipText, active && { color: colors.text.inverse }]}>
+                      <Text style={[styles.timingChipText, active && { color: colors.text.onFill }]}>
                         {opt === 'small' ? 'S' : opt === 'default' ? 'M' : 'L'}
                       </Text>
                     </TouchableOpacity>

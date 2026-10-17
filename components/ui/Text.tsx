@@ -29,7 +29,8 @@ export function Text({ variant = 'body', color = 'primary', style, ...props }: P
     primary: { color: colors.text.primary },
     secondary: { color: colors.text.secondary },
     tertiary: { color: colors.text.tertiary },
-    inverse: { color: colors.text.inverse },
+    // Used for labels on filled buttons.
+    inverse: { color: colors.text.onFill },
   }[color];
 
   const sizeStyle = variant === 'timer' ? null : { fontSize: Math.round(BASE_FONT_SIZES[variant] * scale) };
