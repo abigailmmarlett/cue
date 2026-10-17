@@ -26,6 +26,8 @@ interface TourContextValue {
   totalSteps: number;
   currentStep: TourStep | null;
   highlightLayout: HighlightLayout | null;
+  /** The step whose target has been measured (or that has none), so it's ready to show; -1 if none. */
+  readyStepIndex: number;
   registerTarget: (id: string, ref: React.RefObject<View | null>) => void;
   unregisterTarget: (id: string) => void;
   startTour: () => void;
@@ -39,6 +41,7 @@ const TourContext = createContext<TourContextValue>({
   totalSteps: 0,
   currentStep: null,
   highlightLayout: null,
+  readyStepIndex: -1,
   registerTarget: () => {},
   unregisterTarget: () => {},
   startTour: () => {},
@@ -123,6 +126,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   const [currentStepIndex, _setCurrentStepIndex] = useState(0);
   const [activeSteps, _setActiveSteps] = useState<TourStep[]>([]);
   const [highlightLayout, setHighlightLayout] = useState<HighlightLayout | null>(null);
+  const [readyStepIndex, setReadyStepIndex] = useState(-1);
 
   // Refs kept in sync with state for use inside closures without stale values.
   const isActiveRef = useRef(false);
@@ -146,31 +150,41 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   const pendingTargetId = useRef<string | null>(null);
   const isTransitioning = useRef(false);
 
-  const measureAndShow = useCallback((targetId: string) => {
-    const ref = targetRefs.current.get(targetId);
-    if (!ref?.current) return;
-    ref.current.measureInWindow((x, y, width, height) => {
-      if (width > 0 && height > 0) {
-        setHighlightLayout({ x, y, width, height });
-      } else {
-        // Element exists but has zero size (e.g. tag filter with no tags) — show without highlight
-        setHighlightLayout(null);
-      }
-    });
+  const markReady = useCallback((stepIndex: number, layout: HighlightLayout | null) => {
+    // Ignore a measurement that finishes after the tour has moved on.
+    if (!isActiveRef.current || stepIndexRef.current !== stepIndex) return;
+    setHighlightLayout(layout);
+    setReadyStepIndex(stepIndex);
   }, []);
+
+  const measureAndShow = useCallback(
+    (targetId: string, stepIndex: number) => {
+      const ref = targetRefs.current.get(targetId);
+      if (!ref?.current) {
+        // The target isn't on screen, so show the step without a highlight rather than not at all.
+        markReady(stepIndex, null);
+        return;
+      }
+      ref.current.measureInWindow((x, y, width, height) => {
+        // Zero size (e.g. tag filter with no tags) shows the step without a highlight.
+        markReady(stepIndex, width > 0 && height > 0 ? { x, y, width, height } : null);
+      });
+    },
+    [markReady]
+  );
 
   const showStep = useCallback(
     (stepIndex: number, steps: TourStep[]) => {
       isTransitioning.current = false;
       const step = steps[stepIndex];
       if (!step?.targetId) {
-        setHighlightLayout(null);
+        markReady(stepIndex, null);
         return;
       }
       // Small delay to allow layout to settle after navigation or state update.
-      setTimeout(() => measureAndShow(step.targetId!), 100);
+      setTimeout(() => measureAndShow(step.targetId!, stepIndex), 100);
     },
-    [measureAndShow]
+    [markReady, measureAndShow]
   );
 
   const registerTarget = useCallback(
@@ -192,6 +206,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     setIsActive(false);
     setCurrentStepIndex(0);
     setHighlightLayout(null);
+    setReadyStepIndex(-1);
     isTransitioning.current = false;
     setPreference('hasTakenTour', 'true');
   }, []);
@@ -220,10 +235,8 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
       }
       router.replace(nextStepData.navigateTo as any);
       if (!nextStepData.targetId) {
-        // No target to wait for — clear transitioning after nav settles.
-        setTimeout(() => {
-          isTransitioning.current = false;
-        }, 350);
+        // No target to wait for; show the step once navigation settles.
+        setTimeout(() => showStep(nextIndex, steps), 350);
       }
     } else {
       setTimeout(() => showStep(nextIndex, steps), 200);
@@ -235,11 +248,13 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     setActiveSteps(steps);
     setCurrentStepIndex(0);
     setHighlightLayout(null);
+    setReadyStepIndex(-1);
     isTransitioning.current = false;
     pendingTargetId.current = null;
     router.replace('/');
     setIsActive(true);
-  }, [router]);
+    showStep(0, steps);
+  }, [router, showStep]);
 
   const value: TourContextValue = {
     isActive,
@@ -247,6 +262,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     totalSteps: activeSteps.length,
     currentStep: activeSteps[currentStepIndex] ?? null,
     highlightLayout,
+    readyStepIndex,
     registerTarget,
     unregisterTarget,
     startTour,
