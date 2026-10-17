@@ -40,6 +40,7 @@ import { getAllLoadIcons, loadOverride, parseLoad, type LoadIcon } from '@/lib/d
 import { LoadEditor } from '@/components/LoadEditor';
 import { VariationEditor } from '@/components/VariationEditor';
 import { generateId } from '@/lib/utils/id';
+import { splitDuration } from '@/lib/utils/time';
 import { useTextSize, TEXT_SCALE } from '@/lib/hooks/usePreferences';
 import { emitSequenceChange } from '@/lib/sequenceEvents';
 
@@ -246,13 +247,10 @@ export default function EditSequenceScreen() {
     setSections((prev) =>
       prev.map((s) => {
         if (s.id !== sectionId || s.exercises.length === 0) return s;
-        const perEx = Math.floor(total / s.exercises.length);
+        const durations = splitDuration(total, s.exercises.length);
         return {
           ...s,
-          exercises: s.exercises.map((ex, i) => ({
-            ...ex,
-            duration: i === s.exercises.length - 1 ? total - perEx * (s.exercises.length - 1) : perEx,
-          })),
+          exercises: s.exercises.map((ex, i) => ({ ...ex, duration: durations[i] })),
         };
       })
     );
