@@ -1,246 +1,106 @@
 import { getSequenceById, createSequence } from '../db/sequences';
 import { getSectionsBySequenceId, createSection } from '../db/sections';
-import { getExercisesBySectionId } from '../db/exercises';
-import { createTagCategory, createTagValue, getTagsForExercise } from '../db/tags';
-import { generateId } from './id';
-import { getDb, transaction } from '../db/client';
+import { createExercise, getExercisesBySequenceId, parseVariationSets } from '../db/exercises';
+import { createTagCategory, createTagValue, getTagsForSequenceExercises, setExerciseTags } from '../db/tags';
+import { findOrCreateLoadIcon, getAllLoadIcons, parseLoad, serializeLoad } from '../db/loadIcons';
+import { transaction } from '../db/client';
+import type { LoadKind, ShareExercise, ShareLoadIcon, SharePayload } from './sharePayload';
 
-function findOrCreateTagValue(categoryName: string, label: string): string {
-  return createTagValue(createTagCategory(categoryName).id, label).id;
-}
+export { buildShareUrl, decodeShareData, validateSharePayload, type SharePayload } from './sharePayload';
 
-interface ShareExercise {
-  name: string;
-  duration: number;
-  notes?: string;
-  variation?: string;
-  side?: 'left' | 'right';
-  is_bilateral?: 1;
-  load_base?: string;
-  load_modified?: string;
-  load_amplified?: string;
-  tags?: { c: string; l: string }[];
-}
-
-interface ShareSection {
-  name: string;
-  exercises: ShareExercise[];
-}
-
-export interface SharePayload {
-  v: 1;
-  name: string;
-  sections: ShareSection[];
-}
-
+/** Builds a version 2 share payload for a sequence, with each exercise's effective loads and tags. */
 export function serializeSequence(id: string): SharePayload {
   const sequence = getSequenceById(id);
   if (!sequence) throw new Error(`Sequence ${id} not found`);
 
-  const sections = getSectionsBySequenceId(id);
-
-  return {
-    v: 1,
-    name: sequence.name,
-    sections: sections.map((section) => {
-      const exercises = getExercisesBySectionId(section.id);
-      return {
-        name: section.name,
-        exercises: exercises.map((ex) => {
-          const tags = getTagsForExercise(ex.id);
-          const out: ShareExercise = { name: ex.name, duration: ex.duration };
-          if (ex.notes) out.notes = ex.notes;
-          if (ex.variation) out.variation = ex.variation;
-          if (ex.side) out.side = ex.side;
-          if (ex.is_bilateral) out.is_bilateral = 1;
-          if (ex.load_base) out.load_base = ex.load_base;
-          if (ex.load_modified) out.load_modified = ex.load_modified;
-          if (ex.load_amplified) out.load_amplified = ex.load_amplified;
-          if (tags.length > 0) {
-            out.tags = tags.map((t) => ({ c: t.categoryName, l: t.label }));
-          }
-          return out;
-        }),
-      };
-    }),
-  };
-}
-
-export function buildShareUrl(payload: SharePayload): string {
-  return `cue://import?data=${encodeURIComponent(JSON.stringify(payload))}`;
-}
-
-// Limits for untrusted share payloads; generous for real sequences, small enough to reject junk.
-const MAX_NAME_LENGTH = 120;
-const MAX_TEXT_LENGTH = 2000;
-const MAX_SECTIONS = 50;
-const MAX_EXERCISES = 500;
-const MAX_TAGS_PER_EXERCISE = 30;
-const MAX_DURATION_SECONDS = 24 * 60 * 60;
-
-function cleanString(value: unknown, maxLength: number): string | undefined {
-  if (typeof value !== 'string') return undefined;
-  const trimmed = value.trim();
-  return trimmed ? trimmed.slice(0, maxLength) : undefined;
-}
-
-function cleanLoad(value: unknown): string | undefined {
-  if (typeof value !== 'string') return undefined;
-  try {
-    const parsed: unknown = JSON.parse(value);
-    if (Array.isArray(parsed) && parsed.length > 0 && parsed.every((id) => typeof id === 'string')) return value;
-  } catch {
-    /* invalid load; drop it */
-  }
-  return undefined;
-}
-
-function cleanExercise(raw: unknown): ShareExercise | null {
-  if (typeof raw !== 'object' || raw === null) return null;
-  const ex = raw as Record<string, unknown>;
-  const name = cleanString(ex.name, MAX_NAME_LENGTH);
-  const duration = typeof ex.duration === 'number' ? Math.round(ex.duration) : NaN;
-  if (!name || !Number.isFinite(duration)) return null;
-
-  const out: ShareExercise = { name, duration: Math.min(Math.max(duration, 1), MAX_DURATION_SECONDS) };
-  const notes = cleanString(ex.notes, MAX_TEXT_LENGTH);
-  if (notes) out.notes = notes;
-  const variation = cleanString(ex.variation, MAX_TEXT_LENGTH);
-  if (variation) out.variation = variation;
-  if (ex.side === 'left' || ex.side === 'right') out.side = ex.side;
-  const loadBase = cleanLoad(ex.load_base);
-  if (loadBase) out.load_base = loadBase;
-  const loadModified = cleanLoad(ex.load_modified);
-  if (loadModified) out.load_modified = loadModified;
-  const loadAmplified = cleanLoad(ex.load_amplified);
-  if (loadAmplified) out.load_amplified = loadAmplified;
-
-  if (Array.isArray(ex.tags)) {
-    const tags = ex.tags.slice(0, MAX_TAGS_PER_EXERCISE).flatMap((t) => {
-      const c = cleanString((t as { c?: unknown } | null)?.c, MAX_NAME_LENGTH);
-      const l = cleanString((t as { l?: unknown } | null)?.l, MAX_NAME_LENGTH);
-      return c && l ? [{ c, l }] : [];
+  const iconsById = new Map(getAllLoadIcons().map((icon) => [icon.id, icon]));
+  const icons: ShareLoadIcon[] = [];
+  const iconIndex = new Map<string, number>();
+  // Loads are sent by value: each icon once in `icons`, referenced by position.
+  const loadRefs = (json: string | null): number[] | undefined => {
+    const refs = (parseLoad(json) ?? []).flatMap((iconId) => {
+      const icon = iconsById.get(iconId);
+      if (!icon) return [];
+      if (!iconIndex.has(iconId)) {
+        iconIndex.set(iconId, icons.length);
+        icons.push({ color: icon.color, label: icon.label, ...(icon.size ? { size: icon.size } : {}) });
+      }
+      return [iconIndex.get(iconId)!];
     });
-    if (tags.length > 0) out.tags = tags;
-  }
-  return out;
+    return refs.length > 0 ? refs : undefined;
+  };
+
+  const tags = getTagsForSequenceExercises(id);
+  const exercises = getExercisesBySequenceId(id);
+  const sections = getSectionsBySequenceId(id).map((section) => ({
+    name: section.name,
+    exercises: exercises
+      .filter((ex) => ex.section_id === section.id)
+      .map((ex) => {
+        const out: ShareExercise = { name: ex.name, duration: ex.duration };
+        if (ex.notes) out.notes = ex.notes;
+        if (ex.variation) out.variation = ex.variation;
+        const variationSets = parseVariationSets(ex.variation_sets);
+        if (variationSets) out.variation_sets = variationSets;
+        if (ex.side) out.side = ex.side;
+        if (ex.is_bilateral) out.is_bilateral = 1;
+        const loads: ShareExercise['loads'] = {};
+        const modified = loadRefs(ex.load_modified);
+        if (modified) loads.modified = modified;
+        const base = loadRefs(ex.load_base);
+        if (base) loads.base = base;
+        const amplified = loadRefs(ex.load_amplified);
+        if (amplified) loads.amplified = amplified;
+        if (Object.keys(loads).length > 0) out.loads = loads;
+        const exTags = tags.get(ex.id);
+        if (exTags?.length) out.tags = exTags.map((t) => ({ c: t.categoryName, l: t.label }));
+        return out;
+      }),
+  }));
+
+  return icons.length > 0 ? { v: 2, name: sequence.name, icons, sections } : { v: 2, name: sequence.name, sections };
 }
 
-/**
- * Checks an untrusted, already-parsed share payload and returns a clean copy,
- * or null if it isn't a usable sequence. Optional fields that are malformed are
- * dropped; a missing or malformed required field rejects the whole payload.
- */
-export function validateSharePayload(raw: unknown): SharePayload | null {
-  if (typeof raw !== 'object' || raw === null) return null;
-  const payload = raw as Record<string, unknown>;
-  if (payload.v !== 1) return null;
-
-  const name = cleanString(payload.name, MAX_NAME_LENGTH);
-  if (!name || !Array.isArray(payload.sections)) return null;
-  if (payload.sections.length === 0 || payload.sections.length > MAX_SECTIONS) return null;
-
-  const sections: ShareSection[] = [];
-  let exerciseCount = 0;
-  for (const rawSection of payload.sections) {
-    if (typeof rawSection !== 'object' || rawSection === null) return null;
-    const section = rawSection as Record<string, unknown>;
-    if (!Array.isArray(section.exercises)) return null;
-
-    const exercises: ShareExercise[] = [];
-    for (const rawExercise of section.exercises) {
-      const exercise = cleanExercise(rawExercise);
-      if (!exercise) return null;
-      exercises.push(exercise);
-    }
-    exerciseCount += exercises.length;
-    if (exerciseCount > MAX_EXERCISES) return null;
-
-    sections.push({ name: cleanString(section.name, MAX_NAME_LENGTH) ?? 'Section', exercises });
-  }
-
-  return { v: 1, name, sections };
-}
-
-function safeDecodeURIComponent(value: string): string | null {
-  try {
-    return decodeURIComponent(value);
-  } catch {
-    return null;
-  }
-}
-
-function parsePayload(json: string | null): SharePayload | null {
-  if (!json) return null;
-  try {
-    return validateSharePayload(JSON.parse(json));
-  } catch {
-    return null;
-  }
-}
-
-export function decodeShareData(data: string | undefined): SharePayload | null {
-  if (!data) return null;
-
-  let candidate = data.trim();
-
-  // Handle a full cue:// (or legacy traintrack://) URL pasted from clipboard
-  if (candidate.startsWith('cue://') || candidate.startsWith('traintrack://')) {
-    const match = candidate.match(/[?&]data=([^&\s]*)/);
-    const decoded = match ? safeDecodeURIComponent(match[1]) : null;
-    if (!decoded) return null;
-    candidate = decoded;
-  }
-
-  // Try direct JSON parse (expo-router already decoded the param, or we decoded above),
-  // then fall back to decoding first in case the param arrived still-encoded.
-  return parsePayload(candidate) ?? parsePayload(safeDecodeURIComponent(candidate));
-}
-
+/** Saves a validated share payload as a new sequence, all or nothing. Returns the new sequence's id. */
 export function importSharedSequence(payload: SharePayload): string {
   return transaction(() => insertSharedSequence(payload));
 }
 
 function insertSharedSequence(payload: SharePayload): string {
-  const sequence = createSequence(payload.name);
+  // Match the sender's icons to ones that look the same here, adding any that are missing.
+  const iconIds = (payload.icons ?? []).map(
+    (icon) => findOrCreateLoadIcon(icon.color, icon.size ?? null, icon.label).id
+  );
+  const localIconIds = new Set(getAllLoadIcons().map((icon) => icon.id));
+  const load = (ex: ShareExercise, kind: LoadKind): string | null => {
+    const refs = ex.loads?.[kind];
+    if (refs) return serializeLoad(refs.map((i) => iconIds[i]));
+    // Version 1 links sent icon ids, which only exist on the sender's phone.
+    return serializeLoad(ex.legacy_loads?.[kind]?.filter((iconId) => localIconIds.has(iconId)) ?? null);
+  };
 
+  const sequence = createSequence(payload.name);
   for (const sec of payload.sections) {
     const section = createSection(sequence.id, sec.name);
-
-    for (let i = 0; i < sec.exercises.length; i++) {
-      const ex = sec.exercises[i];
-      const exId = generateId();
-      const now = Date.now();
-      getDb().runSync(
-        `INSERT INTO exercises (id, sequence_id, section_id, name, duration, order_index, notes, created_at, load_base, load_modified, load_amplified, variation, side)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
-        [
-          exId,
-          sequence.id,
-          section.id,
-          ex.name,
-          ex.duration,
-          i,
-          ex.notes ?? null,
-          now,
-          ex.load_base ?? null,
-          ex.load_modified ?? null,
-          ex.load_amplified ?? null,
-          ex.variation ?? null,
-          ex.side ?? null,
-        ]
+    for (const ex of sec.exercises) {
+      const created = createExercise(
+        sequence.id,
+        section.id,
+        ex.name,
+        ex.duration,
+        ex.notes,
+        null,
+        ex.variation ?? null,
+        ex.side ?? null,
+        ex.variation_sets ?? null,
+        { modified: load(ex, 'modified'), base: load(ex, 'base'), amplified: load(ex, 'amplified') },
+        ex.is_bilateral === 1
       );
-      if (ex.tags && ex.tags.length > 0) {
-        for (const tag of ex.tags) {
-          const tagValueId = findOrCreateTagValue(tag.c, tag.l);
-          getDb().runSync(`INSERT OR IGNORE INTO exercise_tags (exercise_id, tag_value_id) VALUES (?, ?);`, [
-            exId,
-            tagValueId,
-          ]);
-        }
+      if (ex.tags?.length) {
+        const tagValueIds = ex.tags.map((t) => createTagValue(createTagCategory(t.c).id, t.l).id);
+        setExerciseTags(created.id, [...new Set(tagValueIds)]);
       }
     }
   }
-
   return sequence.id;
 }
