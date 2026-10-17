@@ -115,19 +115,25 @@ export function updateLibraryExercise(id: string, name: string): void {
 
 export function deleteLibraryExercise(id: string): void {
   transaction(() => {
-    // Snapshot library tags into exercise_tags for all linked exercises before deleting
-    const libTags = db.getAllSync<{ tag_value_id: string }>(
-      `SELECT tag_value_id FROM library_exercise_tags WHERE library_exercise_id = ?;`,
+    // Linked exercises read any load or tags they don't override from the library entry,
+    // so copy those onto them before unlinking. Their own loads and tags are kept.
+    db.runSync(
+      `UPDATE exercises SET
+         load_modified  = COALESCE(load_modified,  (SELECT load_modified  FROM library_exercises WHERE id = ?)),
+         load_base      = COALESCE(load_base,      (SELECT load_base      FROM library_exercises WHERE id = ?)),
+         load_amplified = COALESCE(load_amplified, (SELECT load_amplified FROM library_exercises WHERE id = ?))
+       WHERE library_exercise_id = ?;`,
+      [id, id, id, id]
+    );
+    db.runSync(
+      `INSERT INTO exercise_tags (exercise_id, tag_value_id)
+       SELECT e.id, lt.tag_value_id
+       FROM exercises e JOIN library_exercise_tags lt ON lt.library_exercise_id = e.library_exercise_id
+       WHERE e.library_exercise_id = ?
+         AND NOT EXISTS (SELECT 1 FROM exercise_tags et WHERE et.exercise_id = e.id);`,
       [id]
     );
-    const linked = db.getAllSync<{ id: string }>(`SELECT id FROM exercises WHERE library_exercise_id = ?;`, [id]);
-    for (const ex of linked) {
-      db.runSync(`DELETE FROM exercise_tags WHERE exercise_id = ?;`, [ex.id]);
-      for (const { tag_value_id } of libTags) {
-        db.runSync(`INSERT INTO exercise_tags (exercise_id, tag_value_id) VALUES (?, ?);`, [ex.id, tag_value_id]);
-      }
-      db.runSync(`UPDATE exercises SET library_exercise_id = NULL WHERE id = ?;`, [ex.id]);
-    }
+    db.runSync(`UPDATE exercises SET library_exercise_id = NULL WHERE library_exercise_id = ?;`, [id]);
     db.runSync(`DELETE FROM library_exercises WHERE id = ?;`, [id]);
   });
 }
