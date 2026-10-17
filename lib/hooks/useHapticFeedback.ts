@@ -65,10 +65,14 @@ export function useHapticFeedback(state: HapticTimerState, settings: HapticSetti
   const prevExerciseRef = useRef<TimerExercise | null>(null);
   const firedThisExerciseRef = useRef<Set<string>>(new Set());
   const armedCountdownsRef = useRef<Set<string>>(new Set());
+  const armedIndexRef = useRef<number | null>(null);
 
   // Reset refs and fire transition haptics when exercise changes
   useEffect(() => {
-    if (status !== 'running') return;
+    if (status === 'idle') armedIndexRef.current = null;
+    // Resuming after a pause continues the same exercise, so don't buzz again or re-fire countdowns.
+    if (status !== 'running' || armedIndexRef.current === exerciseIndex) return;
+    armedIndexRef.current = exerciseIndex;
 
     firedThisExerciseRef.current = new Set();
 
