@@ -230,7 +230,33 @@ export function validateSharePayload(raw: unknown): SharePayload | null {
     sections.push({ name: cleanString(section.name, MAX_NAME_LENGTH) ?? 'Section', exercises });
   }
 
-  return icons.length > 0 ? { v: 2, name, icons, sections } : { v: 2, name, sections };
+  const usedIcons = dropUnusedIcons(icons, sections);
+  return usedIcons.length > 0 ? { v: 2, name, icons: usedIcons, sections } : { v: 2, name, sections };
+}
+
+/**
+ * Import creates every icon in the payload, so drop the ones no exercise uses (a link we built never
+ * has any) and renumber the loads to match.
+ */
+function dropUnusedIcons(icons: ShareLoadIcon[], sections: ShareSection[]): ShareLoadIcon[] {
+  const exercises = sections.flatMap((s) => s.exercises);
+  const used = new Set(exercises.flatMap((ex) => LOAD_KINDS.flatMap((kind) => ex.loads?.[kind] ?? [])));
+  if (used.size === icons.length) return icons;
+
+  const kept: ShareLoadIcon[] = [];
+  const newIndex = new Map<number, number>();
+  icons.forEach((icon, i) => {
+    if (!used.has(i)) return;
+    newIndex.set(i, kept.length);
+    kept.push(icon);
+  });
+  for (const ex of exercises) {
+    for (const kind of LOAD_KINDS) {
+      const refs = ex.loads?.[kind];
+      if (refs) ex.loads![kind] = refs.map((i) => newIndex.get(i)!);
+    }
+  }
+  return kept;
 }
 
 function safeDecodeURIComponent(value: string): string | null {

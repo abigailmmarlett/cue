@@ -129,6 +129,33 @@ describe('validateSharePayload cleanup', () => {
     assert.deepEqual(p?.sections[0].exercises[0].loads, { base: [0] });
   });
 
+  test('drops icons that no exercise uses, so importing a link only adds icons it needs', () => {
+    const p = validateSharePayload({
+      v: 2,
+      name: 'x',
+      icons: [
+        { color: '#111', label: 'Unused' },
+        { color: '#222', label: 'Ball' },
+        { color: '#333', label: 'Also unused' },
+        { color: '#444', label: 'Band' },
+      ],
+      sections: [{ exercises: [{ name: 'a', duration: 10, loads: { base: [3, 1], amplified: [3] } }] }],
+    });
+    assert.deepEqual(p?.icons, [
+      { color: '#222', label: 'Ball' },
+      { color: '#444', label: 'Band' },
+    ]);
+    assert.deepEqual(p?.sections[0].exercises[0].loads, { base: [1, 0], amplified: [1] });
+
+    const unused = validateSharePayload({
+      v: 2,
+      name: 'x',
+      icons: [{ color: '#111', label: 'Unused' }],
+      sections: [{ exercises: [{ name: 'a', duration: 10 }] }],
+    });
+    assert.equal(unused?.icons, undefined);
+  });
+
   test('omits loads and icons entirely when nothing valid is left', () => {
     const p = validateSharePayload({
       v: 2,
