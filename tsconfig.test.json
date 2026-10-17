@@ -1,0 +1,12 @@
+// Used by `npm test` (via tsx): swaps native modules for the stand-ins in test/stubs.
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./*"],
+      "expo-sqlite": ["./test/stubs/expo-sqlite.ts"],
+      "expo-haptics": ["./test/stubs/expo-haptics.ts"],
+      "react-native": ["./test/stubs/react-native.ts"]
+    }
+  }
+}
