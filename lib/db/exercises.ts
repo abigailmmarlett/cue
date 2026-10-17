@@ -1,4 +1,4 @@
-import db from './client';
+import db, { transaction } from './client';
 import { generateId } from '../utils/id';
 
 export interface VariationItem {
@@ -6,12 +6,24 @@ export interface VariationItem {
   atSeconds: number | null;
 }
 
+/** Parses the JSON stored in `exercises.variation_sets`; returns null for missing or corrupt data. */
+export function parseVariationSets(json: string | null | undefined): VariationItem[] | null {
+  if (!json) return null;
+  try {
+    const parsed: unknown = JSON.parse(json);
+    if (!Array.isArray(parsed)) return null;
+    const items = parsed.filter(
+      (v): v is VariationItem =>
+        typeof v?.instruction === 'string' && (v.atSeconds === null || Number.isFinite(v.atSeconds))
+    );
+    return items.length > 0 ? items : null;
+  } catch {
+    return null;
+  }
+}
+
 export function computeVariationFractions(items: VariationItem[], duration: number): number[] {
-  return items.map((v, i) =>
-    v.atSeconds != null
-      ? v.atSeconds / duration
-      : (i + 1) / (items.length + 1)
-  );
+  return items.map((v, i) => (v.atSeconds != null ? v.atSeconds / duration : (i + 1) / (items.length + 1)));
 }
 
 export interface Exercise {
@@ -70,6 +82,13 @@ export function getExercisesBySectionId(sectionId: string): Exercise[] {
   );
 }
 
+/** Serialized load columns for an exercise row; null means "none" (or "use the library's" when linked). */
+export interface ExerciseLoads {
+  modified: string | null;
+  base: string | null;
+  amplified: string | null;
+}
+
 export function createExercise(
   sequenceId: string,
   sectionId: string,
@@ -79,7 +98,8 @@ export function createExercise(
   libraryExerciseId?: string | null,
   variation?: string | null,
   side?: 'left' | 'right' | null,
-  variationSets?: VariationItem[] | null
+  variationSets?: VariationItem[] | null,
+  loads: ExerciseLoads = { modified: null, base: null, amplified: null }
 ): Exercise {
   const id = generateId();
   const now = Date.now();
@@ -91,12 +111,45 @@ export function createExercise(
   const variationSetsJson = variationSets?.length ? JSON.stringify(variationSets) : null;
 
   db.runSync(
-    `INSERT INTO exercises (id, sequence_id, section_id, name, duration, order_index, notes, created_at, library_exercise_id, variation, variation_sets, side)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
-    [id, sequenceId, sectionId, name, duration, orderIndex, notes ?? null, now, libraryExerciseId ?? null, variation ?? null, variationSetsJson, side ?? null]
+    `INSERT INTO exercises (id, sequence_id, section_id, name, duration, order_index, notes, created_at, library_exercise_id, load_modified, load_base, load_amplified, variation, variation_sets, side)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+    [
+      id,
+      sequenceId,
+      sectionId,
+      name,
+      duration,
+      orderIndex,
+      notes ?? null,
+      now,
+      libraryExerciseId ?? null,
+      loads.modified,
+      loads.base,
+      loads.amplified,
+      variation ?? null,
+      variationSetsJson,
+      side ?? null,
+    ]
   );
 
-  return { id, sequence_id: sequenceId, section_id: sectionId, name, duration, order_index: orderIndex, notes: notes ?? null, created_at: now, library_exercise_id: libraryExerciseId ?? null, load_modified: null, load_base: null, load_amplified: null, variation: variation ?? null, variation_sets: variationSetsJson, side: side ?? null, is_bilateral: 0 };
+  return {
+    id,
+    sequence_id: sequenceId,
+    section_id: sectionId,
+    name,
+    duration,
+    order_index: orderIndex,
+    notes: notes ?? null,
+    created_at: now,
+    library_exercise_id: libraryExerciseId ?? null,
+    load_modified: loads.modified,
+    load_base: loads.base,
+    load_amplified: loads.amplified,
+    variation: variation ?? null,
+    variation_sets: variationSetsJson,
+    side: side ?? null,
+    is_bilateral: 0,
+  };
 }
 
 export function upsertExercise(
@@ -132,20 +185,42 @@ export function upsertExercise(
        variation = excluded.variation,
        variation_sets = excluded.variation_sets,
        side = excluded.side;`,
-    [id, sequenceId, sectionId, name, duration, orderIndex, notes, Date.now(), libraryExerciseId, loadModified, loadBase, loadAmplified, variation, variationSetsJson, side]
+    [
+      id,
+      sequenceId,
+      sectionId,
+      name,
+      duration,
+      orderIndex,
+      notes,
+      Date.now(),
+      libraryExerciseId,
+      loadModified,
+      loadBase,
+      loadAmplified,
+      variation,
+      variationSetsJson,
+      side,
+    ]
   );
 }
 
-export function updateExercise(
-  id: string,
-  fields: Partial<Pick<Exercise, 'name' | 'duration' | 'notes'>>
-): void {
+export function updateExercise(id: string, fields: Partial<Pick<Exercise, 'name' | 'duration' | 'notes'>>): void {
   const parts: string[] = [];
   const values: (string | number | null)[] = [];
 
-  if (fields.name !== undefined) { parts.push('name = ?'); values.push(fields.name); }
-  if (fields.duration !== undefined) { parts.push('duration = ?'); values.push(fields.duration); }
-  if (fields.notes !== undefined) { parts.push('notes = ?'); values.push(fields.notes); }
+  if (fields.name !== undefined) {
+    parts.push('name = ?');
+    values.push(fields.name);
+  }
+  if (fields.duration !== undefined) {
+    parts.push('duration = ?');
+    values.push(fields.duration);
+  }
+  if (fields.notes !== undefined) {
+    parts.push('notes = ?');
+    values.push(fields.notes);
+  }
 
   if (parts.length === 0) return;
   values.push(id);
@@ -157,10 +232,13 @@ export function deleteExercise(id: string): void {
 }
 
 export function reorderExercises(sectionId: string, orderedIds: string[]): void {
-  for (let i = 0; i < orderedIds.length; i++) {
-    db.runSync(
-      `UPDATE exercises SET order_index = ? WHERE id = ? AND section_id = ?;`,
-      [i, orderedIds[i], sectionId]
-    );
-  }
+  transaction(() => {
+    for (let i = 0; i < orderedIds.length; i++) {
+      db.runSync(`UPDATE exercises SET order_index = ? WHERE id = ? AND section_id = ?;`, [
+        i,
+        orderedIds[i],
+        sectionId,
+      ]);
+    }
+  });
 }

@@ -1,0 +1,6 @@
+.agents/
+.claude/
+.expo/
+node_modules/
+package-lock.json
+skills-lock.json

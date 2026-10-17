@@ -9,16 +9,7 @@ interface Props {
 
 export function Divider({ inset, style }: Props) {
   const { colors } = useTheme();
-  return (
-    <View
-      style={[
-        styles.line,
-        { backgroundColor: colors.border },
-        inset && styles.inset,
-        style,
-      ]}
-    />
-  );
+  return <View style={[styles.line, { backgroundColor: colors.border }, inset && styles.inset, style]} />;
 }
 
 const styles = StyleSheet.create({

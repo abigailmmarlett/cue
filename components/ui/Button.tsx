@@ -55,33 +55,18 @@ const labelSizeStyles = StyleSheet.create({
   lg: { fontSize: FontSize.lg },
 });
 
-export function Button({
-  label,
-  onPress,
-  variant = 'primary',
-  size = 'md',
-  disabled,
-  loading,
-  style,
-}: Props) {
+export function Button({ label, onPress, variant = 'primary', size = 'md', disabled, loading, style }: Props) {
   const { colors } = useTheme();
   const styles = makeStyles(colors);
 
-  const labelColor: 'inverse' | 'primary' =
-    variant === 'primary' ? 'inverse' : 'primary';
+  const labelColor: 'inverse' | 'primary' = variant === 'primary' ? 'inverse' : 'primary';
 
   return (
     <TouchableOpacity
       onPress={onPress}
       disabled={disabled || loading}
       activeOpacity={0.75}
-      style={[
-        styles.base,
-        styles[variant],
-        sizeStyles[size],
-        (disabled || loading) && styles.disabled,
-        style,
-      ]}
+      style={[styles.base, styles[variant], sizeStyles[size], (disabled || loading) && styles.disabled, style]}
     >
       {loading ? (
         <ActivityIndicator color={variant === 'primary' ? colors.text.inverse : colors.text.primary} />
@@ -91,7 +76,9 @@ export function Button({
           style={[
             labelSizeStyles[size],
             variant === 'destructive' && { color: '#D00000', fontWeight: FontWeight.medium },
-            variant !== 'destructive' && { fontWeight: variant === 'primary' ? FontWeight.semibold : FontWeight.medium },
+            variant !== 'destructive' && {
+              fontWeight: variant === 'primary' ? FontWeight.semibold : FontWeight.medium,
+            },
           ]}
         >
           {label}

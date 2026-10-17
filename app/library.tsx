@@ -35,16 +35,7 @@ import { getAllLoadIcons, parseLoad, serializeLoad, type LoadIcon } from '@/lib/
 import type { ExerciseTag } from '@/lib/db/tags';
 
 function buildCatColors(accent: string, deep: string): string[] {
-  return [
-    accent,
-    deep,
-    `${accent}dd`,
-    `${deep}dd`,
-    `${accent}bb`,
-    `${deep}bb`,
-    `${accent}99`,
-    `${deep}99`,
-  ];
+  return [accent, deep, `${accent}dd`, `${deep}dd`, `${accent}bb`, `${deep}bb`, `${accent}99`, `${deep}99`];
 }
 
 function getCatColor(name: string, allNames: string[], catColors: string[]) {
@@ -178,10 +169,7 @@ export default function LibraryScreen() {
   const { top } = useSafeAreaInsets();
   const { colors } = useTheme();
   const styles = makeStyles(colors, ACTION_BUTTON_SCALE[useActionButtonSize()], TEXT_SCALE[useTextSize()]);
-  const catColors = useMemo(
-    () => buildCatColors(colors.accent, colors.accentDeep),
-    [colors.accent, colors.accentDeep]
-  );
+  const catColors = useMemo(() => buildCatColors(colors.accent, colors.accentDeep), [colors.accent, colors.accentDeep]);
   const [exercises, setExercises] = useState<LibraryExerciseWithTags[]>([]);
   const [search, setSearch] = useState('');
   const [activeFilterTags, setActiveFilterTags] = useState<ExerciseTag[]>([]);
@@ -205,7 +193,9 @@ export default function LibraryScreen() {
     setExercises(getAllLibraryExercises());
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const allTagPills = useMemo(() => {
     const seen = new Map<string, ExerciseTag>();
@@ -227,7 +217,8 @@ export default function LibraryScreen() {
   const filtered = useMemo(() => {
     return exercises.filter((ex) => {
       const matchSearch = !search.trim() || ex.name.toLowerCase().includes(search.toLowerCase());
-      const matchTag = activeFilterTags.length === 0 ||
+      const matchTag =
+        activeFilterTags.length === 0 ||
         ex.tags.some((t) => activeFilterTags.some((f) => f.tagValueId === t.tagValueId));
       return matchSearch && matchTag;
     });
@@ -274,22 +265,26 @@ export default function LibraryScreen() {
 
   const handleDelete = (ex: LibraryExerciseWithTags) => {
     const count = getLinkedCount(ex.id);
-    const detail = count > 0
-      ? `This will unlink "${ex.name}" from ${count} sequence${count === 1 ? '' : 's'}. Names and tags will be preserved.`
-      : `"${ex.name}" is not used in any sequences.`;
+    const detail =
+      count > 0
+        ? `This will unlink "${ex.name}" from ${count} sequence${count === 1 ? '' : 's'}. Names and tags will be preserved.`
+        : `"${ex.name}" is not used in any sequences.`;
     Alert.alert(`Delete "${ex.name}"?`, detail, [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => { deleteLibraryExercise(ex.id); load(); } },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => {
+          deleteLibraryExercise(ex.id);
+          load();
+        },
+      },
     ]);
   };
 
-  const tagPickerExercise = tagPickerExerciseId
-    ? exercises.find((e) => e.id === tagPickerExerciseId) ?? null
-    : null;
+  const tagPickerExercise = tagPickerExerciseId ? (exercises.find((e) => e.id === tagPickerExerciseId) ?? null) : null;
 
-  const editLoadTarget = editLoadExerciseId
-    ? exercises.find((e) => e.id === editLoadExerciseId) ?? null
-    : null;
+  const editLoadTarget = editLoadExerciseId ? (exercises.find((e) => e.id === editLoadExerciseId) ?? null) : null;
 
   return (
     <View style={styles.container}>
@@ -311,77 +306,85 @@ export default function LibraryScreen() {
         />
 
         <View ref={contentRef} style={styles.scroll}>
-        <ScrollView
-          style={styles.scroll}
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={styles.scrollContent}
-        >
-        {addingNew && (
-          <View style={styles.addRow}>
-            <TextInput
-              style={styles.addInput}
-              value={newNameText}
-              onChangeText={setNewNameText}
-              placeholder="Exercise name"
-              placeholderTextColor={colors.text.tertiary}
-              autoFocus
-              returnKeyType="done"
-              onSubmitEditing={handleAdd}
-            />
-            <TouchableOpacity onPress={handleAdd} style={styles.actionBtn} hitSlop={8}>
-              <Text style={[styles.actionAdd, { color: colors.accent }]}>Add</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => { setAddingNew(false); setNewNameText(''); }} hitSlop={8}>
-              <Text style={styles.actionCancel}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {grouped.size === 0 && !addingNew ? (
-          <View style={styles.empty}>
-            <Text variant="body" color="tertiary">
-              {search || activeFilterTags.length > 0 ? 'No exercises match.' : 'No exercises yet.'}
-            </Text>
-          </View>
-        ) : (
-          Array.from(grouped.entries()).map(([groupName, exs]) => {
-            const color = groupName === 'Untagged'
-              ? colors.text.tertiary
-              : getCatColor(groupName, allGroupNames, catColors);
-            return (
-              <View key={groupName} style={styles.group}>
-                <View style={styles.groupHeader}>
-                  <View style={[styles.groupDot, { backgroundColor: color }]} />
-                  <Text style={[styles.groupLabel, { color: colors.text.tertiary }]}>
-                    {groupName.toUpperCase()}
-                  </Text>
-                  <View style={styles.groupLine} />
-                  <Text style={styles.groupCount}>{exs.length}</Text>
-                </View>
-
-                {exs.map((ex) => (
-                  <ExerciseItem
-                    key={ex.id}
-                    ex={ex}
-                    accentColor={color}
-                    isEditing={editingId === ex.id}
-                    editText={editNameText}
-                    onEditText={setEditNameText}
-                    onStartEdit={() => { setEditingId(ex.id); setEditNameText(ex.name); }}
-                    onFinishEdit={() => handleRename(ex)}
-                    onCancelEdit={() => setEditingId(null)}
-                    onDelete={() => handleDelete(ex)}
-                    onEditTags={() => setTagPickerExerciseId(ex.id)}
-                    onEditLoad={allLoadIcons.length > 0 ? () => setEditLoadExerciseId(ex.id) : undefined}
-                    onToggleBilateral={() => handleToggleBilateral(ex)}
-                  />
-                ))}
+          <ScrollView
+            style={styles.scroll}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={styles.scrollContent}
+          >
+            {addingNew && (
+              <View style={styles.addRow}>
+                <TextInput
+                  style={styles.addInput}
+                  value={newNameText}
+                  onChangeText={setNewNameText}
+                  placeholder="Exercise name"
+                  placeholderTextColor={colors.text.tertiary}
+                  autoFocus
+                  returnKeyType="done"
+                  onSubmitEditing={handleAdd}
+                />
+                <TouchableOpacity onPress={handleAdd} style={styles.actionBtn} hitSlop={8}>
+                  <Text style={[styles.actionAdd, { color: colors.accent }]}>Add</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => {
+                    setAddingNew(false);
+                    setNewNameText('');
+                  }}
+                  hitSlop={8}
+                >
+                  <Text style={styles.actionCancel}>Cancel</Text>
+                </TouchableOpacity>
               </View>
-            );
-          })
-        )}
-          <View style={{ height: Spacing.xl }} />
-        </ScrollView>
+            )}
+
+            {grouped.size === 0 && !addingNew ? (
+              <View style={styles.empty}>
+                <Text variant="body" color="tertiary">
+                  {search || activeFilterTags.length > 0 ? 'No exercises match.' : 'No exercises yet.'}
+                </Text>
+              </View>
+            ) : (
+              Array.from(grouped.entries()).map(([groupName, exs]) => {
+                const color =
+                  groupName === 'Untagged' ? colors.text.tertiary : getCatColor(groupName, allGroupNames, catColors);
+                return (
+                  <View key={groupName} style={styles.group}>
+                    <View style={styles.groupHeader}>
+                      <View style={[styles.groupDot, { backgroundColor: color }]} />
+                      <Text style={[styles.groupLabel, { color: colors.text.tertiary }]}>
+                        {groupName.toUpperCase()}
+                      </Text>
+                      <View style={styles.groupLine} />
+                      <Text style={styles.groupCount}>{exs.length}</Text>
+                    </View>
+
+                    {exs.map((ex) => (
+                      <ExerciseItem
+                        key={ex.id}
+                        ex={ex}
+                        accentColor={color}
+                        isEditing={editingId === ex.id}
+                        editText={editNameText}
+                        onEditText={setEditNameText}
+                        onStartEdit={() => {
+                          setEditingId(ex.id);
+                          setEditNameText(ex.name);
+                        }}
+                        onFinishEdit={() => handleRename(ex)}
+                        onCancelEdit={() => setEditingId(null)}
+                        onDelete={() => handleDelete(ex)}
+                        onEditTags={() => setTagPickerExerciseId(ex.id)}
+                        onEditLoad={allLoadIcons.length > 0 ? () => setEditLoadExerciseId(ex.id) : undefined}
+                        onToggleBilateral={() => handleToggleBilateral(ex)}
+                      />
+                    ))}
+                  </View>
+                );
+              })
+            )}
+            <View style={{ height: Spacing.xl }} />
+          </ScrollView>
         </View>
       </KeyboardAvoidingView>
 
@@ -411,7 +414,7 @@ export default function LibraryScreen() {
               editLoadTarget.id,
               serializeLoad(modified.length > 0 ? modified : null),
               serializeLoad(base.length > 0 ? base : null),
-              serializeLoad(amplified.length > 0 ? amplified : null),
+              serializeLoad(amplified.length > 0 ? amplified : null)
             );
             setEditLoadExerciseId(null);
             load();
@@ -439,8 +442,18 @@ interface ExerciseItemProps {
 }
 
 function ExerciseItem({
-  ex, accentColor, isEditing, editText, onEditText,
-  onStartEdit, onFinishEdit, onCancelEdit, onDelete, onEditTags, onEditLoad, onToggleBilateral,
+  ex,
+  accentColor,
+  isEditing,
+  editText,
+  onEditText,
+  onStartEdit,
+  onFinishEdit,
+  onCancelEdit,
+  onDelete,
+  onEditTags,
+  onEditLoad,
+  onToggleBilateral,
 }: ExerciseItemProps) {
   const { colors } = useTheme();
   const buttonScale = ACTION_BUTTON_SCALE[useActionButtonSize()];
@@ -478,7 +491,9 @@ function ExerciseItem({
             </TouchableOpacity>
             {onEditLoad && (
               <TouchableOpacity onPress={onEditLoad} hitSlop={8} style={styles.iconBtn}>
-                <Text style={[styles.editIcon, { color: hasLoad ? colors.text.secondary : colors.text.tertiary }]}>⊙</Text>
+                <Text style={[styles.editIcon, { color: hasLoad ? colors.text.secondary : colors.text.tertiary }]}>
+                  ⊙
+                </Text>
               </TouchableOpacity>
             )}
             <TouchableOpacity onPress={onStartEdit} hitSlop={8} style={styles.iconBtn}>
@@ -493,9 +508,7 @@ function ExerciseItem({
         <View style={styles.exTagsRow}>
           {ex.tags.length > 0 && <TagChips tags={ex.tags} />}
           <TouchableOpacity onPress={onEditTags} hitSlop={8}>
-            <Text style={styles.editTagsLabel}>
-              {ex.tags.length > 0 ? 'Edit tags' : '+ Add tags'}
-            </Text>
+            <Text style={styles.editTagsLabel}>{ex.tags.length > 0 ? 'Edit tags' : '+ Add tags'}</Text>
           </TouchableOpacity>
         </View>
       </View>

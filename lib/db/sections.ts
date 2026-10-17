@@ -1,4 +1,4 @@
-import db from './client';
+import db, { transaction } from './client';
 import { generateId } from '../utils/id';
 
 export interface Section {
@@ -10,10 +10,7 @@ export interface Section {
 }
 
 export function getSectionsBySequenceId(sequenceId: string): Section[] {
-  return db.getAllSync<Section>(
-    `SELECT * FROM sections WHERE sequence_id = ? ORDER BY order_index;`,
-    [sequenceId]
-  );
+  return db.getAllSync<Section>(`SELECT * FROM sections WHERE sequence_id = ? ORDER BY order_index;`, [sequenceId]);
 }
 
 export function createSection(sequenceId: string, name: string): Section {
@@ -25,10 +22,13 @@ export function createSection(sequenceId: string, name: string): Section {
   );
   const orderIndex = (maxIndex?.max_index ?? -1) + 1;
 
-  db.runSync(
-    `INSERT INTO sections (id, sequence_id, name, order_index, created_at) VALUES (?, ?, ?, ?, ?);`,
-    [id, sequenceId, name, orderIndex, now]
-  );
+  db.runSync(`INSERT INTO sections (id, sequence_id, name, order_index, created_at) VALUES (?, ?, ?, ?, ?);`, [
+    id,
+    sequenceId,
+    name,
+    orderIndex,
+    now,
+  ]);
 
   return { id, sequence_id: sequenceId, name, order_index: orderIndex, created_at: now };
 }
@@ -41,12 +41,7 @@ export function deleteSection(id: string): void {
   db.runSync(`DELETE FROM sections WHERE id = ?;`, [id]);
 }
 
-export function upsertSection(
-  id: string,
-  sequenceId: string,
-  name: string,
-  orderIndex: number
-): void {
+export function upsertSection(id: string, sequenceId: string, name: string, orderIndex: number): void {
   db.runSync(
     `INSERT INTO sections (id, sequence_id, name, order_index, created_at)
      VALUES (?, ?, ?, ?, ?)
@@ -58,10 +53,13 @@ export function upsertSection(
 }
 
 export function reorderSections(sequenceId: string, orderedIds: string[]): void {
-  for (let i = 0; i < orderedIds.length; i++) {
-    db.runSync(
-      `UPDATE sections SET order_index = ? WHERE id = ? AND sequence_id = ?;`,
-      [i, orderedIds[i], sequenceId]
-    );
-  }
+  transaction(() => {
+    for (let i = 0; i < orderedIds.length; i++) {
+      db.runSync(`UPDATE sections SET order_index = ? WHERE id = ? AND sequence_id = ?;`, [
+        i,
+        orderedIds[i],
+        sequenceId,
+      ]);
+    }
+  });
 }

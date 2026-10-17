@@ -3,9 +3,21 @@ import { useColorScheme } from 'react-native';
 import { Colors as BaseColors, DarkBaseColors } from '@/constants/theme';
 import { getPreference, setPreference } from '@/lib/db/preferences';
 
-export type ThemeId = 'forest' | 'ocean' | 'dusk' | 'ember' | 'stone'
-  | 'bloom' | 'reverie' | 'tidal' | 'electric'
-  | 'haze' | 'canopy' | 'dune' | 'wildfire' | 'verdigris';
+export type ThemeId =
+  | 'forest'
+  | 'ocean'
+  | 'dusk'
+  | 'ember'
+  | 'stone'
+  | 'bloom'
+  | 'reverie'
+  | 'tidal'
+  | 'electric'
+  | 'haze'
+  | 'canopy'
+  | 'dune'
+  | 'wildfire'
+  | 'verdigris';
 
 export type Mode = 'light' | 'dark' | 'system';
 

@@ -73,10 +73,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
     if (labelWidth <= 0) return;
     const elapsed = Date.now() - mountTimeRef.current;
     const remaining = Math.max(0, 1800 - elapsed);
-    subWidth.value = withDelay(
-      remaining,
-      withTiming(labelWidth, { duration: 600, easing: Easing.out(Easing.quad) })
-    );
+    subWidth.value = withDelay(remaining, withTiming(labelWidth, { duration: 600, easing: Easing.out(Easing.quad) }));
   }, [labelWidth]);
 
   return (
@@ -85,13 +82,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
     >
       {/* "hey, coach!" — overflow clip grows left→right, revealing filled Pacifico path */}
       <View style={{ width: screenWidth, height: SVG_HEIGHT }}>
-        <Animated.View
-          style={[
-            styles.heyClip,
-            { left: textLeft, top: 0 },
-            heyClipStyle,
-          ]}
-        >
+        <Animated.View style={[styles.heyClip, { left: textLeft, top: 0 }, heyClipStyle]}>
           <Svg height={SVG_HEIGHT} width={PATH_WIDTH}>
             <G transform={`translate(${(-PATH_X1).toFixed(2)}, ${BASELINE_Y.toFixed(2)})`}>
               <Path d={HEY_COACH_PATH} fill={colors.accent} />
@@ -102,10 +93,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
 
       {/* "cue with confidence" — same clip technique */}
       <View style={styles.subtitleWrap}>
-        <Text
-          onLayout={(e) => setLabelWidth(e.nativeEvent.layout.width)}
-          style={[styles.subtitle, styles.invisible]}
-        >
+        <Text onLayout={(e) => setLabelWidth(e.nativeEvent.layout.width)} style={[styles.subtitle, styles.invisible]}>
           cue with confidence
         </Text>
         <Animated.View style={[styles.clipReveal, subClipStyle]}>

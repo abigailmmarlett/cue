@@ -14,10 +14,7 @@ import { Text } from './ui/Text';
 import { TagChips } from './TagChips';
 import { Colors, Spacing, Radius, FontSize } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
-import {
-  getAllLibraryExercises,
-  type LibraryExerciseWithTags,
-} from '@/lib/db/libraryExercises';
+import { getAllLibraryExercises, type LibraryExerciseWithTags } from '@/lib/db/libraryExercises';
 
 interface Props {
   onSelect: (exercise: LibraryExerciseWithTags) => void;
@@ -102,23 +99,22 @@ export function ExerciseSearchSheet({ onSelect, onCreateNew, onClose }: Props) {
     return library.filter((e) => e.name.toLowerCase().includes(q));
   }, [query, library]);
 
-  const hasExactMatch = results.some(
-    (e) => e.name.toLowerCase() === query.trim().toLowerCase()
-  );
+  const hasExactMatch = results.some((e) => e.name.toLowerCase() === query.trim().toLowerCase());
   const showCreateRow = query.trim().length > 0 && !hasExactMatch;
 
   return (
     <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <SafeAreaView style={styles.container}>
-        <KeyboardAvoidingView
-          style={styles.flex}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
+        <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <View style={styles.header}>
             <TouchableOpacity onPress={onClose} style={styles.cancelBtn}>
-              <Text variant="label" color="secondary">Cancel</Text>
+              <Text variant="label" color="secondary">
+                Cancel
+              </Text>
             </TouchableOpacity>
-            <Text variant="label" style={styles.headerTitle}>Add Exercise</Text>
+            <Text variant="label" style={styles.headerTitle}>
+              Add Exercise
+            </Text>
             <View style={styles.cancelBtn} />
           </View>
 
@@ -152,16 +148,10 @@ export function ExerciseSearchSheet({ onSelect, onCreateNew, onClose }: Props) {
               ) : null
             }
             renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.resultRow}
-                onPress={() => onSelect(item)}
-                activeOpacity={0.7}
-              >
+              <TouchableOpacity style={styles.resultRow} onPress={() => onSelect(item)} activeOpacity={0.7}>
                 <View style={styles.resultBody}>
                   <Text variant="body">{item.name}</Text>
-                  {item.tags.length > 0 && (
-                    <TagChips tags={item.tags} style={styles.resultTags} />
-                  )}
+                  {item.tags.length > 0 && <TagChips tags={item.tags} style={styles.resultTags} />}
                 </View>
               </TouchableOpacity>
             )}
@@ -174,7 +164,7 @@ export function ExerciseSearchSheet({ onSelect, onCreateNew, onClose }: Props) {
                 >
                   <Text style={styles.createIcon}>+</Text>
                   <Text variant="body" color="secondary">
-                    Create "{query.trim()}" as new exercise
+                    Create &ldquo;{query.trim()}&rdquo; as new exercise
                   </Text>
                 </TouchableOpacity>
               ) : null

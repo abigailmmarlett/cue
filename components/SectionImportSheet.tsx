@@ -1,22 +1,15 @@
-import {
-  View,
-  Modal,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-} from 'react-native';
+import { View, Modal, FlatList, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
 import { useState, useEffect } from 'react';
 import { Text } from './ui/Text';
 import { Colors, Spacing, Radius } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
 import { getAllSequences } from '@/lib/db/sequences';
 import { getSectionsBySequenceId, type Section } from '@/lib/db/sections';
-import { getExercisesBySectionId } from '@/lib/db/exercises';
+import { getExercisesBySectionId, parseVariationSets } from '@/lib/db/exercises';
 import { parseLoad } from '@/lib/db/loadIcons';
+import { getOwnTagsForExercise } from '@/lib/db/tags';
 import { generateId } from '@/lib/utils/id';
 import type { LocalExercise } from '@/components/ExerciseRow';
-import type { VariationItem } from '@/lib/db/exercises';
 
 interface LocalSection {
   id: string;
@@ -114,22 +107,26 @@ export function SectionImportSheet({ currentSequenceId, onImport, onClose }: Pro
     const localSection: LocalSection = {
       id: generateId(),
       name: section.name,
-      exercises: dbExercises.map((ex): LocalExercise => ({
-        id: generateId(),
-        name: ex.name,
-        duration: ex.duration,
-        notes: ex.notes ?? null,
-        tagValueIds: [],
-        tags: [],
-        libraryExerciseId: ex.library_exercise_id ?? null,
-        loadModified: parseLoad(ex.load_modified),
-        loadBase: parseLoad(ex.load_base),
-        loadAmplified: parseLoad(ex.load_amplified),
-        variation: ex.variation ?? null,
-        variationSets: ex.variation_sets ? (JSON.parse(ex.variation_sets) as VariationItem[]) : null,
-        isBilateral: ex.is_bilateral !== 0,
-        side: ex.side ?? null,
-      })),
+      exercises: dbExercises.map((ex): LocalExercise => {
+        // Copy only the exercise's own tags; linked exercises keep inheriting their library tags.
+        const ownTags = getOwnTagsForExercise(ex.id);
+        return {
+          id: generateId(),
+          name: ex.name,
+          duration: ex.duration,
+          notes: ex.notes ?? null,
+          tagValueIds: ownTags.map((t) => t.tagValueId),
+          tags: ownTags,
+          libraryExerciseId: ex.library_exercise_id ?? null,
+          loadModified: parseLoad(ex.load_modified),
+          loadBase: parseLoad(ex.load_base),
+          loadAmplified: parseLoad(ex.load_amplified),
+          variation: ex.variation ?? null,
+          variationSets: parseVariationSets(ex.variation_sets),
+          isBilateral: ex.is_bilateral !== 0,
+          side: ex.side ?? null,
+        };
+      }),
     };
     onImport(localSection);
   };
@@ -145,7 +142,9 @@ export function SectionImportSheet({ currentSequenceId, onImport, onClose }: Pro
         <View style={styles.header}>
           {selectedSequence ? (
             <TouchableOpacity onPress={goBack} style={styles.backBtn} hitSlop={8}>
-              <Text variant="body" color="secondary">Back</Text>
+              <Text variant="body" color="secondary">
+                Back
+              </Text>
             </TouchableOpacity>
           ) : (
             <View style={styles.cancelBtn} />
@@ -154,7 +153,9 @@ export function SectionImportSheet({ currentSequenceId, onImport, onClose }: Pro
             {selectedSequence ? selectedSequence.name : 'Import Section'}
           </Text>
           <TouchableOpacity onPress={onClose} style={styles.cancelBtn} hitSlop={8}>
-            <Text variant="body" color="secondary" style={{ textAlign: 'right' }}>Cancel</Text>
+            <Text variant="body" color="secondary" style={{ textAlign: 'right' }}>
+              Cancel
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -174,7 +175,9 @@ export function SectionImportSheet({ currentSequenceId, onImport, onClose }: Pro
             )}
             ListEmptyComponent={
               <View style={styles.emptyState}>
-                <Text variant="body" color="tertiary">No other sequences.</Text>
+                <Text variant="body" color="tertiary">
+                  No other sequences.
+                </Text>
               </View>
             }
           />
@@ -194,7 +197,9 @@ export function SectionImportSheet({ currentSequenceId, onImport, onClose }: Pro
             )}
             ListEmptyComponent={
               <View style={styles.emptyState}>
-                <Text variant="body" color="tertiary">No sections in this sequence.</Text>
+                <Text variant="body" color="tertiary">
+                  No sections in this sequence.
+                </Text>
               </View>
             }
           />

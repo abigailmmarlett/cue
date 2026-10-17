@@ -1,4 +1,4 @@
-import db from './client';
+import db, { transaction } from './client';
 import { generateId } from '../utils/id';
 import type { ExerciseTag } from './tags';
 
@@ -32,7 +32,9 @@ function attachTags(exercises: LibraryExercise[]): LibraryExerciseWithTags[] {
   const tagMap = new Map<string, ExerciseTag[]>();
   for (const row of rows) {
     if (!tagMap.has(row.library_exercise_id)) tagMap.set(row.library_exercise_id, []);
-    tagMap.get(row.library_exercise_id)!.push({ tagValueId: row.tagValueId, categoryName: row.categoryName, label: row.label });
+    tagMap
+      .get(row.library_exercise_id)!
+      .push({ tagValueId: row.tagValueId, categoryName: row.categoryName, label: row.label });
   }
   return exercises.map((e) => ({ ...e, tags: tagMap.get(e.id) ?? [] }));
 }
@@ -64,70 +66,88 @@ export function getLibraryExercise(id: string): LibraryExerciseWithTags | null {
 export function createLibraryExercise(name: string): LibraryExercise {
   const id = generateId();
   const now = Date.now();
-  db.runSync(
-    `INSERT INTO library_exercises (id, name, created_at, updated_at, is_bilateral) VALUES (?, ?, ?, ?, 0);`,
-    [id, name, now, now]
-  );
-  return { id, name, created_at: now, updated_at: now, load_modified: null, load_base: null, load_amplified: null, is_bilateral: 0 };
+  db.runSync(`INSERT INTO library_exercises (id, name, created_at, updated_at, is_bilateral) VALUES (?, ?, ?, ?, 0);`, [
+    id,
+    name,
+    now,
+    now,
+  ]);
+  return {
+    id,
+    name,
+    created_at: now,
+    updated_at: now,
+    load_modified: null,
+    load_base: null,
+    load_amplified: null,
+    is_bilateral: 0,
+  };
 }
 
 export function updateLibraryExerciseBilateral(id: string, isBilateral: boolean): void {
-  db.runSync(
-    `UPDATE library_exercises SET is_bilateral = ?, updated_at = ? WHERE id = ?;`,
-    [isBilateral ? 1 : 0, Date.now(), id]
-  );
+  db.runSync(`UPDATE library_exercises SET is_bilateral = ?, updated_at = ? WHERE id = ?;`, [
+    isBilateral ? 1 : 0,
+    Date.now(),
+    id,
+  ]);
 }
 
 export function updateLibraryExerciseLoad(
   id: string,
   loadModified: string | null,
   loadBase: string | null,
-  loadAmplified: string | null,
+  loadAmplified: string | null
 ): void {
   db.runSync(
     `UPDATE library_exercises SET load_modified = ?, load_base = ?, load_amplified = ?, updated_at = ? WHERE id = ?;`,
-    [loadModified, loadBase, loadAmplified, Date.now(), id],
+    [loadModified, loadBase, loadAmplified, Date.now(), id]
   );
 }
 
 export function updateLibraryExercise(id: string, name: string): void {
   const now = Date.now();
-  db.runSync(`UPDATE library_exercises SET name = ?, updated_at = ? WHERE id = ?;`, [name, now, id]);
-  // Propagate name change to all linked sequence exercises
-  db.runSync(`UPDATE exercises SET name = ? WHERE library_exercise_id = ?;`, [name, id]);
+  transaction(() => {
+    db.runSync(`UPDATE library_exercises SET name = ?, updated_at = ? WHERE id = ?;`, [name, now, id]);
+    // Propagate name change to all linked sequence exercises
+    db.runSync(`UPDATE exercises SET name = ? WHERE library_exercise_id = ?;`, [name, id]);
+  });
 }
 
 export function deleteLibraryExercise(id: string): void {
-  // Snapshot library tags into exercise_tags for all linked exercises before deleting
-  const libTags = db.getAllSync<{ tag_value_id: string }>(
-    `SELECT tag_value_id FROM library_exercise_tags WHERE library_exercise_id = ?;`,
-    [id]
-  );
-  const linked = db.getAllSync<{ id: string }>(
-    `SELECT id FROM exercises WHERE library_exercise_id = ?;`,
-    [id]
-  );
-  for (const ex of linked) {
-    db.runSync(`DELETE FROM exercise_tags WHERE exercise_id = ?;`, [ex.id]);
-    for (const { tag_value_id } of libTags) {
-      db.runSync(
-        `INSERT INTO exercise_tags (exercise_id, tag_value_id) VALUES (?, ?);`,
-        [ex.id, tag_value_id]
-      );
-    }
-    db.runSync(`UPDATE exercises SET library_exercise_id = NULL WHERE id = ?;`, [ex.id]);
-  }
-  db.runSync(`DELETE FROM library_exercises WHERE id = ?;`, [id]);
+  transaction(() => {
+    // Linked exercises read any load or tags they don't override from the library entry,
+    // so copy those onto them before unlinking. Their own loads and tags are kept.
+    db.runSync(
+      `UPDATE exercises SET
+         load_modified  = COALESCE(load_modified,  (SELECT load_modified  FROM library_exercises WHERE id = ?)),
+         load_base      = COALESCE(load_base,      (SELECT load_base      FROM library_exercises WHERE id = ?)),
+         load_amplified = COALESCE(load_amplified, (SELECT load_amplified FROM library_exercises WHERE id = ?))
+       WHERE library_exercise_id = ?;`,
+      [id, id, id, id]
+    );
+    db.runSync(
+      `INSERT INTO exercise_tags (exercise_id, tag_value_id)
+       SELECT e.id, lt.tag_value_id
+       FROM exercises e JOIN library_exercise_tags lt ON lt.library_exercise_id = e.library_exercise_id
+       WHERE e.library_exercise_id = ?
+         AND NOT EXISTS (SELECT 1 FROM exercise_tags et WHERE et.exercise_id = e.id);`,
+      [id]
+    );
+    db.runSync(`UPDATE exercises SET library_exercise_id = NULL WHERE library_exercise_id = ?;`, [id]);
+    db.runSync(`DELETE FROM library_exercises WHERE id = ?;`, [id]);
+  });
 }
 
 export function setLibraryExerciseTags(libraryExerciseId: string, tagValueIds: string[]): void {
-  db.runSync(`DELETE FROM library_exercise_tags WHERE library_exercise_id = ?;`, [libraryExerciseId]);
-  for (const tagValueId of tagValueIds) {
-    db.runSync(
-      `INSERT INTO library_exercise_tags (library_exercise_id, tag_value_id) VALUES (?, ?);`,
-      [libraryExerciseId, tagValueId]
-    );
-  }
+  transaction(() => {
+    db.runSync(`DELETE FROM library_exercise_tags WHERE library_exercise_id = ?;`, [libraryExerciseId]);
+    for (const tagValueId of tagValueIds) {
+      db.runSync(`INSERT INTO library_exercise_tags (library_exercise_id, tag_value_id) VALUES (?, ?);`, [
+        libraryExerciseId,
+        tagValueId,
+      ]);
+    }
+  });
 }
 
 export function getLinkedCount(libraryExerciseId: string): number {

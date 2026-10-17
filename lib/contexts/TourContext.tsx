@@ -55,7 +55,8 @@ const ALL_TOUR_STEPS: TourStep[] = [
   {
     id: 'sequences',
     title: 'Your Sequences',
-    description: 'All your workout sequences live here. Each card is a complete routine with sections, exercises, timings, and loads.',
+    description:
+      'All your workout sequences live here. Each card is a complete routine with sections, exercises, timings, and loads.',
     targetId: 'sequences-list',
   },
   {
@@ -67,20 +68,23 @@ const ALL_TOUR_STEPS: TourStep[] = [
   {
     id: 'tag-filter',
     title: 'Tags & Filtering',
-    description: 'Add tags to sequences in the builder, then filter here to quickly find the right workout for any session.',
+    description:
+      'Add tags to sequences in the builder, then filter here to quickly find the right workout for any session.',
     targetId: 'tag-filter',
   },
   {
     id: 'sequence-card',
     title: 'Sequence Cards',
-    description: 'Tap to view or edit. Long-press for options — duplicate, share, or delete. Hit ▶ to launch the workout timer with haptic cues at every transition.',
+    description:
+      'Tap to view or edit. Long-press for options — duplicate, share, or delete. Hit ▶ to launch the workout timer with haptic cues at every transition.',
     targetId: 'first-sequence-card',
     condition: 'has-sequences',
   },
   {
     id: 'library',
     title: 'Exercise Library',
-    description: 'Your reusable exercise library. Create exercises once — with variations, load presets, and bilateral tracking — and use them across any sequence.',
+    description:
+      'Your reusable exercise library. Create exercises once — with variations, load presets, and bilateral tracking — and use them across any sequence.',
     targetId: 'library-content',
     navigateTo: '/library',
   },
@@ -125,9 +129,18 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   const stepIndexRef = useRef(0);
   const activeStepsRef = useRef<TourStep[]>([]);
 
-  const setIsActive = (v: boolean) => { isActiveRef.current = v; _setIsActive(v); };
-  const setCurrentStepIndex = (v: number) => { stepIndexRef.current = v; _setCurrentStepIndex(v); };
-  const setActiveSteps = (v: TourStep[]) => { activeStepsRef.current = v; _setActiveSteps(v); };
+  const setIsActive = (v: boolean) => {
+    isActiveRef.current = v;
+    _setIsActive(v);
+  };
+  const setCurrentStepIndex = (v: number) => {
+    stepIndexRef.current = v;
+    _setCurrentStepIndex(v);
+  };
+  const setActiveSteps = (v: TourStep[]) => {
+    activeStepsRef.current = v;
+    _setActiveSteps(v);
+  };
 
   const targetRefs = useRef<Map<string, React.RefObject<View | null>>>(new Map());
   const pendingTargetId = useRef<string | null>(null);
@@ -146,24 +159,30 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const showStep = useCallback((stepIndex: number, steps: TourStep[]) => {
-    isTransitioning.current = false;
-    const step = steps[stepIndex];
-    if (!step?.targetId) {
-      setHighlightLayout(null);
-      return;
-    }
-    // Small delay to allow layout to settle after navigation or state update.
-    setTimeout(() => measureAndShow(step.targetId!), 100);
-  }, [measureAndShow]);
+  const showStep = useCallback(
+    (stepIndex: number, steps: TourStep[]) => {
+      isTransitioning.current = false;
+      const step = steps[stepIndex];
+      if (!step?.targetId) {
+        setHighlightLayout(null);
+        return;
+      }
+      // Small delay to allow layout to settle after navigation or state update.
+      setTimeout(() => measureAndShow(step.targetId!), 100);
+    },
+    [measureAndShow]
+  );
 
-  const registerTarget = useCallback((id: string, ref: React.RefObject<View | null>) => {
-    targetRefs.current.set(id, ref);
-    if (isActiveRef.current && pendingTargetId.current === id) {
-      pendingTargetId.current = null;
-      setTimeout(() => showStep(stepIndexRef.current, activeStepsRef.current), 200);
-    }
-  }, [showStep]);
+  const registerTarget = useCallback(
+    (id: string, ref: React.RefObject<View | null>) => {
+      targetRefs.current.set(id, ref);
+      if (isActiveRef.current && pendingTargetId.current === id) {
+        pendingTargetId.current = null;
+        setTimeout(() => showStep(stepIndexRef.current, activeStepsRef.current), 200);
+      }
+    },
+    [showStep]
+  );
 
   const unregisterTarget = useCallback((id: string) => {
     targetRefs.current.delete(id);
@@ -202,7 +221,9 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
       router.replace(nextStepData.navigateTo as any);
       if (!nextStepData.targetId) {
         // No target to wait for — clear transitioning after nav settles.
-        setTimeout(() => { isTransitioning.current = false; }, 350);
+        setTimeout(() => {
+          isTransitioning.current = false;
+        }, 350);
       }
     } else {
       setTimeout(() => showStep(nextIndex, steps), 200);

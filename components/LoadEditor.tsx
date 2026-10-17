@@ -1,11 +1,4 @@
-import {
-  View,
-  Modal,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-} from 'react-native';
+import { View, Modal, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
 import { useState, useEffect } from 'react';
 import { Text } from './ui/Text';
 import { LoadDot } from './LoadDot';
@@ -114,15 +107,7 @@ function makeStyles(c: typeof Colors) {
   });
 }
 
-export function LoadEditor({
-  visible,
-  loadModified,
-  loadBase,
-  loadAmplified,
-  allIcons,
-  onSave,
-  onClose,
-}: Props) {
+export function LoadEditor({ visible, loadModified, loadBase, loadAmplified, allIcons, onSave, onClose }: Props) {
   const { colors } = useTheme();
   const styles = makeStyles(colors);
 
@@ -146,18 +131,17 @@ export function LoadEditor({
   };
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.headerBtn}>
-            <Text variant="label" color="secondary">Cancel</Text>
+            <Text variant="label" color="secondary">
+              Cancel
+            </Text>
           </TouchableOpacity>
-          <Text variant="label" style={styles.headerTitle}>Load</Text>
+          <Text variant="label" style={styles.headerTitle}>
+            Load
+          </Text>
           <TouchableOpacity onPress={() => onSave(mod, base, amp)} style={styles.headerBtn}>
             <Text variant="label">Done</Text>
           </TouchableOpacity>
@@ -182,9 +166,7 @@ export function LoadEditor({
                         <TouchableOpacity
                           key={`${iconId}-${idx}`}
                           style={styles.selectedDotBtn}
-                          onPress={() =>
-                            setSelection((prev) => prev.filter((_, i) => i !== idx))
-                          }
+                          onPress={() => setSelection((prev) => prev.filter((_, i) => i !== idx))}
                           activeOpacity={0.75}
                         >
                           <LoadDot color={icon.color} size={icon.size} diameter={26} />

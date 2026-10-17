@@ -84,9 +84,7 @@ export function TourOverlay() {
     transform: [{ translateY: tooltipTranslateY.value }],
   }));
 
-  const perimeter = highlightLayout
-    ? 2 * (highlightLayout.width + PAD * 2 + highlightLayout.height + PAD * 2)
-    : 0;
+  const perimeter = highlightLayout ? 2 * (highlightLayout.width + PAD * 2 + highlightLayout.height + PAD * 2) : 0;
 
   const animatedRectProps = useAnimatedProps(() => ({
     strokeDashoffset: dashOffset.value,
@@ -94,9 +92,7 @@ export function TourOverlay() {
 
   // Tooltip positioning: below highlight in top half, above in bottom half.
   const TOOLTIP_MARGIN = 20;
-  const isBottomHalf = highlightLayout
-    ? highlightLayout.y + highlightLayout.height / 2 > screenHeight * 0.5
-    : false;
+  const isBottomHalf = highlightLayout ? highlightLayout.y + highlightLayout.height / 2 > screenHeight * 0.5 : false;
 
   const tooltipMaxWidth = screenWidth - Spacing.lg * 2;
 
@@ -142,7 +138,17 @@ export function TourOverlay() {
       {/* Tooltip card */}
       <Animated.View
         key={tooltipKey}
-        style={[styles.tooltip, { backgroundColor: colors.surfaceSolid, borderColor: colors.border, maxWidth: tooltipMaxWidth, pointerEvents: 'auto' }, tooltipPositionStyle, tooltipStyle]}
+        style={[
+          styles.tooltip,
+          {
+            backgroundColor: colors.surfaceSolid,
+            borderColor: colors.border,
+            maxWidth: tooltipMaxWidth,
+            pointerEvents: 'auto',
+          },
+          tooltipPositionStyle,
+          tooltipStyle,
+        ]}
       >
         {/* Step dots */}
         <View style={styles.dotsRow}>
@@ -158,22 +164,15 @@ export function TourOverlay() {
           ))}
         </View>
 
-        <Text
-          style={[styles.title, { color: colors.accent }]}
-          numberOfLines={1}
-        >
+        <Text style={[styles.title, { color: colors.accent }]} numberOfLines={1}>
           {currentStep?.title ?? ''}
         </Text>
 
-        <Text style={[styles.description, { color: colors.text.secondary }]}>
-          {currentStep?.description ?? ''}
-        </Text>
+        <Text style={[styles.description, { color: colors.text.secondary }]}>{currentStep?.description ?? ''}</Text>
 
         <View style={styles.actions}>
           <TouchableOpacity onPress={skipTour} hitSlop={8} activeOpacity={0.6}>
-            <Text style={[styles.skipLabel, { color: colors.text.tertiary }]}>
-              {isDone ? '' : 'Skip tour'}
-            </Text>
+            <Text style={[styles.skipLabel, { color: colors.text.tertiary }]}>{isDone ? '' : 'Skip tour'}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -181,9 +180,7 @@ export function TourOverlay() {
             onPress={nextStep}
             activeOpacity={0.8}
           >
-            <Text style={[styles.nextLabel, { color: colors.text.inverse }]}>
-              {isLastStep ? 'Done' : 'Next'}
-            </Text>
+            <Text style={[styles.nextLabel, { color: colors.text.inverse }]}>{isLastStep ? 'Done' : 'Next'}</Text>
           </TouchableOpacity>
         </View>
       </Animated.View>

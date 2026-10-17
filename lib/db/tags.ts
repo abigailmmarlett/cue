@@ -1,4 +1,4 @@
-import db from './client';
+import db, { transaction } from './client';
 import { generateId } from '../utils/id';
 
 export interface TagCategory {
@@ -21,18 +21,13 @@ export interface ExerciseTag {
 }
 
 export function getAllTagCategories(): TagCategory[] {
-  return db.getAllSync<TagCategory>(
-    `SELECT * FROM tag_categories ORDER BY name;`
-  );
+  return db.getAllSync<TagCategory>(`SELECT * FROM tag_categories ORDER BY name;`);
 }
 
 export function createTagCategory(name: string): TagCategory {
   const id = generateId();
   const now = Date.now();
-  db.runSync(
-    `INSERT INTO tag_categories (id, name, created_at) VALUES (?, ?, ?);`,
-    [id, name, now]
-  );
+  db.runSync(`INSERT INTO tag_categories (id, name, created_at) VALUES (?, ?, ?);`, [id, name, now]);
   return { id, name, created_at: now };
 }
 
@@ -45,13 +40,10 @@ export function deleteTagCategory(id: string): void {
 }
 
 export function getTagValuesByCategory(categoryId: string): TagValue[] {
-  return db.getAllSync<TagValue>(
-    `SELECT * FROM tag_values WHERE category_id = ? ORDER BY label;`,
-    [categoryId]
-  );
+  return db.getAllSync<TagValue>(`SELECT * FROM tag_values WHERE category_id = ? ORDER BY label;`, [categoryId]);
 }
 
-export function getAllTagValuesWithCategory(): Array<TagValue & { categoryName: string }> {
+export function getAllTagValuesWithCategory(): (TagValue & { categoryName: string })[] {
   return db.getAllSync<TagValue & { categoryName: string }>(
     `SELECT tv.*, tc.name AS categoryName
      FROM tag_values tv
@@ -63,10 +55,12 @@ export function getAllTagValuesWithCategory(): Array<TagValue & { categoryName: 
 export function createTagValue(categoryId: string, label: string): TagValue {
   const id = generateId();
   const now = Date.now();
-  db.runSync(
-    `INSERT INTO tag_values (id, category_id, label, created_at) VALUES (?, ?, ?, ?);`,
-    [id, categoryId, label, now]
-  );
+  db.runSync(`INSERT INTO tag_values (id, category_id, label, created_at) VALUES (?, ?, ?, ?);`, [
+    id,
+    categoryId,
+    label,
+    now,
+  ]);
   return { id, category_id: categoryId, label, created_at: now };
 }
 
@@ -123,13 +117,12 @@ export function getOwnTagsForExercise(exerciseId: string): ExerciseTag[] {
 }
 
 export function setExerciseTags(exerciseId: string, tagValueIds: string[]): void {
-  db.runSync(`DELETE FROM exercise_tags WHERE exercise_id = ?;`, [exerciseId]);
-  for (const tagValueId of tagValueIds) {
-    db.runSync(
-      `INSERT INTO exercise_tags (exercise_id, tag_value_id) VALUES (?, ?);`,
-      [exerciseId, tagValueId]
-    );
-  }
+  transaction(() => {
+    db.runSync(`DELETE FROM exercise_tags WHERE exercise_id = ?;`, [exerciseId]);
+    for (const tagValueId of tagValueIds) {
+      db.runSync(`INSERT INTO exercise_tags (exercise_id, tag_value_id) VALUES (?, ?);`, [exerciseId, tagValueId]);
+    }
+  });
 }
 
 export function getTagsForSequence(sequenceId: string): ExerciseTag[] {
@@ -145,13 +138,12 @@ export function getTagsForSequence(sequenceId: string): ExerciseTag[] {
 }
 
 export function setSequenceTags(sequenceId: string, tagValueIds: string[]): void {
-  db.runSync(`DELETE FROM sequence_tags WHERE sequence_id = ?;`, [sequenceId]);
-  for (const tagValueId of tagValueIds) {
-    db.runSync(
-      `INSERT INTO sequence_tags (sequence_id, tag_value_id) VALUES (?, ?);`,
-      [sequenceId, tagValueId]
-    );
-  }
+  transaction(() => {
+    db.runSync(`DELETE FROM sequence_tags WHERE sequence_id = ?;`, [sequenceId]);
+    for (const tagValueId of tagValueIds) {
+      db.runSync(`INSERT INTO sequence_tags (sequence_id, tag_value_id) VALUES (?, ?);`, [sequenceId, tagValueId]);
+    }
+  });
 }
 
 export function getAllSequenceTags(): Map<string, ExerciseTag[]> {

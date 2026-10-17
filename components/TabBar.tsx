@@ -104,9 +104,7 @@ export function TabBar() {
             activeOpacity={0.7}
           >
             <tab.Icon color={color} />
-            <Text style={[styles.label, active && { color: colors.accent, fontWeight: '700' }]}>
-              {tab.label}
-            </Text>
+            <Text style={[styles.label, active && { color: colors.accent, fontWeight: '700' }]}>{tab.label}</Text>
           </TouchableOpacity>
         );
       })}

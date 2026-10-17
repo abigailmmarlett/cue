@@ -1,6 +1,6 @@
 import { View, ScrollView, StyleSheet, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Text } from '@/components/ui/Text';
 import { Button } from '@/components/ui/Button';
 import { Divider } from '@/components/ui/Divider';
@@ -9,6 +9,8 @@ import { useTheme } from '@/lib/contexts/ThemeContext';
 import { decodeShareData, importSharedSequence } from '@/lib/utils/shareSequence';
 import { formatSeconds } from '@/lib/utils/time';
 
+export { RouteErrorBoundary as ErrorBoundary } from '@/components/ErrorFallback';
+
 export default function ImportScreen() {
   const { data } = useLocalSearchParams<{ data: string }>();
   const router = useRouter();
@@ -16,25 +18,27 @@ export default function ImportScreen() {
   const styles = makeStyles(colors);
   const [importing, setImporting] = useState(false);
 
-  const payload = decodeShareData(data);
+  const payload = useMemo(() => decodeShareData(data), [data]);
+
+  // Opened from a link while the app was closed, there may be nothing to go back to.
+  const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
 
   if (!payload) {
     return (
       <View style={styles.centered}>
-        <Text variant="heading" style={styles.errorTitle}>Invalid Link</Text>
-        <Text variant="body" color="tertiary" style={styles.errorBody}>
-          This link doesn't contain a valid sequence.
+        <Text variant="heading" style={styles.errorTitle}>
+          Invalid Link
         </Text>
-        <Button label="Close" variant="secondary" onPress={() => router.back()} style={styles.closeButton} />
+        <Text variant="body" color="tertiary" style={styles.errorBody}>
+          This link doesn&apos;t contain a valid sequence.
+        </Text>
+        <Button label="Close" variant="secondary" onPress={close} style={styles.closeButton} />
       </View>
     );
   }
 
   const totalExercises = payload.sections.reduce((sum, s) => sum + s.exercises.length, 0);
-  const totalDuration = payload.sections.reduce(
-    (sum, s) => sum + s.exercises.reduce((es, e) => es + e.duration, 0),
-    0
-  );
+  const totalDuration = payload.sections.reduce((sum, s) => sum + s.exercises.reduce((es, e) => es + e.duration, 0), 0);
 
   const handleImport = () => {
     setImporting(true);
@@ -51,13 +55,20 @@ export default function ImportScreen() {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.header}>
-          <Text variant="title" style={styles.sequenceName}>{payload.name}</Text>
+          <Text variant="title" style={styles.sequenceName}>
+            {payload.name}
+          </Text>
           <View style={styles.meta}>
             <Text variant="caption" color="secondary">
               {totalExercises} exercise{totalExercises !== 1 ? 's' : ''}
             </Text>
-            <Text variant="caption" color="tertiary"> · </Text>
-            <Text variant="caption" color="secondary">{formatSeconds(totalDuration)}</Text>
+            <Text variant="caption" color="tertiary">
+              {' '}
+              ·{' '}
+            </Text>
+            <Text variant="caption" color="secondary">
+              {formatSeconds(totalDuration)}
+            </Text>
           </View>
         </View>
 
@@ -73,9 +84,8 @@ export default function ImportScreen() {
               </View>
             )}
             {section.exercises.map((ex, eIdx) => {
-              const globalIndex = payload.sections
-                .slice(0, sIdx)
-                .reduce((sum, s) => sum + s.exercises.length, 0) + eIdx;
+              const globalIndex =
+                payload.sections.slice(0, sIdx).reduce((sum, s) => sum + s.exercises.length, 0) + eIdx;
               const isLastInSection = eIdx === section.exercises.length - 1;
               const isLastSection = sIdx === payload.sections.length - 1;
               return (
@@ -102,12 +112,7 @@ export default function ImportScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <Button
-          label="Cancel"
-          variant="secondary"
-          onPress={() => router.back()}
-          style={styles.cancelButton}
-        />
+        <Button label="Cancel" variant="secondary" onPress={close} style={styles.cancelButton} />
         <Button
           label="Add to My Sequences"
           variant="primary"

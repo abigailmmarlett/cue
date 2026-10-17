@@ -11,12 +11,14 @@ import { FireworkAnimation } from '@/components/timer/FireworkAnimation';
 import { Colors, Spacing, Radius, FontSize } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
 import { getAllLoadIcons, parseLoad, type LoadIcon } from '@/lib/db/loadIcons';
-import { computeVariationFractions, type VariationItem } from '@/lib/db/exercises';
+import { computeVariationFractions, parseVariationSets } from '@/lib/db/exercises';
 import { useSequence } from '@/lib/hooks/useSequence';
 import { useTimer, type TimerExercise, type TimerSection } from '@/lib/hooks/useTimer';
 import { useHapticFeedback, fireHaptic } from '@/lib/hooks/useHapticFeedback';
 import { usePreferences } from '@/lib/hooks/usePreferences';
 import { formatSeconds } from '@/lib/utils/time';
+
+export { RouteErrorBoundary as ErrorBoundary } from '@/components/ErrorFallback';
 
 export default function TimerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -40,7 +42,7 @@ export default function TimerScreen() {
     loadBase: parseLoad(e.load_base),
     loadAmplified: parseLoad(e.load_amplified),
     variation: e.variation,
-    variationSets: e.variation_sets ? JSON.parse(e.variation_sets) as VariationItem[] : null,
+    variationSets: parseVariationSets(e.variation_sets),
     side: e.side,
     libraryExerciseId: e.library_exercise_id,
   }));
@@ -70,10 +72,12 @@ export default function TimerScreen() {
   const { hapticSettings } = usePreferences();
   useHapticFeedback(
     { status, exerciseIndex, timeRemaining, currentExercise, nextExercise, currentSectionIndex },
-    hapticSettings,
+    hapticSettings
   );
 
-  useEffect(() => { currentRunMarksRef.current = currentRunMarks; }, [currentRunMarks]);
+  useEffect(() => {
+    currentRunMarksRef.current = currentRunMarks;
+  }, [currentRunMarks]);
 
   useEffect(() => {
     const prevKey = prevExerciseKeyRef.current;
@@ -108,9 +112,9 @@ export default function TimerScreen() {
   }, [currentExercise, timeRemaining, status, hapticSettings]);
 
   // Track total time elapsed for the outer ring
-  const totalElapsed = timerExercises
-    .slice(0, exerciseIndex)
-    .reduce((sum, e) => sum + e.duration, 0) + ((currentExercise?.duration ?? 0) - timeRemaining);
+  const totalElapsed =
+    timerExercises.slice(0, exerciseIndex).reduce((sum, e) => sum + e.duration, 0) +
+    ((currentExercise?.duration ?? 0) - timeRemaining);
   const totalTimeRemaining = Math.max(0, totalDuration - totalElapsed);
 
   const hasLoadData =
@@ -127,16 +131,12 @@ export default function TimerScreen() {
 
   const elapsed = currentExercise ? currentExercise.duration - timeRemaining : 0;
   const activeVariationIndex = currentExercise?.variationSets?.length
-    ? variationFractions.reduce<number>(
-        (last, f, i) => (elapsed / currentExercise!.duration >= f ? i : last),
-        -1
-      )
+    ? variationFractions.reduce<number>((last, f, i) => (elapsed / currentExercise!.duration >= f ? i : last), -1)
     : -1;
   const activeVariationLabel =
     activeVariationIndex >= 0
       ? (currentExercise?.variationSets?.[activeVariationIndex]?.instruction ?? null)
       : (currentExercise?.variation ?? null);
-
 
   const currentKey = currentExercise?.libraryExerciseId ?? currentExercise?.name ?? null;
   const ringMarks = currentKey
@@ -144,11 +144,9 @@ export default function TimerScreen() {
     : [];
 
   const exerciseProgress = currentExercise ? timeRemaining / currentExercise.duration : 1;
-  const sectionProgress = currentSection && currentSection.duration > 0
-    ? sectionTimeRemaining / currentSection.duration
-    : 1;
+  const sectionProgress =
+    currentSection && currentSection.duration > 0 ? sectionTimeRemaining / currentSection.duration : 1;
   const totalProgress = totalDuration > 0 ? totalTimeRemaining / totalDuration : 1;
-
 
   if (!sequence) return null;
 
@@ -164,24 +162,22 @@ export default function TimerScreen() {
           <Text variant="body" color="secondary" style={styles.completeSubtitle}>
             {sequence.name}
           </Text>
-          <Text style={[styles.completeTotalTime, { color: colors.accent }]}>
-            {formatSeconds(totalDuration)}
-          </Text>
+          <Text style={[styles.completeTotalTime, { color: colors.accent }]}>{formatSeconds(totalDuration)}</Text>
 
           <View style={styles.completionActions}>
-            <TouchableOpacity
-              onPress={controls.reset}
-              style={styles.restartButton}
-              activeOpacity={0.8}
-            >
-              <Text variant="label" color="secondary">Restart</Text>
+            <TouchableOpacity onPress={controls.reset} style={styles.restartButton} activeOpacity={0.8}>
+              <Text variant="label" color="secondary">
+                Restart
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => router.back()}
               style={[styles.exitButton, { backgroundColor: colors.accent }]}
               activeOpacity={0.8}
             >
-              <Text variant="label" color="inverse">Done</Text>
+              <Text variant="label" color="inverse">
+                Done
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -201,9 +197,7 @@ export default function TimerScreen() {
           {sequence.name}
         </Text>
         <View style={[styles.totalTimeBadge, { backgroundColor: colors.accentDim, borderColor: colors.pill.border }]}>
-          <Text style={[styles.totalTimeBadgeText, { color: colors.accent }]}>
-            {formatSeconds(totalTimeRemaining)}
-          </Text>
+          <Text style={[styles.totalTimeBadgeText, { color: colors.accent }]}>{formatSeconds(totalTimeRemaining)}</Text>
         </View>
       </View>
 
@@ -224,15 +218,28 @@ export default function TimerScreen() {
               <Text style={styles.exerciseName} numberOfLines={2}>
                 {currentExercise.name}
               </Text>
-              <Text style={styles.countdown}>
-                {formatSeconds(timeRemaining)}
-              </Text>
+              <Text style={styles.countdown}>{formatSeconds(timeRemaining)}</Text>
               <TagChips tags={currentExercise.tags} style={styles.timerTagChips} />
               {allLoadIcons.length > 0 && hasLoadData && (
                 <View style={styles.loadRows}>
-                  <LoadDotRow label="MOD" iconIds={currentExercise.loadModified ?? []} allIcons={allLoadIcons} dotDiameter={12} />
-                  <LoadDotRow label="BASE" iconIds={currentExercise.loadBase ?? []} allIcons={allLoadIcons} dotDiameter={12} />
-                  <LoadDotRow label="AMP" iconIds={currentExercise.loadAmplified ?? []} allIcons={allLoadIcons} dotDiameter={12} />
+                  <LoadDotRow
+                    label="MOD"
+                    iconIds={currentExercise.loadModified ?? []}
+                    allIcons={allLoadIcons}
+                    dotDiameter={12}
+                  />
+                  <LoadDotRow
+                    label="BASE"
+                    iconIds={currentExercise.loadBase ?? []}
+                    allIcons={allLoadIcons}
+                    dotDiameter={12}
+                  />
+                  <LoadDotRow
+                    label="AMP"
+                    iconIds={currentExercise.loadAmplified ?? []}
+                    allIcons={allLoadIcons}
+                    dotDiameter={12}
+                  />
                 </View>
               )}
             </View>
@@ -242,13 +249,17 @@ export default function TimerScreen() {
         <View style={styles.nextContainer}>
           {nextExercise ? (
             <>
-              <Text variant="caption" color="tertiary">Next</Text>
+              <Text variant="caption" color="tertiary">
+                Next
+              </Text>
               <Text variant="label" color="secondary" numberOfLines={1} style={styles.nextName}>
                 {nextExercise.name}
               </Text>
             </>
           ) : (
-            <Text variant="caption" color="tertiary">Last exercise</Text>
+            <Text variant="caption" color="tertiary">
+              Last exercise
+            </Text>
           )}
         </View>
       </View>
@@ -265,7 +276,11 @@ export default function TimerScreen() {
           )}
           {hasVariation && activeVariationLabel && (
             <>
-              {hasSide && <Text variant="caption" color="tertiary" style={styles.variationText}>·</Text>}
+              {hasSide && (
+                <Text variant="caption" color="tertiary" style={styles.variationText}>
+                  ·
+                </Text>
+              )}
               <Text style={[styles.variationIcon, { color: colors.accent }]}>◈</Text>
               <Text variant="caption" color="secondary" style={styles.variationText}>
                 {activeVariationLabel}

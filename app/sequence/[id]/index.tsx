@@ -1,7 +1,6 @@
 import { View, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity, Share } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useCallback, useEffect } from 'react';
 import { SymbolView } from 'expo-symbols';
 import { serializeSequence, buildShareUrl } from '@/lib/utils/shareSequence';
@@ -13,6 +12,8 @@ import { Colors, Spacing } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
 import { useSequence } from '@/lib/hooks/useSequence';
 import { formatSeconds, totalDuration } from '@/lib/utils/time';
+
+export { RouteErrorBoundary as ErrorBoundary } from '@/components/ErrorFallback';
 
 export default function SequenceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -105,9 +106,7 @@ export default function SequenceDetailScreen() {
                     </View>
                   )}
                   {section.exercises.map((ex, i) => {
-                    const globalIndex = sections
-                      .slice(0, sIdx)
-                      .reduce((sum, s) => sum + s.exercises.length, 0) + i;
+                    const globalIndex = sections.slice(0, sIdx).reduce((sum, s) => sum + s.exercises.length, 0) + i;
                     const isLastInSection = i === section.exercises.length - 1;
                     const isLastSection = sIdx === sections.length - 1;
                     return (
@@ -119,7 +118,9 @@ export default function SequenceDetailScreen() {
                             </Text>
                           </View>
                           <View style={styles.exerciseInfo}>
-                            <Text variant="body" numberOfLines={1}>{ex.name}</Text>
+                            <Text variant="body" numberOfLines={1}>
+                              {ex.name}
+                            </Text>
                             {ex.notes ? (
                               <Text variant="caption" color="tertiary" numberOfLines={1}>
                                 {ex.notes}

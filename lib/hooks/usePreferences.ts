@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getPreference, setPreference } from '@/lib/db/preferences';
 
-export type HapticStyle =
-  | 'light' | 'medium' | 'heavy' | 'rigid' | 'soft'
-  | 'success' | 'warning' | 'error';
+export type HapticStyle = 'light' | 'medium' | 'heavy' | 'rigid' | 'soft' | 'success' | 'warning' | 'error';
 
 export interface BasicEvent {
   enabled: boolean;
@@ -85,7 +83,11 @@ function toTextSize(raw: string | null): TextSize {
 }
 
 // Module-level stores so all hook instances share one value and re-render together.
-let _actionButtonSize: ActionButtonSize = toActionButtonSize(getPreference('actionButtonSize'));
+// Loaded lazily: this module is imported before runMigrations() creates the preferences table.
+let _actionButtonSize: ActionButtonSize | null = null;
+function _getActionButtonSize(): ActionButtonSize {
+  return (_actionButtonSize ??= toActionButtonSize(getPreference('actionButtonSize')));
+}
 const _absListeners = new Set<(v: ActionButtonSize) => void>();
 
 function _setActionButtonSize(size: ActionButtonSize) {
@@ -95,15 +97,20 @@ function _setActionButtonSize(size: ActionButtonSize) {
 }
 
 export function useActionButtonSize(): ActionButtonSize {
-  const [size, setSize] = useState<ActionButtonSize>(() => _actionButtonSize);
+  const [size, setSize] = useState<ActionButtonSize>(_getActionButtonSize);
   useEffect(() => {
     _absListeners.add(setSize);
-    return () => { _absListeners.delete(setSize); };
+    return () => {
+      _absListeners.delete(setSize);
+    };
   }, []);
   return size;
 }
 
-let _textSize: TextSize = toTextSize(getPreference('textSize'));
+let _textSize: TextSize | null = null;
+function _getTextSize(): TextSize {
+  return (_textSize ??= toTextSize(getPreference('textSize')));
+}
 const _tsListeners = new Set<(v: TextSize) => void>();
 
 function _setTextSize(size: TextSize) {
@@ -113,10 +120,12 @@ function _setTextSize(size: TextSize) {
 }
 
 export function useTextSize(): TextSize {
-  const [size, setSize] = useState<TextSize>(() => _textSize);
+  const [size, setSize] = useState<TextSize>(_getTextSize);
   useEffect(() => {
     _tsListeners.add(setSize);
-    return () => { _tsListeners.delete(setSize); };
+    return () => {
+      _tsListeners.delete(setSize);
+    };
   }, []);
   return size;
 }
@@ -129,11 +138,9 @@ export function usePreferences() {
 
   const [hapticSettings, setHapticSettingsState] = useState<HapticSettings>(loadHapticSettings);
 
-  const [actionButtonSize, setActionButtonSizeState] = useState<ActionButtonSize>(
-    () => _actionButtonSize
-  );
+  const [actionButtonSize, setActionButtonSizeState] = useState<ActionButtonSize>(_getActionButtonSize);
 
-  const [textSize, setTextSizeState] = useState<TextSize>(() => _textSize);
+  const [textSize, setTextSizeState] = useState<TextSize>(_getTextSize);
 
   // Keep local state in sync with module-level stores (in case another caller changed them).
   useEffect(() => {

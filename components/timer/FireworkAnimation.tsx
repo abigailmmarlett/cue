@@ -35,8 +35,8 @@ function Particle({ angle, distance, delay, color, size }: ParticleProps) {
       withSequence(
         withTiming(1, { duration: 60 }),
         withTiming(1, { duration: 420 }),
-        withTiming(0, { duration: 270, easing: Easing.in(Easing.quad) }),
-      ),
+        withTiming(0, { duration: 270, easing: Easing.in(Easing.quad) })
+      )
     );
   }, []);
 

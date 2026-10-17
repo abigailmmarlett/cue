@@ -2,7 +2,7 @@ import { View, ScrollView, TouchableOpacity, TextInput, StyleSheet } from 'react
 import { LinearGradient } from 'expo-linear-gradient';
 import { SymbolView } from 'expo-symbols';
 import { Text } from '@/components/ui/Text';
-import { Colors, Spacing } from '@/constants/theme';
+import { Colors } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
 import { useTextSize, TEXT_SCALE } from '@/lib/hooks/usePreferences';
 import type { ExerciseTag } from '@/lib/db/tags';
@@ -174,9 +174,7 @@ export function ScreenHeader({
           <View style={[styles.accentBar, { backgroundColor: colors.accent }]} />
           <View>
             <Text style={styles.wordmark}>{title}</Text>
-            {countLabel ? (
-              <Text style={styles.countLabel}>{countLabel}</Text>
-            ) : null}
+            {countLabel ? <Text style={styles.countLabel}>{countLabel}</Text> : null}
           </View>
         </View>
         {(onImport || onAdd) && (
@@ -224,40 +222,36 @@ export function ScreenHeader({
       )}
 
       <View ref={filterAreaRef}>
-      {tagPills.length > 0 && onTagToggle && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.pillsRow}
-          keyboardShouldPersistTaps="handled"
-        >
-          {tagPills.map((tag) => {
-            const active = activeTagIds.includes(tag.tagValueId);
-            return (
-              <TouchableOpacity
-                key={tag.tagValueId}
-                style={[
-                  styles.pill,
-                  { backgroundColor: colors.pill.bg, borderColor: colors.pill.border },
-                  active && { backgroundColor: colors.pill.activeBg, borderColor: colors.accent },
-                ]}
-                onPress={() => onTagToggle(tag)}
-                activeOpacity={0.7}
-              >
-                <Text
+        {tagPills.length > 0 && onTagToggle && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.pillsRow}
+            keyboardShouldPersistTaps="handled"
+          >
+            {tagPills.map((tag) => {
+              const active = activeTagIds.includes(tag.tagValueId);
+              return (
+                <TouchableOpacity
+                  key={tag.tagValueId}
                   style={[
-                    styles.pillText,
-                    { color: colors.pill.text },
-                    active && { color: colors.pill.activeText },
+                    styles.pill,
+                    { backgroundColor: colors.pill.bg, borderColor: colors.pill.border },
+                    active && { backgroundColor: colors.pill.activeBg, borderColor: colors.accent },
                   ]}
+                  onPress={() => onTagToggle(tag)}
+                  activeOpacity={0.7}
                 >
-                  {tag.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      )}
+                  <Text
+                    style={[styles.pillText, { color: colors.pill.text }, active && { color: colors.pill.activeText }]}
+                  >
+                    {tag.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        )}
       </View>
     </LinearGradient>
   );
