@@ -1,4 +1,4 @@
-import db, { transaction } from './client';
+import { getDb, transaction } from './client';
 import { generateId } from '../utils/id';
 
 export interface TagCategory {
@@ -21,30 +21,42 @@ export interface ExerciseTag {
 }
 
 export function getAllTagCategories(): TagCategory[] {
-  return db.getAllSync<TagCategory>(`SELECT * FROM tag_categories ORDER BY name;`);
+  return getDb().getAllSync<TagCategory>(`SELECT * FROM tag_categories ORDER BY name;`);
 }
 
+/** Returns the category with this name (ignoring case), creating it if there isn't one. */
 export function createTagCategory(name: string): TagCategory {
+  const existing = getDb().getFirstSync<TagCategory>(`SELECT * FROM tag_categories WHERE name = ? COLLATE NOCASE;`, [
+    name,
+  ]);
+  if (existing) return existing;
   const id = generateId();
   const now = Date.now();
-  db.runSync(`INSERT INTO tag_categories (id, name, created_at) VALUES (?, ?, ?);`, [id, name, now]);
+  getDb().runSync(`INSERT INTO tag_categories (id, name, created_at) VALUES (?, ?, ?);`, [id, name, now]);
   return { id, name, created_at: now };
 }
 
-export function updateTagCategory(id: string, name: string): void {
-  db.runSync(`UPDATE tag_categories SET name = ? WHERE id = ?;`, [name, id]);
+/** Renames a category. Returns false, changing nothing, if another category already has that name. */
+export function updateTagCategory(id: string, name: string): boolean {
+  const clash = getDb().getFirstSync(`SELECT 1 FROM tag_categories WHERE name = ? COLLATE NOCASE AND id != ?;`, [
+    name,
+    id,
+  ]);
+  if (clash) return false;
+  getDb().runSync(`UPDATE tag_categories SET name = ? WHERE id = ?;`, [name, id]);
+  return true;
 }
 
 export function deleteTagCategory(id: string): void {
-  db.runSync(`DELETE FROM tag_categories WHERE id = ?;`, [id]);
+  getDb().runSync(`DELETE FROM tag_categories WHERE id = ?;`, [id]);
 }
 
 export function getTagValuesByCategory(categoryId: string): TagValue[] {
-  return db.getAllSync<TagValue>(`SELECT * FROM tag_values WHERE category_id = ? ORDER BY label;`, [categoryId]);
+  return getDb().getAllSync<TagValue>(`SELECT * FROM tag_values WHERE category_id = ? ORDER BY label;`, [categoryId]);
 }
 
 export function getAllTagValuesWithCategory(): (TagValue & { categoryName: string })[] {
-  return db.getAllSync<TagValue & { categoryName: string }>(
+  return getDb().getAllSync<TagValue & { categoryName: string }>(
     `SELECT tv.*, tc.name AS categoryName
      FROM tag_values tv
      JOIN tag_categories tc ON tc.id = tv.category_id
@@ -52,10 +64,16 @@ export function getAllTagValuesWithCategory(): (TagValue & { categoryName: strin
   );
 }
 
+/** Returns the value with this label (ignoring case) in the category, creating it if there isn't one. */
 export function createTagValue(categoryId: string, label: string): TagValue {
+  const existing = getDb().getFirstSync<TagValue>(
+    `SELECT * FROM tag_values WHERE category_id = ? AND label = ? COLLATE NOCASE;`,
+    [categoryId, label]
+  );
+  if (existing) return existing;
   const id = generateId();
   const now = Date.now();
-  db.runSync(`INSERT INTO tag_values (id, category_id, label, created_at) VALUES (?, ?, ?, ?);`, [
+  getDb().runSync(`INSERT INTO tag_values (id, category_id, label, created_at) VALUES (?, ?, ?, ?);`, [
     id,
     categoryId,
     label,
@@ -64,18 +82,26 @@ export function createTagValue(categoryId: string, label: string): TagValue {
   return { id, category_id: categoryId, label, created_at: now };
 }
 
-export function updateTagValue(id: string, label: string): void {
-  db.runSync(`UPDATE tag_values SET label = ? WHERE id = ?;`, [label, id]);
+/** Renames a value. Returns false, changing nothing, if its category already has a value with that label. */
+export function updateTagValue(id: string, label: string): boolean {
+  const clash = getDb().getFirstSync(
+    `SELECT 1 FROM tag_values v JOIN tag_values self ON self.id = ?
+     WHERE v.category_id = self.category_id AND v.label = ? COLLATE NOCASE AND v.id != self.id;`,
+    [id, label]
+  );
+  if (clash) return false;
+  getDb().runSync(`UPDATE tag_values SET label = ? WHERE id = ?;`, [label, id]);
+  return true;
 }
 
 export function deleteTagValue(id: string): void {
-  db.runSync(`DELETE FROM tag_values WHERE id = ?;`, [id]);
+  getDb().runSync(`DELETE FROM tag_values WHERE id = ?;`, [id]);
 }
 
 export function getTagsForExercise(exerciseId: string): ExerciseTag[] {
   // Always prefer exercise-level tags if any exist (allows per-sequence overrides).
   // Fall back to library tags only for linked exercises that have never been overridden.
-  const ownTags = db.getAllSync<ExerciseTag>(
+  const ownTags = getDb().getAllSync<ExerciseTag>(
     `SELECT tv.id AS tagValueId, tc.name AS categoryName, tv.label
      FROM exercise_tags et
      JOIN tag_values tv ON tv.id = et.tag_value_id
@@ -86,12 +112,12 @@ export function getTagsForExercise(exerciseId: string): ExerciseTag[] {
   );
   if (ownTags.length > 0) return ownTags;
 
-  const row = db.getFirstSync<{ library_exercise_id: string | null }>(
+  const row = getDb().getFirstSync<{ library_exercise_id: string | null }>(
     `SELECT library_exercise_id FROM exercises WHERE id = ?;`,
     [exerciseId]
   );
   if (row?.library_exercise_id) {
-    return db.getAllSync<ExerciseTag>(
+    return getDb().getAllSync<ExerciseTag>(
       `SELECT tv.id AS tagValueId, tc.name AS categoryName, tv.label
        FROM library_exercise_tags let
        JOIN tag_values tv ON tv.id = let.tag_value_id
@@ -104,8 +130,38 @@ export function getTagsForExercise(exerciseId: string): ExerciseTag[] {
   return [];
 }
 
+/**
+ * Each exercise's tags in a sequence, in one query: its own tags, or for a linked exercise with none
+ * of its own, its library entry's. Same rule as getTagsForExercise.
+ */
+export function getTagsForSequenceExercises(sequenceId: string): Map<string, ExerciseTag[]> {
+  const rows = getDb().getAllSync<ExerciseTag & { exerciseId: string }>(
+    `SELECT e.id AS exerciseId, tv.id AS tagValueId, tc.name AS categoryName, tv.label
+     FROM exercises e
+     JOIN exercise_tags et ON et.exercise_id = e.id
+     JOIN tag_values tv ON tv.id = et.tag_value_id
+     JOIN tag_categories tc ON tc.id = tv.category_id
+     WHERE e.sequence_id = ?
+     UNION ALL
+     SELECT e.id, tv.id, tc.name, tv.label
+     FROM exercises e
+     JOIN library_exercise_tags lt ON lt.library_exercise_id = e.library_exercise_id
+     JOIN tag_values tv ON tv.id = lt.tag_value_id
+     JOIN tag_categories tc ON tc.id = tv.category_id
+     WHERE e.sequence_id = ? AND NOT EXISTS (SELECT 1 FROM exercise_tags own WHERE own.exercise_id = e.id)
+     ORDER BY exerciseId, categoryName, label;`,
+    [sequenceId, sequenceId]
+  );
+  const map = new Map<string, ExerciseTag[]>();
+  for (const { exerciseId, ...tag } of rows) {
+    if (!map.has(exerciseId)) map.set(exerciseId, []);
+    map.get(exerciseId)!.push(tag);
+  }
+  return map;
+}
+
 export function getOwnTagsForExercise(exerciseId: string): ExerciseTag[] {
-  return db.getAllSync<ExerciseTag>(
+  return getDb().getAllSync<ExerciseTag>(
     `SELECT tv.id AS tagValueId, tc.name AS categoryName, tv.label
      FROM exercise_tags et
      JOIN tag_values tv ON tv.id = et.tag_value_id
@@ -118,15 +174,15 @@ export function getOwnTagsForExercise(exerciseId: string): ExerciseTag[] {
 
 export function setExerciseTags(exerciseId: string, tagValueIds: string[]): void {
   transaction(() => {
-    db.runSync(`DELETE FROM exercise_tags WHERE exercise_id = ?;`, [exerciseId]);
+    getDb().runSync(`DELETE FROM exercise_tags WHERE exercise_id = ?;`, [exerciseId]);
     for (const tagValueId of tagValueIds) {
-      db.runSync(`INSERT INTO exercise_tags (exercise_id, tag_value_id) VALUES (?, ?);`, [exerciseId, tagValueId]);
+      getDb().runSync(`INSERT INTO exercise_tags (exercise_id, tag_value_id) VALUES (?, ?);`, [exerciseId, tagValueId]);
     }
   });
 }
 
 export function getTagsForSequence(sequenceId: string): ExerciseTag[] {
-  return db.getAllSync<ExerciseTag>(
+  return getDb().getAllSync<ExerciseTag>(
     `SELECT tv.id AS tagValueId, tc.name AS categoryName, tv.label
      FROM sequence_tags st
      JOIN tag_values tv ON tv.id = st.tag_value_id
@@ -139,15 +195,15 @@ export function getTagsForSequence(sequenceId: string): ExerciseTag[] {
 
 export function setSequenceTags(sequenceId: string, tagValueIds: string[]): void {
   transaction(() => {
-    db.runSync(`DELETE FROM sequence_tags WHERE sequence_id = ?;`, [sequenceId]);
+    getDb().runSync(`DELETE FROM sequence_tags WHERE sequence_id = ?;`, [sequenceId]);
     for (const tagValueId of tagValueIds) {
-      db.runSync(`INSERT INTO sequence_tags (sequence_id, tag_value_id) VALUES (?, ?);`, [sequenceId, tagValueId]);
+      getDb().runSync(`INSERT INTO sequence_tags (sequence_id, tag_value_id) VALUES (?, ?);`, [sequenceId, tagValueId]);
     }
   });
 }
 
 export function getAllSequenceTags(): Map<string, ExerciseTag[]> {
-  const rows = db.getAllSync<{
+  const rows = getDb().getAllSync<{
     sequence_id: string;
     tagValueId: string;
     categoryName: string;

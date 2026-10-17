@@ -1,4 +1,4 @@
-import db from './client';
+import { getDb } from './client';
 import { generateId } from '../utils/id';
 
 export interface LoadIcon {
@@ -10,7 +10,7 @@ export interface LoadIcon {
 }
 
 export function getAllLoadIcons(): LoadIcon[] {
-  return db
+  return getDb()
     .getAllSync<{ id: string; color: string; size: string | null; label: string; created_at: number }>(
       `SELECT * FROM load_icons ORDER BY created_at ASC;`
     )
@@ -26,7 +26,7 @@ export function getAllLoadIcons(): LoadIcon[] {
 export function createLoadIcon(color: string, size: 'S' | 'M' | 'L' | null, label: string): LoadIcon {
   const id = generateId();
   const now = Date.now();
-  db.runSync(`INSERT INTO load_icons (id, color, size, label, created_at) VALUES (?, ?, ?, ?, ?);`, [
+  getDb().runSync(`INSERT INTO load_icons (id, color, size, label, created_at) VALUES (?, ?, ?, ?, ?);`, [
     id,
     color,
     size,
@@ -36,8 +36,18 @@ export function createLoadIcon(color: string, size: 'S' | 'M' | 'L' | null, labe
   return { id, color, size, label, createdAt: now };
 }
 
+/** Returns an icon that looks the same (color, size and label), creating one if there isn't one. */
+export function findOrCreateLoadIcon(color: string, size: 'S' | 'M' | 'L' | null, label: string): LoadIcon {
+  const existing = getDb().getFirstSync<{ id: string; created_at: number }>(
+    `SELECT id, created_at FROM load_icons WHERE color = ? COLLATE NOCASE AND size IS ? AND label = ? COLLATE NOCASE;`,
+    [color, size, label]
+  );
+  if (existing) return { id: existing.id, color, size, label, createdAt: existing.created_at };
+  return createLoadIcon(color, size, label);
+}
+
 export function deleteLoadIcon(id: string): void {
-  db.runSync(`DELETE FROM load_icons WHERE id = ?;`, [id]);
+  getDb().runSync(`DELETE FROM load_icons WHERE id = ?;`, [id]);
 }
 
 export function parseLoad(json: string | null): string[] | null {

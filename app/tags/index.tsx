@@ -70,7 +70,10 @@ export default function TagsScreen() {
 
   const handleRenameCategory = (cat: CategoryWithValues) => {
     const name = cat.editNameText.trim();
-    if (name && name !== cat.name) updateTagCategory(cat.id, name);
+    if (name && name !== cat.name && !updateTagCategory(cat.id, name)) {
+      Alert.alert('Name already used', `There's already a category called "${name}".`);
+      return;
+    }
     setCatField(cat.id, { editingName: false });
     load();
   };
@@ -113,7 +116,10 @@ export default function TagsScreen() {
 
   const handleSaveValue = (valId: string) => {
     const label = editValueText.trim();
-    if (label) updateTagValue(valId, label);
+    if (label && !updateTagValue(valId, label)) {
+      Alert.alert('Name already used', `This category already has a value called "${label}".`);
+      return;
+    }
     setEditingValueId(null);
     load();
   };

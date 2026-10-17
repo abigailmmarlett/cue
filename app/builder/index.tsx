@@ -45,13 +45,16 @@ interface LocalSection {
   exercises: LocalExercise[];
 }
 
-/** Adds each named, unlinked exercise to the library. Its tags move to the library entry. */
+/**
+ * Adds each named, unlinked exercise to the library. Its tags move to the library entry, and so does
+ * its left/right flag, since a linked exercise reads that flag from the library.
+ */
 function addUnlinkedToLibrary(sections: LocalSection[]): LocalSection[] {
   return sections.map((s) => ({
     ...s,
     exercises: s.exercises.map((ex) => {
       if (ex.libraryExerciseId || !ex.name.trim()) return ex;
-      const libEx = createLibraryExercise(ex.name.trim());
+      const libEx = createLibraryExercise(ex.name.trim(), ex.isBilateral);
       if (ex.tagValueIds.length > 0) setLibraryExerciseTags(libEx.id, ex.tagValueIds);
       return { ...ex, libraryExerciseId: libEx.id, tagValueIds: [] };
     }),
@@ -230,7 +233,8 @@ export default function NewSequenceScreen() {
                   modified: loadOverride(ex.loadModified, libEx?.load_modified),
                   base: loadOverride(ex.loadBase, libEx?.load_base),
                   amplified: loadOverride(ex.loadAmplified, libEx?.load_amplified),
-                }
+                },
+                ex.isBilateral
               );
               // Own tags; linked exercises without them inherit their library tags.
               if (ex.tagValueIds.length > 0) setExerciseTags(created.id, ex.tagValueIds);

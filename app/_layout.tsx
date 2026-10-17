@@ -6,7 +6,7 @@ import 'react-native-reanimated';
 import * as SplashScreen from 'expo-splash-screen';
 import { useState, useEffect, useCallback } from 'react';
 
-import { runMigrations } from '@/lib/db/schema';
+import { DatabaseTooNewError, runMigrations } from '@/lib/db/schema';
 import { getPreference } from '@/lib/db/preferences';
 import { ThemeProvider, useTheme } from '@/lib/contexts/ThemeContext';
 import { TourProvider, useTour } from '@/lib/contexts/TourContext';
@@ -19,13 +19,14 @@ export const unstable_settings = { initialRouteName: 'index' };
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
-/** Sets up the database. Returns false instead of crashing so we can show a recoverable screen. */
-function openDatabase(): boolean {
+/** Sets up the database. Returns the error instead of crashing so we can show a recoverable screen. */
+function openDatabase(): Error | null {
   try {
     runMigrations();
-    return true;
-  } catch {
-    return false;
+    return null;
+  } catch (e) {
+    console.error('Could not open the database', e);
+    return e instanceof Error ? e : new Error(String(e));
   }
 }
 
@@ -117,14 +118,25 @@ function AppShell() {
 
 export default function RootLayout() {
   // Runs before any screen renders, since every screen reads from the database.
-  const [dbReady, setDbReady] = useState(openDatabase);
+  const [dbError, setDbError] = useState(openDatabase);
 
-  if (!dbReady) {
+  if (dbError instanceof DatabaseTooNewError) {
+    return (
+      <ErrorFallback
+        title="Update Cue to open your data"
+        message="Your data was saved by a newer version of Cue. Update Cue from the App Store to keep using it."
+        error={dbError}
+        actions={[]}
+      />
+    );
+  }
+  if (dbError) {
     return (
       <ErrorFallback
         title="Cue couldn't open your data"
         message="Try again, or close and reopen the app. If this keeps happening, please contact support."
-        actions={[{ label: 'Try again', onPress: () => setDbReady(openDatabase()) }]}
+        error={dbError}
+        actions={[{ label: 'Try again', onPress: () => setDbError(openDatabase()) }]}
       />
     );
   }

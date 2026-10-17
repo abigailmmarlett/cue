@@ -1,4 +1,4 @@
-import db, { transaction } from './client';
+import { getDb, transaction } from './client';
 import { generateId } from '../utils/id';
 
 export interface VariationItem {
@@ -42,17 +42,17 @@ export interface Exercise {
   variation: string | null;
   variation_sets: string | null; // JSON-encoded VariationItem[]
   side: 'left' | 'right' | null;
-  is_bilateral: number; // 0 | 1 from library join
+  is_bilateral: number; // 0 | 1: the library entry's when linked, else the exercise's own
 }
 
 export function getExercisesBySequenceId(sequenceId: string): Exercise[] {
-  return db.getAllSync<Exercise>(
+  return getDb().getAllSync<Exercise>(
     `SELECT e.id, e.sequence_id, e.section_id, e.name, e.duration, e.order_index, e.notes, e.created_at, e.library_exercise_id,
       COALESCE(e.load_modified, le.load_modified) AS load_modified,
       COALESCE(e.load_base, le.load_base) AS load_base,
       COALESCE(e.load_amplified, le.load_amplified) AS load_amplified,
       e.variation, e.variation_sets, e.side,
-      COALESCE(le.is_bilateral, 0) AS is_bilateral
+      CASE WHEN le.id IS NOT NULL THEN le.is_bilateral ELSE e.is_bilateral END AS is_bilateral
      FROM exercises e
      LEFT JOIN library_exercises le ON le.id = e.library_exercise_id
      LEFT JOIN sections s ON s.id = e.section_id
@@ -63,17 +63,17 @@ export function getExercisesBySequenceId(sequenceId: string): Exercise[] {
 }
 
 export function deleteExercisesBySequenceId(sequenceId: string): void {
-  db.runSync(`DELETE FROM exercises WHERE sequence_id = ?;`, [sequenceId]);
+  getDb().runSync(`DELETE FROM exercises WHERE sequence_id = ?;`, [sequenceId]);
 }
 
 export function getExercisesBySectionId(sectionId: string): Exercise[] {
-  return db.getAllSync<Exercise>(
+  return getDb().getAllSync<Exercise>(
     `SELECT e.id, e.sequence_id, e.section_id, e.name, e.duration, e.order_index, e.notes, e.created_at, e.library_exercise_id,
       COALESCE(e.load_modified, le.load_modified) AS load_modified,
       COALESCE(e.load_base, le.load_base) AS load_base,
       COALESCE(e.load_amplified, le.load_amplified) AS load_amplified,
       e.variation, e.variation_sets, e.side,
-      COALESCE(le.is_bilateral, 0) AS is_bilateral
+      CASE WHEN le.id IS NOT NULL THEN le.is_bilateral ELSE e.is_bilateral END AS is_bilateral
      FROM exercises e
      LEFT JOIN library_exercises le ON le.id = e.library_exercise_id
      WHERE e.section_id = ?
@@ -99,20 +99,21 @@ export function createExercise(
   variation?: string | null,
   side?: 'left' | 'right' | null,
   variationSets?: VariationItem[] | null,
-  loads: ExerciseLoads = { modified: null, base: null, amplified: null }
+  loads: ExerciseLoads = { modified: null, base: null, amplified: null },
+  isBilateral = false
 ): Exercise {
   const id = generateId();
   const now = Date.now();
-  const maxIndex = db.getFirstSync<{ max_index: number | null }>(
+  const maxIndex = getDb().getFirstSync<{ max_index: number | null }>(
     `SELECT MAX(order_index) as max_index FROM exercises WHERE section_id = ?;`,
     [sectionId]
   );
   const orderIndex = (maxIndex?.max_index ?? -1) + 1;
   const variationSetsJson = variationSets?.length ? JSON.stringify(variationSets) : null;
 
-  db.runSync(
-    `INSERT INTO exercises (id, sequence_id, section_id, name, duration, order_index, notes, created_at, library_exercise_id, load_modified, load_base, load_amplified, variation, variation_sets, side)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+  getDb().runSync(
+    `INSERT INTO exercises (id, sequence_id, section_id, name, duration, order_index, notes, created_at, library_exercise_id, load_modified, load_base, load_amplified, variation, variation_sets, side, is_bilateral)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
     [
       id,
       sequenceId,
@@ -129,6 +130,7 @@ export function createExercise(
       variation ?? null,
       variationSetsJson,
       side ?? null,
+      isBilateral ? 1 : 0,
     ]
   );
 
@@ -148,7 +150,7 @@ export function createExercise(
     variation: variation ?? null,
     variation_sets: variationSetsJson,
     side: side ?? null,
-    is_bilateral: 0,
+    is_bilateral: isBilateral ? 1 : 0,
   };
 }
 
@@ -166,12 +168,13 @@ export function upsertExercise(
   loadAmplified: string | null = null,
   variation: string | null = null,
   side: 'left' | 'right' | null = null,
-  variationSets: VariationItem[] | null = null
+  variationSets: VariationItem[] | null = null,
+  isBilateral = false
 ): void {
   const variationSetsJson = variationSets?.length ? JSON.stringify(variationSets) : null;
-  db.runSync(
-    `INSERT INTO exercises (id, sequence_id, section_id, name, duration, order_index, notes, created_at, library_exercise_id, load_modified, load_base, load_amplified, variation, variation_sets, side)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  getDb().runSync(
+    `INSERT INTO exercises (id, sequence_id, section_id, name, duration, order_index, notes, created_at, library_exercise_id, load_modified, load_base, load_amplified, variation, variation_sets, side, is_bilateral)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(id) DO UPDATE SET
        name = excluded.name,
        duration = excluded.duration,
@@ -184,7 +187,8 @@ export function upsertExercise(
        load_amplified = excluded.load_amplified,
        variation = excluded.variation,
        variation_sets = excluded.variation_sets,
-       side = excluded.side;`,
+       side = excluded.side,
+       is_bilateral = excluded.is_bilateral;`,
     [
       id,
       sequenceId,
@@ -201,6 +205,7 @@ export function upsertExercise(
       variation,
       variationSetsJson,
       side,
+      isBilateral ? 1 : 0,
     ]
   );
 }
@@ -224,17 +229,17 @@ export function updateExercise(id: string, fields: Partial<Pick<Exercise, 'name'
 
   if (parts.length === 0) return;
   values.push(id);
-  db.runSync(`UPDATE exercises SET ${parts.join(', ')} WHERE id = ?;`, values);
+  getDb().runSync(`UPDATE exercises SET ${parts.join(', ')} WHERE id = ?;`, values);
 }
 
 export function deleteExercise(id: string): void {
-  db.runSync(`DELETE FROM exercises WHERE id = ?;`, [id]);
+  getDb().runSync(`DELETE FROM exercises WHERE id = ?;`, [id]);
 }
 
 export function reorderExercises(sectionId: string, orderedIds: string[]): void {
   transaction(() => {
     for (let i = 0; i < orderedIds.length; i++) {
-      db.runSync(`UPDATE exercises SET order_index = ? WHERE id = ? AND section_id = ?;`, [
+      getDb().runSync(`UPDATE exercises SET order_index = ? WHERE id = ? AND section_id = ?;`, [
         i,
         orderedIds[i],
         sectionId,

@@ -1,7 +1,7 @@
 import { View, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity, Share } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import { useCallback, useEffect } from 'react';
+import { useNavigation } from '@react-navigation/native';
+import { useEffect } from 'react';
 import { SymbolView } from 'expo-symbols';
 import { serializeSequence, buildShareUrl } from '@/lib/utils/shareSequence';
 import { Text } from '@/components/ui/Text';
@@ -21,13 +21,7 @@ export default function SequenceDetailScreen() {
   const navigation = useNavigation();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
-  const { sequence, sections, exercises, loading, refresh } = useSequence(id);
-
-  useFocusEffect(
-    useCallback(() => {
-      refresh();
-    }, [refresh])
-  );
+  const { sequence, sections, exercises, loading } = useSequence(id);
 
   useEffect(() => {
     if (sequence) {

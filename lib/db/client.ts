@@ -1,8 +1,15 @@
 import * as SQLite from 'expo-sqlite';
 
-const db = SQLite.openDatabaseSync('cue.db');
+let db: SQLite.SQLiteDatabase | null = null;
 
-export default db;
+/**
+ * The app's database. It's opened on first use rather than at import time, so a failure to open
+ * it happens inside the root layout's startup check, which can show a retry screen.
+ */
+export function getDb(): SQLite.SQLiteDatabase {
+  db ??= SQLite.openDatabaseSync('cue.db');
+  return db;
+}
 
 /**
  * Runs `task` atomically: either every write inside it commits, or none do.
@@ -13,9 +20,10 @@ export default db;
  * one inside an outer transaction and carrying on would commit its partial writes.
  */
 export function transaction<T>(task: () => T): T {
-  if (db.isInTransactionSync()) return task();
+  const database = getDb();
+  if (database.isInTransactionSync()) return task();
   let result!: T;
-  db.withTransactionSync(() => {
+  database.withTransactionSync(() => {
     result = task();
   });
   return result;

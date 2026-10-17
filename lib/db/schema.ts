@@ -1,33 +1,76 @@
-import db, { transaction } from './client';
+import type { SQLiteDatabase } from 'expo-sqlite';
+import { getDb, transaction } from './client';
 import { generateId } from '../utils/id';
 
+/**
+ * Database changes, applied in order. The database's `user_version` records the last one applied,
+ * so each runs exactly once per install.
+ *
+ * Once a migration has shipped, never edit it: users' data has already been through it. To
+ * change the schema, append a new migration with the next version number.
+ */
+const MIGRATIONS: { version: number; up: (db: SQLiteDatabase) => void }[] = [
+  { version: 1, up: baselineSchema },
+  { version: 2, up: addLinkIndexes },
+  { version: 3, up: uniqueTagNames },
+  { version: 4, up: exerciseBilateralFlag },
+];
+
+export const SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;
+
+/** Thrown when the database was last opened by a newer version of Cue. Retrying can't help. */
+export class DatabaseTooNewError extends Error {
+  constructor(version: number) {
+    super(`Database version ${version} is newer than this app supports (${SCHEMA_VERSION}).`);
+    this.name = 'DatabaseTooNewError';
+  }
+}
+
 export function runMigrations(): void {
+  const db = getDb();
+  // Neither pragma can change inside a transaction, so set them first.
   db.execSync(`PRAGMA journal_mode = WAL;`);
   db.execSync(`PRAGMA foreign_keys = ON;`);
 
+  const current = db.getFirstSync<{ user_version: number }>(`PRAGMA user_version;`)?.user_version ?? 0;
+  if (current > SCHEMA_VERSION) {
+    // Opening a newer database with an older app could corrupt it, so refuse instead.
+    throw new DatabaseTooNewError(current);
+  }
+
+  for (const migration of MIGRATIONS) {
+    if (migration.version <= current) continue;
+    // Each migration and its version bump commit together, so a failure leaves the database at
+    // the last good version and the next launch retries from there.
+    transaction(() => {
+      migration.up(db);
+      db.execSync(`PRAGMA user_version = ${migration.version};`);
+    });
+  }
+}
+
+function hasColumn(db: SQLiteDatabase, table: string, column: string): boolean {
+  return db.getAllSync<{ name: string }>(`PRAGMA table_info(${table});`).some((c) => c.name === column);
+}
+
+function addColumnIfMissing(db: SQLiteDatabase, table: string, column: string, definition: string): void {
+  if (!hasColumn(db, table, column)) db.execSync(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition};`);
+}
+
+/**
+ * Version 1: the schema as it stood when versioning was introduced. Creates it on a fresh install,
+ * and brings databases from before versioning up to it (they may be missing later columns).
+ */
+function baselineSchema(db: SQLiteDatabase): void {
   db.execSync(`
     CREATE TABLE IF NOT EXISTS sequences (
-      id         TEXT    PRIMARY KEY NOT NULL,
-      name       TEXT    NOT NULL,
-      created_at INTEGER NOT NULL,
-      updated_at INTEGER NOT NULL
+      id           TEXT    PRIMARY KEY NOT NULL,
+      name         TEXT    NOT NULL,
+      created_at   INTEGER NOT NULL,
+      updated_at   INTEGER NOT NULL,
+      is_favorited INTEGER NOT NULL DEFAULT 0
     );
-  `);
 
-  db.execSync(`
-    CREATE TABLE IF NOT EXISTS exercises (
-      id          TEXT    PRIMARY KEY NOT NULL,
-      sequence_id TEXT    NOT NULL,
-      name        TEXT    NOT NULL,
-      duration    INTEGER NOT NULL,
-      order_index INTEGER NOT NULL,
-      notes       TEXT,
-      created_at  INTEGER NOT NULL,
-      FOREIGN KEY (sequence_id) REFERENCES sequences(id) ON DELETE CASCADE
-    );
-  `);
-
-  db.execSync(`
     CREATE TABLE IF NOT EXISTS sections (
       id          TEXT    PRIMARY KEY NOT NULL,
       sequence_id TEXT    NOT NULL,
@@ -36,24 +79,43 @@ export function runMigrations(): void {
       created_at  INTEGER NOT NULL,
       FOREIGN KEY (sequence_id) REFERENCES sequences(id) ON DELETE CASCADE
     );
-  `);
 
-  // Add section_id column to exercises if it doesn't exist yet
-  try {
-    db.execSync(`ALTER TABLE exercises ADD COLUMN section_id TEXT REFERENCES sections(id) ON DELETE SET NULL;`);
-  } catch {
-    // Column already exists — safe to ignore
-  }
+    CREATE TABLE IF NOT EXISTS library_exercises (
+      id             TEXT    PRIMARY KEY NOT NULL,
+      name           TEXT    NOT NULL,
+      created_at     INTEGER NOT NULL,
+      updated_at     INTEGER NOT NULL,
+      load_modified  TEXT,
+      load_base      TEXT,
+      load_amplified TEXT,
+      is_bilateral   INTEGER NOT NULL DEFAULT 0
+    );
 
-  db.execSync(`
+    CREATE TABLE IF NOT EXISTS exercises (
+      id                  TEXT    PRIMARY KEY NOT NULL,
+      sequence_id         TEXT    NOT NULL,
+      name                TEXT    NOT NULL,
+      duration            INTEGER NOT NULL,
+      order_index         INTEGER NOT NULL,
+      notes               TEXT,
+      created_at          INTEGER NOT NULL,
+      section_id          TEXT REFERENCES sections(id) ON DELETE SET NULL,
+      library_exercise_id TEXT REFERENCES library_exercises(id) ON DELETE SET NULL,
+      load_modified       TEXT,
+      load_base           TEXT,
+      load_amplified      TEXT,
+      variation           TEXT,
+      variation_sets      TEXT,
+      side                TEXT,
+      FOREIGN KEY (sequence_id) REFERENCES sequences(id) ON DELETE CASCADE
+    );
+
     CREATE TABLE IF NOT EXISTS tag_categories (
       id         TEXT    PRIMARY KEY NOT NULL,
       name       TEXT    NOT NULL,
       created_at INTEGER NOT NULL
     );
-  `);
 
-  db.execSync(`
     CREATE TABLE IF NOT EXISTS tag_values (
       id          TEXT    PRIMARY KEY NOT NULL,
       category_id TEXT    NOT NULL,
@@ -61,9 +123,7 @@ export function runMigrations(): void {
       created_at  INTEGER NOT NULL,
       FOREIGN KEY (category_id) REFERENCES tag_categories(id) ON DELETE CASCADE
     );
-  `);
 
-  db.execSync(`
     CREATE TABLE IF NOT EXISTS exercise_tags (
       exercise_id  TEXT NOT NULL,
       tag_value_id TEXT NOT NULL,
@@ -71,9 +131,7 @@ export function runMigrations(): void {
       FOREIGN KEY (exercise_id)  REFERENCES exercises(id)   ON DELETE CASCADE,
       FOREIGN KEY (tag_value_id) REFERENCES tag_values(id)  ON DELETE CASCADE
     );
-  `);
 
-  db.execSync(`
     CREATE TABLE IF NOT EXISTS sequence_tags (
       sequence_id  TEXT NOT NULL,
       tag_value_id TEXT NOT NULL,
@@ -81,18 +139,7 @@ export function runMigrations(): void {
       FOREIGN KEY (sequence_id)  REFERENCES sequences(id)   ON DELETE CASCADE,
       FOREIGN KEY (tag_value_id) REFERENCES tag_values(id)  ON DELETE CASCADE
     );
-  `);
 
-  db.execSync(`
-    CREATE TABLE IF NOT EXISTS library_exercises (
-      id         TEXT    PRIMARY KEY NOT NULL,
-      name       TEXT    NOT NULL,
-      created_at INTEGER NOT NULL,
-      updated_at INTEGER NOT NULL
-    );
-  `);
-
-  db.execSync(`
     CREATE TABLE IF NOT EXISTS library_exercise_tags (
       library_exercise_id TEXT NOT NULL,
       tag_value_id        TEXT NOT NULL,
@@ -100,24 +147,12 @@ export function runMigrations(): void {
       FOREIGN KEY (library_exercise_id) REFERENCES library_exercises(id) ON DELETE CASCADE,
       FOREIGN KEY (tag_value_id)        REFERENCES tag_values(id)        ON DELETE CASCADE
     );
-  `);
 
-  try {
-    db.execSync(
-      `ALTER TABLE exercises ADD COLUMN library_exercise_id TEXT REFERENCES library_exercises(id) ON DELETE SET NULL;`
-    );
-  } catch {
-    // Column already exists
-  }
-
-  db.execSync(`
     CREATE TABLE IF NOT EXISTS preferences (
       key   TEXT PRIMARY KEY NOT NULL,
       value TEXT NOT NULL
     );
-  `);
 
-  db.execSync(`
     CREATE TABLE IF NOT EXISTS load_icons (
       id         TEXT    PRIMARY KEY NOT NULL,
       color      TEXT    NOT NULL,
@@ -127,59 +162,111 @@ export function runMigrations(): void {
     );
   `);
 
-  try {
-    db.execSync(`ALTER TABLE library_exercises ADD COLUMN load_modified TEXT;`);
-  } catch {}
-  try {
-    db.execSync(`ALTER TABLE library_exercises ADD COLUMN load_base TEXT;`);
-  } catch {}
-  try {
-    db.execSync(`ALTER TABLE library_exercises ADD COLUMN load_amplified TEXT;`);
-  } catch {}
-  try {
-    db.execSync(`ALTER TABLE exercises ADD COLUMN load_modified TEXT;`);
-  } catch {}
-  try {
-    db.execSync(`ALTER TABLE exercises ADD COLUMN load_base TEXT;`);
-  } catch {}
-  try {
-    db.execSync(`ALTER TABLE exercises ADD COLUMN load_amplified TEXT;`);
-  } catch {}
-  try {
-    db.execSync(`ALTER TABLE exercises ADD COLUMN variation TEXT;`);
-  } catch {}
-  try {
-    db.execSync(`ALTER TABLE exercises ADD COLUMN variation_sets TEXT;`);
-  } catch {}
-  try {
-    db.execSync(`ALTER TABLE library_exercises ADD COLUMN is_bilateral INTEGER NOT NULL DEFAULT 0;`);
-  } catch {}
-  try {
-    db.execSync(`ALTER TABLE exercises ADD COLUMN side TEXT;`);
-  } catch {}
-  try {
-    db.execSync(`ALTER TABLE sequences ADD COLUMN is_favorited INTEGER NOT NULL DEFAULT 0;`);
-  } catch {}
+  // Columns that older versions of the app added after creating these tables.
+  addColumnIfMissing(db, 'sequences', 'is_favorited', 'INTEGER NOT NULL DEFAULT 0');
+  addColumnIfMissing(db, 'library_exercises', 'load_modified', 'TEXT');
+  addColumnIfMissing(db, 'library_exercises', 'load_base', 'TEXT');
+  addColumnIfMissing(db, 'library_exercises', 'load_amplified', 'TEXT');
+  addColumnIfMissing(db, 'library_exercises', 'is_bilateral', 'INTEGER NOT NULL DEFAULT 0');
+  addColumnIfMissing(db, 'exercises', 'section_id', 'TEXT REFERENCES sections(id) ON DELETE SET NULL');
+  addColumnIfMissing(
+    db,
+    'exercises',
+    'library_exercise_id',
+    'TEXT REFERENCES library_exercises(id) ON DELETE SET NULL'
+  );
+  addColumnIfMissing(db, 'exercises', 'load_modified', 'TEXT');
+  addColumnIfMissing(db, 'exercises', 'load_base', 'TEXT');
+  addColumnIfMissing(db, 'exercises', 'load_amplified', 'TEXT');
+  addColumnIfMissing(db, 'exercises', 'variation', 'TEXT');
+  addColumnIfMissing(db, 'exercises', 'variation_sets', 'TEXT');
+  addColumnIfMissing(db, 'exercises', 'side', 'TEXT');
 
-  // Data migration: assign existing exercises (section_id IS NULL) to a default "Main" section
-  const unmigrated = db.getAllSync<{ sequence_id: string }>(
+  // Exercises from before sections existed go into a "Main" section in their sequence.
+  const unsectioned = db.getAllSync<{ sequence_id: string }>(
     `SELECT DISTINCT sequence_id FROM exercises WHERE section_id IS NULL;`
   );
-  for (const { sequence_id } of unmigrated) {
-    transaction(() => {
-      const sectionId = generateId();
-      const now = Date.now();
-      db.runSync(`INSERT INTO sections (id, sequence_id, name, order_index, created_at) VALUES (?, ?, ?, ?, ?);`, [
-        sectionId,
-        sequence_id,
-        'Main',
-        0,
-        now,
-      ]);
-      db.runSync(`UPDATE exercises SET section_id = ? WHERE sequence_id = ? AND section_id IS NULL;`, [
-        sectionId,
-        sequence_id,
-      ]);
-    });
+  for (const { sequence_id } of unsectioned) {
+    const sectionId = generateId();
+    db.runSync(`INSERT INTO sections (id, sequence_id, name, order_index, created_at) VALUES (?, ?, ?, ?, ?);`, [
+      sectionId,
+      sequence_id,
+      'Main',
+      0,
+      Date.now(),
+    ]);
+    db.runSync(`UPDATE exercises SET section_id = ? WHERE sequence_id = ? AND section_id IS NULL;`, [
+      sectionId,
+      sequence_id,
+    ]);
   }
+}
+
+/** Version 2: index the columns used to look up related rows, so those lookups don't scan whole tables. */
+function addLinkIndexes(db: SQLiteDatabase): void {
+  db.execSync(`
+    CREATE INDEX IF NOT EXISTS exercises_sequence_id ON exercises(sequence_id);
+    CREATE INDEX IF NOT EXISTS exercises_section_id ON exercises(section_id, order_index);
+    CREATE INDEX IF NOT EXISTS exercises_library_exercise_id ON exercises(library_exercise_id);
+    CREATE INDEX IF NOT EXISTS sections_sequence_id ON sections(sequence_id, order_index);
+    CREATE INDEX IF NOT EXISTS exercise_tags_tag_value_id ON exercise_tags(tag_value_id);
+    CREATE INDEX IF NOT EXISTS sequence_tags_tag_value_id ON sequence_tags(tag_value_id);
+    CREATE INDEX IF NOT EXISTS library_exercise_tags_tag_value_id ON library_exercise_tags(tag_value_id);
+  `);
+}
+
+const TAG_LINK_TABLES = [
+  { table: 'exercise_tags', owner: 'exercise_id' },
+  { table: 'sequence_tags', owner: 'sequence_id' },
+  { table: 'library_exercise_tags', owner: 'library_exercise_id' },
+];
+
+/**
+ * Version 3: tag category names, and value labels within a category, are unique (ignoring case).
+ * Existing duplicates are merged into the oldest copy, keeping every exercise's and sequence's tags.
+ */
+function uniqueTagNames(db: SQLiteDatabase): void {
+  const duplicateCategories = db.getAllSync<{ id: string; keep_id: string }>(
+    `SELECT c.id, (SELECT k.id FROM tag_categories k WHERE k.name = c.name COLLATE NOCASE
+                   ORDER BY k.created_at, k.id LIMIT 1) AS keep_id
+     FROM tag_categories c;`
+  );
+  for (const { id, keep_id } of duplicateCategories) {
+    if (id === keep_id) continue;
+    db.runSync(`UPDATE tag_values SET category_id = ? WHERE category_id = ?;`, [keep_id, id]);
+    db.runSync(`DELETE FROM tag_categories WHERE id = ?;`, [id]);
+  }
+
+  const duplicateValues = db.getAllSync<{ id: string; keep_id: string }>(
+    `SELECT v.id, (SELECT k.id FROM tag_values k
+                   WHERE k.category_id = v.category_id AND k.label = v.label COLLATE NOCASE
+                   ORDER BY k.created_at, k.id LIMIT 1) AS keep_id
+     FROM tag_values v;`
+  );
+  for (const { id, keep_id } of duplicateValues) {
+    if (id === keep_id) continue;
+    for (const { table, owner } of TAG_LINK_TABLES) {
+      db.runSync(
+        `INSERT OR IGNORE INTO ${table} (${owner}, tag_value_id) SELECT ${owner}, ? FROM ${table} WHERE tag_value_id = ?;`,
+        [keep_id, id]
+      );
+    }
+    // Cascades remove the duplicate's remaining links.
+    db.runSync(`DELETE FROM tag_values WHERE id = ?;`, [id]);
+  }
+
+  db.execSync(`
+    CREATE UNIQUE INDEX tag_categories_name ON tag_categories(name COLLATE NOCASE);
+    CREATE UNIQUE INDEX tag_values_category_label ON tag_values(category_id, label COLLATE NOCASE);
+  `);
+}
+
+/**
+ * Version 4: exercises keep their own "has left/right sides" flag. Linked exercises still follow
+ * their library entry; this copy is what's used once they're unlinked (e.g. the entry is deleted).
+ */
+function exerciseBilateralFlag(db: SQLiteDatabase): void {
+  db.execSync(`ALTER TABLE exercises ADD COLUMN is_bilateral INTEGER NOT NULL DEFAULT 0;`);
+  // Unlinked exercises whose library entry was deleted lost the flag; a chosen side means they had it.
+  db.execSync(`UPDATE exercises SET is_bilateral = 1 WHERE library_exercise_id IS NULL AND side IS NOT NULL;`);
 }

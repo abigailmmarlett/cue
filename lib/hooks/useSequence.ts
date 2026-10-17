@@ -1,41 +1,36 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
+import { useFocusEffect } from 'expo-router';
 import { getSequenceById, type Sequence } from '../db/sequences';
-import { getExercisesBySequenceId, getExercisesBySectionId, type Exercise } from '../db/exercises';
+import { getExercisesBySequenceId, type Exercise } from '../db/exercises';
 import { getSectionsBySequenceId, type Section } from '../db/sections';
-import { getTagsForExercise, type ExerciseTag } from '../db/tags';
+import { getTagsForSequenceExercises, type ExerciseTag } from '../db/tags';
 
 export type ExerciseWithTags = Exercise & { tags: ExerciseTag[] };
 export type SectionWithExercises = Section & { exercises: ExerciseWithTags[] };
 
+interface SequenceData {
+  sequence: Sequence | null;
+  sections: SectionWithExercises[];
+  exercises: ExerciseWithTags[];
+}
+
+const EMPTY: SequenceData = { sequence: null, sections: [], exercises: [] };
+
+function loadSequence(id: string): SequenceData {
+  const tags = getTagsForSequenceExercises(id);
+  const exercises = getExercisesBySequenceId(id).map((e) => ({ ...e, tags: tags.get(e.id) ?? [] }));
+  const sections = getSectionsBySequenceId(id).map((s) => ({
+    ...s,
+    exercises: exercises.filter((e) => e.section_id === s.id),
+  }));
+  return { sequence: getSequenceById(id), sections, exercises };
+}
+
+/** Loads a sequence with its sections, exercises and tags, and reloads it each time the screen comes into focus. */
 export function useSequence(id: string) {
-  const [sequence, setSequence] = useState<Sequence | null>(null);
-  const [sections, setSections] = useState<SectionWithExercises[]>([]);
-  const [exercises, setExercises] = useState<ExerciseWithTags[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<SequenceData | null>(null);
+  const refresh = useCallback(() => setData(loadSequence(id)), [id]);
+  useFocusEffect(refresh);
 
-  const refresh = useCallback(() => {
-    setSequence(getSequenceById(id));
-    const rawSections = getSectionsBySequenceId(id);
-    const sectionsWithExercises = rawSections.map((s) => ({
-      ...s,
-      exercises: getExercisesBySectionId(s.id).map((e) => ({
-        ...e,
-        tags: getTagsForExercise(e.id),
-      })),
-    }));
-    setSections(sectionsWithExercises);
-    setExercises(
-      getExercisesBySequenceId(id).map((e) => ({
-        ...e,
-        tags: getTagsForExercise(e.id),
-      }))
-    );
-    setLoading(false);
-  }, [id]);
-
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
-
-  return { sequence, sections, exercises, loading, refresh };
+  return { ...(data ?? EMPTY), loading: data === null, refresh };
 }

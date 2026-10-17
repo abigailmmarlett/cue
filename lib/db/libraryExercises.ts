@@ -1,4 +1,4 @@
-import db, { transaction } from './client';
+import { getDb, transaction } from './client';
 import { generateId } from '../utils/id';
 import type { ExerciseTag } from './tags';
 
@@ -20,7 +20,12 @@ export interface LibraryExerciseWithTags extends LibraryExercise {
 function attachTags(exercises: LibraryExercise[]): LibraryExerciseWithTags[] {
   if (exercises.length === 0) return [];
   const ids = exercises.map((e) => e.id);
-  const rows = db.getAllSync<{ library_exercise_id: string; tagValueId: string; categoryName: string; label: string }>(
+  const rows = getDb().getAllSync<{
+    library_exercise_id: string;
+    tagValueId: string;
+    categoryName: string;
+    label: string;
+  }>(
     `SELECT let.library_exercise_id, tv.id AS tagValueId, tc.name AS categoryName, tv.label
      FROM library_exercise_tags let
      JOIN tag_values tv ON tv.id = let.tag_value_id
@@ -40,14 +45,14 @@ function attachTags(exercises: LibraryExercise[]): LibraryExerciseWithTags[] {
 }
 
 export function getAllLibraryExercises(): LibraryExerciseWithTags[] {
-  const rows = db.getAllSync<LibraryExercise>(
+  const rows = getDb().getAllSync<LibraryExercise>(
     `SELECT id, name, created_at, updated_at, load_modified, load_base, load_amplified, is_bilateral FROM library_exercises ORDER BY name COLLATE NOCASE;`
   );
   return attachTags(rows);
 }
 
 export function searchLibraryExercises(query: string): LibraryExerciseWithTags[] {
-  const rows = db.getAllSync<LibraryExercise>(
+  const rows = getDb().getAllSync<LibraryExercise>(
     `SELECT id, name, created_at, updated_at, load_modified, load_base, load_amplified, is_bilateral FROM library_exercises WHERE name LIKE ? COLLATE NOCASE ORDER BY name COLLATE NOCASE;`,
     [`%${query}%`]
   );
@@ -55,7 +60,7 @@ export function searchLibraryExercises(query: string): LibraryExerciseWithTags[]
 }
 
 export function getLibraryExercise(id: string): LibraryExerciseWithTags | null {
-  const row = db.getFirstSync<LibraryExercise>(
+  const row = getDb().getFirstSync<LibraryExercise>(
     `SELECT id, name, created_at, updated_at, load_modified, load_base, load_amplified, is_bilateral FROM library_exercises WHERE id = ?;`,
     [id]
   );
@@ -63,15 +68,13 @@ export function getLibraryExercise(id: string): LibraryExerciseWithTags | null {
   return attachTags([row])[0];
 }
 
-export function createLibraryExercise(name: string): LibraryExercise {
+export function createLibraryExercise(name: string, isBilateral = false): LibraryExercise {
   const id = generateId();
   const now = Date.now();
-  db.runSync(`INSERT INTO library_exercises (id, name, created_at, updated_at, is_bilateral) VALUES (?, ?, ?, ?, 0);`, [
-    id,
-    name,
-    now,
-    now,
-  ]);
+  getDb().runSync(
+    `INSERT INTO library_exercises (id, name, created_at, updated_at, is_bilateral) VALUES (?, ?, ?, ?, ?);`,
+    [id, name, now, now, isBilateral ? 1 : 0]
+  );
   return {
     id,
     name,
@@ -80,12 +83,12 @@ export function createLibraryExercise(name: string): LibraryExercise {
     load_modified: null,
     load_base: null,
     load_amplified: null,
-    is_bilateral: 0,
+    is_bilateral: isBilateral ? 1 : 0,
   };
 }
 
 export function updateLibraryExerciseBilateral(id: string, isBilateral: boolean): void {
-  db.runSync(`UPDATE library_exercises SET is_bilateral = ?, updated_at = ? WHERE id = ?;`, [
+  getDb().runSync(`UPDATE library_exercises SET is_bilateral = ?, updated_at = ? WHERE id = ?;`, [
     isBilateral ? 1 : 0,
     Date.now(),
     id,
@@ -98,7 +101,7 @@ export function updateLibraryExerciseLoad(
   loadBase: string | null,
   loadAmplified: string | null
 ): void {
-  db.runSync(
+  getDb().runSync(
     `UPDATE library_exercises SET load_modified = ?, load_base = ?, load_amplified = ?, updated_at = ? WHERE id = ?;`,
     [loadModified, loadBase, loadAmplified, Date.now(), id]
   );
@@ -107,25 +110,26 @@ export function updateLibraryExerciseLoad(
 export function updateLibraryExercise(id: string, name: string): void {
   const now = Date.now();
   transaction(() => {
-    db.runSync(`UPDATE library_exercises SET name = ?, updated_at = ? WHERE id = ?;`, [name, now, id]);
+    getDb().runSync(`UPDATE library_exercises SET name = ?, updated_at = ? WHERE id = ?;`, [name, now, id]);
     // Propagate name change to all linked sequence exercises
-    db.runSync(`UPDATE exercises SET name = ? WHERE library_exercise_id = ?;`, [name, id]);
+    getDb().runSync(`UPDATE exercises SET name = ? WHERE library_exercise_id = ?;`, [name, id]);
   });
 }
 
 export function deleteLibraryExercise(id: string): void {
   transaction(() => {
-    // Linked exercises read any load or tags they don't override from the library entry,
-    // so copy those onto them before unlinking. Their own loads and tags are kept.
-    db.runSync(
+    // Linked exercises read their bilateral flag, and any load or tags they don't override, from
+    // the library entry, so copy those onto them before unlinking. Their own loads and tags are kept.
+    getDb().runSync(
       `UPDATE exercises SET
          load_modified  = COALESCE(load_modified,  (SELECT load_modified  FROM library_exercises WHERE id = ?)),
          load_base      = COALESCE(load_base,      (SELECT load_base      FROM library_exercises WHERE id = ?)),
-         load_amplified = COALESCE(load_amplified, (SELECT load_amplified FROM library_exercises WHERE id = ?))
+         load_amplified = COALESCE(load_amplified, (SELECT load_amplified FROM library_exercises WHERE id = ?)),
+         is_bilateral   = (SELECT is_bilateral FROM library_exercises WHERE id = ?)
        WHERE library_exercise_id = ?;`,
-      [id, id, id, id]
+      [id, id, id, id, id]
     );
-    db.runSync(
+    getDb().runSync(
       `INSERT INTO exercise_tags (exercise_id, tag_value_id)
        SELECT e.id, lt.tag_value_id
        FROM exercises e JOIN library_exercise_tags lt ON lt.library_exercise_id = e.library_exercise_id
@@ -133,16 +137,16 @@ export function deleteLibraryExercise(id: string): void {
          AND NOT EXISTS (SELECT 1 FROM exercise_tags et WHERE et.exercise_id = e.id);`,
       [id]
     );
-    db.runSync(`UPDATE exercises SET library_exercise_id = NULL WHERE library_exercise_id = ?;`, [id]);
-    db.runSync(`DELETE FROM library_exercises WHERE id = ?;`, [id]);
+    getDb().runSync(`UPDATE exercises SET library_exercise_id = NULL WHERE library_exercise_id = ?;`, [id]);
+    getDb().runSync(`DELETE FROM library_exercises WHERE id = ?;`, [id]);
   });
 }
 
 export function setLibraryExerciseTags(libraryExerciseId: string, tagValueIds: string[]): void {
   transaction(() => {
-    db.runSync(`DELETE FROM library_exercise_tags WHERE library_exercise_id = ?;`, [libraryExerciseId]);
+    getDb().runSync(`DELETE FROM library_exercise_tags WHERE library_exercise_id = ?;`, [libraryExerciseId]);
     for (const tagValueId of tagValueIds) {
-      db.runSync(`INSERT INTO library_exercise_tags (library_exercise_id, tag_value_id) VALUES (?, ?);`, [
+      getDb().runSync(`INSERT INTO library_exercise_tags (library_exercise_id, tag_value_id) VALUES (?, ?);`, [
         libraryExerciseId,
         tagValueId,
       ]);
@@ -151,7 +155,7 @@ export function setLibraryExerciseTags(libraryExerciseId: string, tagValueIds: s
 }
 
 export function getLinkedCount(libraryExerciseId: string): number {
-  const row = db.getFirstSync<{ count: number }>(
+  const row = getDb().getFirstSync<{ count: number }>(
     `SELECT COUNT(*) as count FROM exercises WHERE library_exercise_id = ?;`,
     [libraryExerciseId]
   );
