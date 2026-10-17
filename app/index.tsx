@@ -170,6 +170,7 @@ export default function SequencesScreen() {
                 <SequenceCard
                   sequence={item}
                   onPress={() => router.push(`/sequence/${item.id}`)}
+                  onEdit={() => router.push(`/builder/${item.id}`)}
                   onPlay={() => router.push(`/sequence/${item.id}/timer`)}
                   onDuplicate={() => {
                     duplicateSequence(item.id);

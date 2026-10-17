@@ -1,4 +1,12 @@
-import { View, TouchableOpacity, StyleSheet, Alert, ActionSheetIOS, Platform } from 'react-native';
+import {
+  View,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  ActionSheetIOS,
+  Platform,
+  type AccessibilityActionEvent,
+} from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Text } from './ui/Text';
 import { TagChips } from './TagChips';
@@ -11,6 +19,7 @@ import type { SequenceWithTags } from '@/lib/db/sequences';
 interface Props {
   sequence: SequenceWithTags;
   onPress: () => void;
+  onEdit: () => void;
   onPlay: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
@@ -118,7 +127,7 @@ function makeStyles(c: typeof Colors, textScale = 1.0) {
   });
 }
 
-export function SequenceCard({ sequence, onPress, onPlay, onDuplicate, onDelete, onFavorite, onShare }: Props) {
+export function SequenceCard({ sequence, onPress, onEdit, onPlay, onDuplicate, onDelete, onFavorite, onShare }: Props) {
   const { colors } = useTheme();
   const { hapticsEnabled } = usePreferences();
   const styles = makeStyles(colors, TEXT_SCALE[useTextSize()]);
@@ -132,7 +141,7 @@ export function SequenceCard({ sequence, onPress, onPlay, onDuplicate, onDelete,
           destructiveButtonIndex: 4,
         },
         (index) => {
-          if (index === 1) onPress();
+          if (index === 1) onEdit();
           if (index === 2) onDuplicate();
           if (index === 3) onShare();
           if (index === 4) confirmDelete();
@@ -151,8 +160,40 @@ export function SequenceCard({ sequence, onPress, onPlay, onDuplicate, onDelete,
   const totalTime = formatSeconds(sequence.total_duration);
   const exLabel = sequence.exercise_count === 1 ? '1 ex' : `${sequence.exercise_count} ex`;
 
+  const openMenu = () => {
+    if (hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    showMenu();
+  };
+
+  const toggleFavorite = () => {
+    if (hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onFavorite();
+  };
+
+  // VoiceOver reads the card as one button, so its inner buttons are offered as actions instead.
+  const accessibilityActions = [
+    { name: 'play', label: 'Start workout' },
+    { name: 'favorite', label: sequence.is_favorited ? 'Remove from favorites' : 'Add to favorites' },
+    { name: 'menu', label: 'More options' },
+  ];
+  const onAccessibilityAction = ({ nativeEvent }: AccessibilityActionEvent) => {
+    if (nativeEvent.actionName === 'play') onPlay();
+    if (nativeEvent.actionName === 'favorite') toggleFavorite();
+    if (nativeEvent.actionName === 'menu') showMenu();
+  };
+
+  // The play, star and menu buttons inside take their own taps; anywhere else opens the sequence.
   return (
-    <View style={styles.card}>
+    <TouchableOpacity
+      style={styles.card}
+      onPress={onPress}
+      onLongPress={openMenu}
+      activeOpacity={0.8}
+      accessibilityRole="button"
+      accessibilityLabel={`${sequence.is_favorited ? 'Favorite, ' : ''}${sequence.name}, ${totalTime}, ${sequence.exercise_count} ${sequence.exercise_count === 1 ? 'exercise' : 'exercises'}`}
+      accessibilityActions={accessibilityActions}
+      onAccessibilityAction={onAccessibilityAction}
+    >
       <View style={[styles.accentBar, { backgroundColor: colors.accent }]} />
       <View style={styles.row}>
         <TouchableOpacity
@@ -165,14 +206,7 @@ export function SequenceCard({ sequence, onPress, onPlay, onDuplicate, onDelete,
 
         <View style={styles.body}>
           <View style={styles.nameRow}>
-            <TouchableOpacity
-              onPress={() => {
-                if (hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                onFavorite();
-              }}
-              hitSlop={8}
-              activeOpacity={0.7}
-            >
+            <TouchableOpacity onPress={toggleFavorite} hitSlop={8} activeOpacity={0.7}>
               <Text style={[styles.star, { color: sequence.is_favorited ? '#f59e0b' : colors.text.tertiary }]}>★</Text>
             </TouchableOpacity>
             <Text style={styles.name} numberOfLines={1}>
@@ -193,6 +227,6 @@ export function SequenceCard({ sequence, onPress, onPlay, onDuplicate, onDelete,
           <View style={styles.dot} />
         </TouchableOpacity>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
