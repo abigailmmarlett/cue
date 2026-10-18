@@ -174,7 +174,7 @@ export default function LibraryScreen() {
   const { colors } = useTheme();
   const styles = makeStyles(colors, ACTION_BUTTON_SCALE[useActionButtonSize()], TEXT_SCALE[useTextSize()]);
   const catColors = useMemo(() => buildCatColors(colors.accent, colors.accentDeep), [colors.accent, colors.accentDeep]);
-  const [exercises, setExercises] = useState<LibraryExerciseWithTags[]>([]);
+  const [exercises, setExercises] = useState(getAllLibraryExercises);
   const [search, setSearch] = useState('');
   const [activeFilterTags, setActiveFilterTags] = useState<ExerciseTag[]>([]);
   const [addingNew, setAddingNew] = useState(false);
@@ -196,10 +196,6 @@ export default function LibraryScreen() {
   const load = useCallback(() => {
     setExercises(getAllLibraryExercises());
   }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
 
   const allTagPills = useMemo(() => {
     const seen = new Map<string, ExerciseTag>();

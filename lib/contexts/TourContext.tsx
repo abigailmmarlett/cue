@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useRef, useState } from 'react';
-import { View, type ViewInstance } from 'react-native';
+import type { ViewInstance } from 'react-native';
 import { useRouter } from 'expo-router';
 import { setPreference } from '@/lib/db/preferences';
 import { getDb } from '@/lib/db/client';

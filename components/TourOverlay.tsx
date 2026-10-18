@@ -43,6 +43,16 @@ export function TourOverlay() {
   const [shown, setShown] = useState<Shown>({ index: -1, step: null, layout: null });
   const shownIndexRef = useRef(-1);
 
+  // Show the overlay as soon as the tour starts. It hides itself once it has faded out.
+  if (isActive && !visible) setVisible(true);
+
+  // Once the step is ready, swap in its content. This happens while it's faded out (see below); a
+  // re-measure of the step already showing only moves it.
+  const ready = isActive && readyStepIndex === currentStepIndex;
+  if (ready && (shown.index !== currentStepIndex || shown.step !== currentStep || shown.layout !== highlightLayout)) {
+    setShown({ index: currentStepIndex, step: currentStep, layout: highlightLayout });
+  }
+
   const dimOpacity = useSharedValue(0);
   const svgOpacity = useSharedValue(0);
   const dashOffset = useSharedValue(0);
@@ -59,7 +69,6 @@ export function TourOverlay() {
   // Mount / unmount the overlay with entrance/exit animations. The tooltip fades in once its step is ready.
   useEffect(() => {
     if (isActive) {
-      setVisible(true);
       dimOpacity.set(withTiming(1, { duration: 300 }));
     } else {
       shownIndexRef.current = -1;
@@ -81,12 +90,9 @@ export function TourOverlay() {
     svgOpacity.set(withTiming(0, { duration: 120 }));
   }, [isActive, currentStepIndex, svgOpacity, tooltipOpacity]);
 
-  // The step is ready: swap in its content while hidden, then fade it in. A re-measure of the
-  // step already showing only moves it.
+  // Fade in a step once it's ready.
   useEffect(() => {
-    if (!isActive || readyStepIndex !== currentStepIndex) return;
-    setShown({ index: currentStepIndex, step: currentStep, layout: highlightLayout });
-    if (shownIndexRef.current === currentStepIndex) return;
+    if (!ready || shownIndexRef.current === currentStepIndex) return;
     const first = shownIndexRef.current === -1;
     shownIndexRef.current = currentStepIndex;
     // The first step waits for the dim layer to fade in.
@@ -102,16 +108,7 @@ export function TourOverlay() {
       )
     );
     tooltipTranslateY.set(withDelay(delay, withTiming(0, { duration: 280, easing: Easing.out(Easing.quad) })));
-  }, [
-    isActive,
-    readyStepIndex,
-    currentStepIndex,
-    currentStep,
-    highlightLayout,
-    tooltipOpacity,
-    tooltipTranslateY,
-    focusTitle,
-  ]);
+  }, [ready, currentStepIndex, tooltipOpacity, tooltipTranslateY, focusTitle]);
 
   // Draw the highlight border around the shown step's target.
   useEffect(() => {

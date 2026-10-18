@@ -51,15 +51,15 @@ export function TripleRing({
 
   useEffect(() => {
     innerVal.set(withTiming(exerciseProgress, { duration: 220, easing: Easing.linear }));
-  }, [exerciseProgress]);
+  }, [exerciseProgress, innerVal]);
 
   useEffect(() => {
     midVal.set(withTiming(sectionProgress, { duration: 220, easing: Easing.linear }));
-  }, [sectionProgress]);
+  }, [sectionProgress, midVal]);
 
   useEffect(() => {
     outerVal.set(withTiming(totalProgress, { duration: 220, easing: Easing.linear }));
-  }, [totalProgress]);
+  }, [totalProgress, outerVal]);
 
   const innerProps = useAnimatedProps(() => ({
     strokeDashoffset: C_INNER * (1 - innerVal.get()),

@@ -81,6 +81,8 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
         ReduceMotion.Never
       )
     );
+    // The intro plays once, on mount; a new onComplete from a re-render mustn't restart it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // A tap fades out early. Replacing the delayed fade-out cancels it, so onComplete still runs once.
@@ -100,7 +102,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
     const elapsed = Date.now() - mountTimeRef.current;
     const remaining = Math.max(0, 1800 - elapsed);
     subWidth.set(withDelay(remaining, withTiming(labelWidth, { duration: 600, easing: Easing.out(Easing.quad) })));
-  }, [labelWidth]);
+  }, [labelWidth, subWidth]);
 
   return (
     <Animated.View style={[StyleSheet.absoluteFill, styles.overlay, screenStyle]} accessibilityViewIsModal>

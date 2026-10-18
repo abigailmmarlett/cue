@@ -3,21 +3,17 @@ import { getAllSequences, type SequenceWithTags } from '../db/sequences';
 import { getAllSequenceTags } from '../db/tags';
 import { onSequenceChange } from '../sequenceEvents';
 
+function readSequences(): SequenceWithTags[] {
+  const tagsMap = getAllSequenceTags();
+  return getAllSequences().map((s) => ({ ...s, tags: tagsMap.get(s.id) ?? [] }));
+}
+
 export function useSequences() {
-  const [sequences, setSequences] = useState<SequenceWithTags[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [sequences, setSequences] = useState(readSequences);
 
-  const refresh = useCallback(() => {
-    const seqs = getAllSequences();
-    const tagsMap = getAllSequenceTags();
-    setSequences(seqs.map((s) => ({ ...s, tags: tagsMap.get(s.id) ?? [] })));
-    setLoading(false);
-  }, []);
+  const refresh = useCallback(() => setSequences(readSequences()), []);
 
-  useEffect(() => {
-    refresh();
-    return onSequenceChange(refresh);
-  }, [refresh]);
+  useEffect(() => onSequenceChange(refresh), [refresh]);
 
-  return { sequences, loading, refresh };
+  return { sequences, refresh };
 }

@@ -40,7 +40,7 @@ function Particle({ angle, distance, delay, color, size }: ParticleProps) {
         )
       )
     );
-  }, []);
+  }, [angle, distance, delay, translateX, translateY, opacity]);
 
   const animStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.get() }, { translateY: translateY.get() }],
