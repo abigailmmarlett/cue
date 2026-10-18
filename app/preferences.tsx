@@ -1,3 +1,4 @@
+import Constants from 'expo-constants';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { TabBar } from '@/components/TabBar';
 import { Text } from '@/components/ui/Text';
@@ -116,7 +117,7 @@ export default function PreferencesScreen() {
           <View style={styles.card}>
             <View style={styles.row}>
               <Text style={styles.rowLabel}>Version</Text>
-              <Text style={styles.rowValue}>1.0.0</Text>
+              <Text style={styles.rowValue}>{Constants.expoConfig?.version}</Text>
             </View>
           </View>
 
