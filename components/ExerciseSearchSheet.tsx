@@ -1,19 +1,12 @@
-import {
-  View,
-  Modal,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+import { View, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
 import { TextInput } from '@/components/ui/TextInput';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Text } from './ui/Text';
+import { Sheet } from './ui/Sheet';
 import { TagChips } from './TagChips';
 import { Colors, Spacing, Radius, FontSize } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
+import { useTextSize, TEXT_SCALE } from '@/lib/hooks/usePreferences';
 import { getAllLibraryExercises, type LibraryExerciseWithTags } from '@/lib/db/libraryExercises';
 
 interface Props {
@@ -22,21 +15,8 @@ interface Props {
   onClose: () => void;
 }
 
-function makeStyles(c: typeof Colors) {
+function makeStyles(c: typeof Colors, textScale: number) {
   return StyleSheet.create({
-    flex: { flex: 1 },
-    container: { flex: 1, backgroundColor: c.background },
-    header: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: Spacing.md,
-      paddingVertical: Spacing.md,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: c.border,
-    },
-    cancelBtn: { minWidth: 60 },
-    headerTitle: { textAlign: 'center' },
     searchRow: {
       paddingHorizontal: Spacing.md,
       paddingVertical: Spacing.sm,
@@ -48,7 +28,7 @@ function makeStyles(c: typeof Colors) {
       borderRadius: Radius.md,
       paddingHorizontal: Spacing.md,
       paddingVertical: Spacing.sm,
-      fontSize: FontSize.base,
+      fontSize: Math.round(FontSize.base * textScale),
       color: c.text.primary,
     },
     emptyState: {
@@ -76,7 +56,7 @@ function makeStyles(c: typeof Colors) {
       borderTopColor: c.border,
     },
     createIcon: {
-      fontSize: 18,
+      fontSize: Math.round(18 * textScale),
       color: c.text.tertiary,
       lineHeight: 22,
     },
@@ -85,13 +65,9 @@ function makeStyles(c: typeof Colors) {
 
 export function ExerciseSearchSheet({ onSelect, onCreateNew, onClose }: Props) {
   const { colors } = useTheme();
-  const styles = makeStyles(colors);
+  const styles = makeStyles(colors, TEXT_SCALE[useTextSize()]);
   const [query, setQuery] = useState('');
-  const [library, setLibrary] = useState<LibraryExerciseWithTags[]>([]);
-
-  useEffect(() => {
-    setLibrary(getAllLibraryExercises());
-  }, []);
+  const [library] = useState(getAllLibraryExercises);
 
   const results = useMemo(() => {
     if (!query.trim()) return library;
@@ -103,83 +79,67 @@ export function ExerciseSearchSheet({ onSelect, onCreateNew, onClose }: Props) {
   const showCreateRow = query.trim().length > 0 && !hasExactMatch;
 
   return (
-    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <SafeAreaView style={styles.container}>
-        <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <View style={styles.header}>
-            <TouchableOpacity onPress={onClose} style={styles.cancelBtn} hitSlop={12} accessibilityRole="button">
-              <Text variant="label" color="secondary">
-                Cancel
+    <Sheet title="Add Exercise" onClose={onClose} left={{ label: 'Cancel', onPress: onClose }} avoidKeyboard>
+      <View style={styles.searchRow}>
+        <TextInput
+          style={styles.searchInput}
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Search or type a name…"
+          accessibilityLabel="Search exercises"
+          placeholderTextColor={colors.text.tertiary}
+          autoFocus
+          returnKeyType="search"
+          clearButtonMode="while-editing"
+        />
+      </View>
+
+      <FlatList
+        data={results}
+        keyExtractor={(item) => item.id}
+        keyboardShouldPersistTaps="handled"
+        ListEmptyComponent={
+          query.trim().length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text variant="body" color="tertiary">
+                Your exercise library is empty.
+              </Text>
+              <Text variant="caption" color="tertiary">
+                Type a name below to create one.
+              </Text>
+            </View>
+          ) : undefined
+        }
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={styles.resultRow}
+            onPress={() => onSelect(item)}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+          >
+            <View style={styles.resultBody}>
+              <Text variant="body">{item.name}</Text>
+              {item.tags.length > 0 && <TagChips tags={item.tags} style={styles.resultTags} />}
+            </View>
+          </TouchableOpacity>
+        )}
+        ListFooterComponent={
+          showCreateRow ? (
+            <TouchableOpacity
+              style={styles.createRow}
+              onPress={() => onCreateNew(query.trim())}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={`Create ${query.trim()} as a new exercise`}
+            >
+              <Text style={styles.createIcon}>+</Text>
+              <Text variant="body" color="secondary">
+                Create &ldquo;{query.trim()}&rdquo; as new exercise
               </Text>
             </TouchableOpacity>
-            <Text variant="label" style={styles.headerTitle}>
-              Add Exercise
-            </Text>
-            <View style={styles.cancelBtn} />
-          </View>
-
-          <View style={styles.searchRow}>
-            <TextInput
-              style={styles.searchInput}
-              value={query}
-              onChangeText={setQuery}
-              placeholder="Search or type a name…"
-              accessibilityLabel="Search exercises"
-              placeholderTextColor={colors.text.tertiary}
-              autoFocus
-              returnKeyType="search"
-              clearButtonMode="while-editing"
-            />
-          </View>
-
-          <FlatList
-            data={results}
-            keyExtractor={(item) => item.id}
-            keyboardShouldPersistTaps="handled"
-            ListEmptyComponent={
-              query.trim().length === 0 ? (
-                <View style={styles.emptyState}>
-                  <Text variant="body" color="tertiary">
-                    Your exercise library is empty.
-                  </Text>
-                  <Text variant="caption" color="tertiary">
-                    Type a name below to create one.
-                  </Text>
-                </View>
-              ) : undefined
-            }
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.resultRow}
-                onPress={() => onSelect(item)}
-                activeOpacity={0.7}
-                accessibilityRole="button"
-              >
-                <View style={styles.resultBody}>
-                  <Text variant="body">{item.name}</Text>
-                  {item.tags.length > 0 && <TagChips tags={item.tags} style={styles.resultTags} />}
-                </View>
-              </TouchableOpacity>
-            )}
-            ListFooterComponent={
-              showCreateRow ? (
-                <TouchableOpacity
-                  style={styles.createRow}
-                  onPress={() => onCreateNew(query.trim())}
-                  activeOpacity={0.7}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Create ${query.trim()} as a new exercise`}
-                >
-                  <Text style={styles.createIcon}>+</Text>
-                  <Text variant="body" color="secondary">
-                    Create &ldquo;{query.trim()}&rdquo; as new exercise
-                  </Text>
-                </TouchableOpacity>
-              ) : undefined
-            }
-          />
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    </Modal>
+          ) : undefined
+        }
+      />
+    </Sheet>
   );
 }

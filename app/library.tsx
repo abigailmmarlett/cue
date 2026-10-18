@@ -408,7 +408,6 @@ export default function LibraryScreen() {
 
       {editLoadTarget && (
         <LoadEditor
-          visible
           loadModified={parseLoad(editLoadTarget.load_modified) ?? []}
           loadBase={parseLoad(editLoadTarget.load_base) ?? []}
           loadAmplified={parseLoad(editLoadTarget.load_amplified) ?? []}

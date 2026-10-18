@@ -524,7 +524,6 @@ export default function EditSequenceScreen() {
 
       {editLoadTarget && (
         <LoadEditor
-          visible
           loadModified={editLoadTarget.ex.loadModified ?? []}
           loadBase={editLoadTarget.ex.loadBase ?? []}
           loadAmplified={editLoadTarget.ex.loadAmplified ?? []}
@@ -543,7 +542,6 @@ export default function EditSequenceScreen() {
 
       {editVariationTarget && (
         <VariationEditor
-          visible
           variationSets={editVariationTarget.ex.variationSets ?? []}
           exerciseDuration={editVariationTarget.ex.duration}
           onSave={(items) => {
