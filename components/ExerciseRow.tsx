@@ -8,10 +8,9 @@ import { Colors, Spacing, FontSize, FontWeight } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
 import { useActionButtonSize, useTextSize, ACTION_BUTTON_SCALE, TEXT_SCALE } from '@/lib/hooks/usePreferences';
 import { formatSeconds, spokenDuration } from '@/lib/utils/time';
-import { DRAG_ITEM_HEIGHT } from './DraggableList';
 import type { ExerciseTag } from '@/lib/db/tags';
 import type { VariationItem } from '@/lib/db/exercises';
-import type { ItemMover } from './DraggableList';
+import { DRAG_ITEM_HEIGHT, DragHandle, type ItemMover } from './DraggableList';
 
 export interface LocalExercise {
   id: string;
@@ -193,23 +192,25 @@ export function ExerciseRow({
   return (
     <View style={styles.outer}>
       <View style={styles.mainRow}>
-        <View
-          style={styles.handle}
-          accessible={!!mover}
-          accessibilityLabel={`Reorder ${exercise.name || 'exercise'}`}
-          accessibilityActions={[
-            ...(mover?.canMove(-1) ? [{ name: 'moveUp', label: 'Move up' }] : []),
-            ...(mover?.canMove(1) ? [{ name: 'moveDown', label: 'Move down' }] : []),
-          ]}
-          onAccessibilityAction={({ nativeEvent }) => {
-            if (nativeEvent.actionName === 'moveUp') mover?.move(-1);
-            if (nativeEvent.actionName === 'moveDown') mover?.move(1);
-          }}
-        >
-          <Text color="tertiary" style={styles.handleIcon}>
-            ≡
-          </Text>
-        </View>
+        <DragHandle>
+          <View
+            style={styles.handle}
+            accessible={!!mover}
+            accessibilityLabel={`Reorder ${exercise.name || 'exercise'}`}
+            accessibilityActions={[
+              ...(mover?.canMove(-1) ? [{ name: 'moveUp', label: 'Move up' }] : []),
+              ...(mover?.canMove(1) ? [{ name: 'moveDown', label: 'Move down' }] : []),
+            ]}
+            onAccessibilityAction={({ nativeEvent }) => {
+              if (nativeEvent.actionName === 'moveUp') mover?.move(-1);
+              if (nativeEvent.actionName === 'moveDown') mover?.move(1);
+            }}
+          >
+            <Text color="tertiary" style={styles.handleIcon}>
+              ≡
+            </Text>
+          </View>
+        </DragHandle>
 
         <TextInput
           style={[styles.nameInput, !!exercise.libraryExerciseId && styles.nameInputLinked]}
