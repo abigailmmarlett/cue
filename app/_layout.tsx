@@ -77,7 +77,7 @@ function AppShellInner() {
       <Stack
         screenOptions={{
           headerStyle: { backgroundColor: colors.headerBg },
-          headerTintColor: colors.accent,
+          headerTintColor: colors.accentText,
           headerShadowVisible: false,
           contentStyle: { backgroundColor: colors.background },
         }}

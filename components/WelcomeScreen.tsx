@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Animated, {
   Easing,
+  ReduceMotion,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
@@ -61,12 +62,15 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
       duration: 1400,
       easing: Easing.out(Easing.cubic),
     });
+    // With Reduce Motion on, Reanimated shows the text reveals at their end state. The fade-out
+    // opts out so the text still stays up long enough to read, then dissolves instead of vanishing.
     screenOpacity.value = withDelay(
       2700,
-      withTiming(0, { duration: 500, easing: Easing.in(Easing.quad) }, (finished) => {
+      withTiming(0, { duration: 500, easing: Easing.in(Easing.quad), reduceMotion: ReduceMotion.Never }, (finished) => {
         'worklet';
         if (finished) runOnJS(onComplete)();
-      })
+      }),
+      ReduceMotion.Never
     );
   }, []);
 
@@ -74,7 +78,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
   const skip = () => {
     if (skippedRef.current) return;
     skippedRef.current = true;
-    screenOpacity.value = withTiming(0, { duration: 200 }, (finished) => {
+    screenOpacity.value = withTiming(0, { duration: 200, reduceMotion: ReduceMotion.Never }, (finished) => {
       'worklet';
       if (finished) runOnJS(onComplete)();
     });
@@ -88,7 +92,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
   }, [labelWidth]);
 
   return (
-    <Animated.View style={[StyleSheet.absoluteFill, styles.overlay, screenStyle]}>
+    <Animated.View style={[StyleSheet.absoluteFill, styles.overlay, screenStyle]} accessibilityViewIsModal>
       <Pressable
         style={[StyleSheet.absoluteFill, styles.container, { backgroundColor: colors.background }]}
         onPress={skip}

@@ -92,19 +92,30 @@ export function TabBar() {
   ];
 
   return (
-    <View style={[styles.bar, { paddingBottom: bottom + 4 }]}>
+    <View style={[styles.bar, { paddingBottom: bottom + 4 }]} accessibilityRole="tabbar">
       {tabs.map((tab) => {
         const active = tab.match(pathname);
-        const color = active ? colors.accent : colors.text.tertiary;
+        const color = active ? colors.accentText : colors.text.tertiary;
         return (
           <TouchableOpacity
             key={tab.href}
             style={styles.tab}
             onPress={() => router.replace(tab.href as any)}
             activeOpacity={0.7}
+            accessibilityRole="tab"
+            accessibilityLabel={tab.label}
+            accessibilityState={{ selected: active }}
           >
             <tab.Icon color={color} />
-            <Text style={[styles.label, active && { color: colors.accent, fontWeight: '700' }]}>{tab.label}</Text>
+            {/* The tab bar has a fixed height, and each tab a third of the width. */}
+            <Text
+              style={[styles.label, active && { color: colors.accentText, fontWeight: '700' }]}
+              maxFontSizeMultiplier={1.3}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+            >
+              {tab.label}
+            </Text>
           </TouchableOpacity>
         );
       })}

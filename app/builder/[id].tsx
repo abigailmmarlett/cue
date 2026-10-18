@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   View,
-  TextInput,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
@@ -10,9 +9,10 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { TextInput } from '@/components/ui/TextInput';
 import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router';
 import { usePreventRemove } from '@react-navigation/native';
-import { Text } from '@/components/ui/Text';
+import { DISPLAY_MAX_MULTIPLIER, Text } from '@/components/ui/Text';
 import { DraggableList } from '@/components/DraggableList';
 import { ExerciseRow, type LocalExercise } from '@/components/ExerciseRow';
 import { SectionGroup } from '@/components/SectionGroup';
@@ -366,12 +366,14 @@ export default function EditSequenceScreen() {
       >
         <TextInput
           style={styles.nameInput}
+          maxFontSizeMultiplier={DISPLAY_MAX_MULTIPLIER}
           value={name}
           onChangeText={(v) => {
             setIsDirty(true);
             setName(v);
           }}
           placeholder="Sequence name"
+          accessibilityLabel="Sequence name"
           placeholderTextColor={colors.text.tertiary}
           returnKeyType="done"
           maxLength={80}
@@ -379,7 +381,7 @@ export default function EditSequenceScreen() {
 
         <View style={styles.sequenceTagsRow}>
           {sequenceTags.length > 0 && <TagChips tags={sequenceTags} style={styles.sequenceTagChips} />}
-          <TouchableOpacity onPress={() => setShowSequenceTagPicker(true)} hitSlop={8}>
+          <TouchableOpacity onPress={() => setShowSequenceTagPicker(true)} hitSlop={12} accessibilityRole="button">
             <Text variant="caption" color="tertiary">
               {sequenceTags.length > 0 ? 'Edit tags' : '+ Add tags'}
             </Text>
@@ -402,9 +404,10 @@ export default function EditSequenceScreen() {
             {section.exercises.length > 0 && (
               <DraggableList
                 data={section.exercises}
-                renderItem={(item) => (
+                renderItem={(item, _index, mover) => (
                   <ExerciseRow
                     exercise={item}
+                    mover={mover}
                     onNameChange={(n) => updateExercise(section.id, item.id, { name: n })}
                     onDurationChange={(d) => updateExercise(section.id, item.id, { duration: d })}
                     onDelete={() => removeExercise(section.id, item.id)}
@@ -422,14 +425,26 @@ export default function EditSequenceScreen() {
           </SectionGroup>
         ))}
 
-        <TouchableOpacity onPress={addSection} style={styles.addSectionRow} activeOpacity={0.7}>
+        <TouchableOpacity
+          onPress={addSection}
+          style={styles.addSectionRow}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Add section"
+        >
           <Text style={styles.addIcon}>+</Text>
           <Text variant="body" color="tertiary">
             Add section
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => setShowSectionImport(true)} style={styles.addSectionRow} activeOpacity={0.7}>
+        <TouchableOpacity
+          onPress={() => setShowSectionImport(true)}
+          style={styles.addSectionRow}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Import section from another sequence"
+        >
           <Text style={styles.addIcon}>↓</Text>
           <Text variant="body" color="tertiary">
             Import section from another sequence
@@ -442,6 +457,8 @@ export default function EditSequenceScreen() {
           onPress={save}
           disabled={!canSave}
           activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: !canSave }}
           style={[styles.saveButton, { backgroundColor: colors.fill.primary }, !canSave && styles.saveButtonDisabled]}
         >
           <Text variant="label" color="inverse">

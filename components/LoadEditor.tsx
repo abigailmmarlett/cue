@@ -134,7 +134,7 @@ export function LoadEditor({ visible, loadModified, loadBase, loadAmplified, all
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} style={styles.headerBtn}>
+          <TouchableOpacity onPress={onClose} style={styles.headerBtn} hitSlop={12} accessibilityRole="button">
             <Text variant="label" color="secondary">
               Cancel
             </Text>
@@ -142,7 +142,12 @@ export function LoadEditor({ visible, loadModified, loadBase, loadAmplified, all
           <Text variant="label" style={styles.headerTitle}>
             Load
           </Text>
-          <TouchableOpacity onPress={() => onSave(mod, base, amp)} style={styles.headerBtn}>
+          <TouchableOpacity
+            onPress={() => onSave(mod, base, amp)}
+            style={styles.headerBtn}
+            hitSlop={12}
+            accessibilityRole="button"
+          >
             <Text variant="label">Done</Text>
           </TouchableOpacity>
         </View>
@@ -168,6 +173,9 @@ export function LoadEditor({ visible, loadModified, loadBase, loadAmplified, all
                           style={styles.selectedDotBtn}
                           onPress={() => setSelection((prev) => prev.filter((_, i) => i !== idx))}
                           activeOpacity={0.75}
+                          hitSlop={6}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Remove ${icon.label}`}
                         >
                           <LoadDot color={icon.color} size={icon.size} diameter={26} />
                           <View style={styles.removeBadge}>
@@ -187,6 +195,9 @@ export function LoadEditor({ visible, loadModified, loadBase, loadAmplified, all
                       style={styles.addDotBtn}
                       onPress={() => setSelection((prev) => [...prev, icon.id])}
                       activeOpacity={0.75}
+                      hitSlop={6}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Add ${icon.label}`}
                     >
                       <LoadDot color={icon.color} size={icon.size} diameter={26} />
                     </TouchableOpacity>

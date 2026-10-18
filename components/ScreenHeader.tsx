@@ -1,4 +1,5 @@
-import { View, ScrollView, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
+import { View, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { TextInput } from '@/components/ui/TextInput';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SymbolView } from 'expo-symbols';
 import { Text } from '@/components/ui/Text';
@@ -7,12 +8,15 @@ import { useTheme } from '@/lib/contexts/ThemeContext';
 import { useTextSize, TEXT_SCALE } from '@/lib/hooks/usePreferences';
 import type { ExerciseTag } from '@/lib/db/tags';
 import type { RefObject } from 'react';
+import { IconButton } from '@/components/ui/IconButton';
 
 interface Props {
   title: string;
   countLabel?: string;
   safeTop: number;
   onAdd?: () => void;
+  /** What VoiceOver says for the + button, e.g. "New sequence". */
+  addLabel?: string;
   onImport?: () => void;
   search?: string;
   onSearchChange?: (v: string) => void;
@@ -60,7 +64,8 @@ function makeStyles(c: typeof Colors, textScale = 1.0) {
     countLabel: {
       fontSize: Math.round(10 * textScale),
       fontWeight: '600',
-      color: c.text.tertiary,
+      // Secondary, not tertiary: it sits on the header's gradient.
+      color: c.text.secondary,
       textTransform: 'uppercase',
       letterSpacing: 1.5,
       marginTop: 8,
@@ -152,6 +157,7 @@ export function ScreenHeader({
   countLabel,
   safeTop,
   onAdd,
+  addLabel,
   onImport,
   search = '',
   onSearchChange,
@@ -173,30 +179,35 @@ export function ScreenHeader({
         <View style={styles.wordmarkLeft}>
           <View style={[styles.accentBar, { backgroundColor: colors.accent }]} />
           <View>
-            <Text style={styles.wordmark}>{title}</Text>
+            {/* The wordmark is already huge, so it ignores Dynamic Type and shrinks to fit. */}
+            <Text style={styles.wordmark} maxFontSizeMultiplier={1} numberOfLines={1} adjustsFontSizeToFit>
+              {title}
+            </Text>
             {countLabel ? <Text style={styles.countLabel}>{countLabel}</Text> : null}
           </View>
         </View>
         {(onImport || onAdd) && (
           <View style={styles.headerActions}>
             {onImport && (
-              <TouchableOpacity
+              <IconButton
+                label="Import a copied sequence link"
                 style={[styles.importButton, { borderColor: colors.border }]}
                 onPress={onImport}
-                activeOpacity={0.7}
+                hitSlop={4}
               >
                 <SymbolView name="square.and.arrow.down" size={18} tintColor={colors.text.secondary} />
-              </TouchableOpacity>
+              </IconButton>
             )}
             {onAdd && (
               <View ref={addButtonRef}>
-                <TouchableOpacity
+                <IconButton
+                  label={addLabel ?? 'Add'}
                   style={[styles.addButton, { borderColor: colors.accent }]}
                   onPress={onAdd}
-                  activeOpacity={0.7}
+                  hitSlop={4}
                 >
-                  <Text style={[styles.addButtonText, { color: colors.accent }]}>+</Text>
-                </TouchableOpacity>
+                  <Text style={[styles.addButtonText, { color: colors.accentText }]}>+</Text>
+                </IconButton>
               </View>
             )}
           </View>
@@ -210,13 +221,14 @@ export function ScreenHeader({
             value={search}
             onChangeText={onSearchChange}
             placeholder={`Search ${title}…`}
+            accessibilityLabel={`Search ${title}`}
             placeholderTextColor={colors.text.tertiary}
             style={styles.searchInput}
           />
           {search.length > 0 && (
-            <TouchableOpacity onPress={() => onSearchChange('')} hitSlop={8}>
+            <IconButton label="Clear search" onPress={() => onSearchChange('')}>
               <Text style={styles.searchClear}>✕</Text>
-            </TouchableOpacity>
+            </IconButton>
           )}
         </View>
       )}
@@ -241,6 +253,10 @@ export function ScreenHeader({
                   ]}
                   onPress={() => onTagToggle(tag)}
                   activeOpacity={0.7}
+                  hitSlop={{ top: 8, bottom: 8 }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Filter by ${tag.label}`}
+                  accessibilityState={{ selected: active }}
                 >
                   <Text
                     style={[styles.pillText, { color: colors.pill.text }, active && { color: colors.pill.activeText }]}

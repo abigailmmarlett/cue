@@ -1,20 +1,12 @@
-import {
-  View,
-  Modal,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-  Alert,
-  Platform,
-} from 'react-native';
+import { View, Modal, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Platform } from 'react-native';
+import { TextInput } from '@/components/ui/TextInput';
 import { useState, useEffect, useRef } from 'react';
 import { Text } from './ui/Text';
 import { Colors, Spacing, Radius, FontSize } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
 import type { VariationItem } from '@/lib/db/exercises';
-import { formatSeconds } from '@/lib/utils/time';
+import { formatSeconds, spokenDuration } from '@/lib/utils/time';
+import { IconButton } from './ui/IconButton';
 
 type EditorItem = VariationItem & { _key: number };
 
@@ -87,7 +79,7 @@ function makeStyles(c: typeof Colors) {
     },
     addLabel: {
       fontSize: FontSize.sm,
-      color: c.accent,
+      color: c.accentText,
     },
     empty: {
       paddingHorizontal: Spacing.md,
@@ -161,7 +153,7 @@ export function VariationEditor({ visible, variationSets, exerciseDuration, onSa
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} style={styles.headerBtn}>
+          <TouchableOpacity onPress={onClose} style={styles.headerBtn} hitSlop={12} accessibilityRole="button">
             <Text variant="label" color="secondary">
               Cancel
             </Text>
@@ -172,6 +164,8 @@ export function VariationEditor({ visible, variationSets, exerciseDuration, onSa
           <TouchableOpacity
             onPress={() => onSave(items.filter((it) => it.instruction.trim()).map(({ _key: _, ...rest }) => rest))}
             style={styles.headerBtn}
+            hitSlop={12}
+            accessibilityRole="button"
           >
             <Text variant="label">Done</Text>
           </TouchableOpacity>
@@ -199,12 +193,23 @@ export function VariationEditor({ visible, variationSets, exerciseDuration, onSa
                 value={item.instruction}
                 onChangeText={(t) => updateInstruction(item._key, t)}
                 placeholder="Cue (e.g. narrow grip)"
+                accessibilityLabel="Variation cue"
                 placeholderTextColor={colors.text.tertiary}
                 returnKeyType="done"
                 maxLength={80}
               />
               {Platform.OS === 'ios' && (
-                <TouchableOpacity style={styles.timeBtn} onPress={() => promptTime(item._key)} hitSlop={8}>
+                <TouchableOpacity
+                  style={styles.timeBtn}
+                  onPress={() => promptTime(item._key)}
+                  hitSlop={{ top: 12, bottom: 12, left: 4, right: 4 }}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    item.atSeconds != null
+                      ? `Starts at ${spokenDuration(item.atSeconds)}`
+                      : 'Starts evenly spaced. Set a time'
+                  }
+                >
                   {item.atSeconds != null ? (
                     <Text style={styles.timeBtnText}>{formatSeconds(item.atSeconds)}</Text>
                   ) : (
@@ -212,13 +217,18 @@ export function VariationEditor({ visible, variationSets, exerciseDuration, onSa
                   )}
                 </TouchableOpacity>
               )}
-              <TouchableOpacity style={styles.deleteBtn} onPress={() => removeItem(item._key)} hitSlop={8}>
+              <IconButton label="Remove variation" style={styles.deleteBtn} onPress={() => removeItem(item._key)}>
                 <Text style={styles.deleteBtnText}>✕</Text>
-              </TouchableOpacity>
+              </IconButton>
             </View>
           ))}
 
-          <TouchableOpacity style={styles.addRow} onPress={addItem}>
+          <TouchableOpacity
+            style={styles.addRow}
+            onPress={addItem}
+            accessibilityRole="button"
+            accessibilityLabel="Add variation"
+          >
             <Text style={styles.addLabel}>+ Add variation</Text>
           </TouchableOpacity>
         </ScrollView>

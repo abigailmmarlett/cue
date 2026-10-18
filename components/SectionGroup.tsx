@@ -1,9 +1,11 @@
-import { View, TextInput, TouchableOpacity, StyleSheet, Alert, Platform } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Alert, Platform } from 'react-native';
+import { TextInput } from '@/components/ui/TextInput';
 import { Text } from './ui/Text';
 import { Colors, Spacing, FontSize, FontWeight } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
 import { useTextSize, TEXT_SCALE } from '@/lib/hooks/usePreferences';
-import { formatSeconds } from '@/lib/utils/time';
+import { formatSeconds, spokenDuration } from '@/lib/utils/time';
+import { IconButton } from './ui/IconButton';
 
 interface Props {
   name: string;
@@ -112,32 +114,42 @@ export function SectionGroup({
           value={name}
           onChangeText={onRename}
           placeholder="Section name"
+          accessibilityLabel="Section name"
           placeholderTextColor={colors.text.tertiary}
           returnKeyType="done"
           maxLength={60}
         />
         <TouchableOpacity
           onPress={editTotalDuration}
-          hitSlop={8}
+          hitSlop={12}
           style={styles.durationButton}
           disabled={!hasExercises}
+          accessibilityRole="button"
+          accessibilityLabel={`Section duration, ${spokenDuration(totalDuration)}`}
+          accessibilityState={{ disabled: !hasExercises }}
         >
           <Text style={[styles.durationText, !hasExercises && styles.durationTextDimmed]}>
             {formatSeconds(totalDuration)}
           </Text>
         </TouchableOpacity>
         {canDelete && (
-          <TouchableOpacity onPress={onDelete} hitSlop={10} style={styles.deleteButton}>
+          <IconButton label={`Remove section ${name || ''}`.trim()} onPress={onDelete} style={styles.deleteButton}>
             <Text color="tertiary" style={styles.deleteIcon}>
               ✕
             </Text>
-          </TouchableOpacity>
+          </IconButton>
         )}
       </View>
 
       {children}
 
-      <TouchableOpacity onPress={onAddExercise} style={styles.addExerciseRow} activeOpacity={0.7}>
+      <TouchableOpacity
+        onPress={onAddExercise}
+        style={styles.addExerciseRow}
+        activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel="Add exercise"
+      >
         <Text style={styles.addIcon}>+</Text>
         <Text variant="body" color="secondary">
           Add exercise

@@ -131,6 +131,7 @@ export default function SequencesScreen() {
         countLabel={`${sequences.length} sequence${sequences.length !== 1 ? 's' : ''}`}
         safeTop={top}
         onAdd={() => router.push('/builder')}
+        addLabel="New sequence"
         onImport={handleClipboardImport}
         search={search}
         onSearchChange={setSearch}
@@ -150,6 +151,7 @@ export default function SequencesScreen() {
             {!search && activeFilterTags.length === 0 && (
               <TouchableOpacity
                 style={[styles.createButton, { backgroundColor: colors.fill.primary }]}
+                accessibilityRole="button"
                 onPress={() => router.push('/builder')}
                 activeOpacity={0.8}
               >

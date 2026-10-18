@@ -1,14 +1,17 @@
 import { useMemo } from 'react';
-import { View, TextInput, TouchableOpacity, StyleSheet, Alert, Platform } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Alert, Platform } from 'react-native';
+import { TextInput } from '@/components/ui/TextInput';
 import { Text } from './ui/Text';
+import { IconButton } from './ui/IconButton';
 import { TagChips } from './TagChips';
 import { Colors, Spacing, FontSize, FontWeight } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
 import { useActionButtonSize, useTextSize, ACTION_BUTTON_SCALE, TEXT_SCALE } from '@/lib/hooks/usePreferences';
-import { formatSeconds } from '@/lib/utils/time';
+import { formatSeconds, spokenDuration } from '@/lib/utils/time';
 import { DRAG_ITEM_HEIGHT } from './DraggableList';
 import type { ExerciseTag } from '@/lib/db/tags';
 import type { VariationItem } from '@/lib/db/exercises';
+import type { ItemMover } from './DraggableList';
 
 export interface LocalExercise {
   id: string;
@@ -36,9 +39,15 @@ interface Props {
   onEditLoad?: () => void;
   onEditVariation?: () => void;
   onSideChange?: (side: 'left' | 'right' | null) => void;
+  /** Lets VoiceOver users reorder with Move up / Move down instead of dragging. */
+  mover?: ItemMover;
 }
 
 const HANDLE_WIDTH = 32;
+
+// The row's buttons sit side by side, so their touch areas grow up and down to 44pt but only a
+// little sideways, where they'd overlap their neighbours.
+const ROW_HIT_SLOP = { top: 12, bottom: 12, left: 2, right: 2 };
 
 function makeStyles(c: typeof Colors, scale: number, textScale: number) {
   const hw = Math.round(HANDLE_WIDTH * scale);
@@ -84,9 +93,8 @@ function makeStyles(c: typeof Colors, scale: number, textScale: number) {
       color: c.text.secondary,
     },
     tagButton: {
-      paddingHorizontal: Math.round(Spacing.xs * scale),
+      paddingHorizontal: Math.round(Spacing.sm * scale),
       paddingVertical: Math.round(Spacing.xs * scale),
-      marginRight: Spacing.xs,
     },
     tagIcon: {
       fontSize: Math.round(17 * scale),
@@ -111,7 +119,7 @@ function makeStyles(c: typeof Colors, scale: number, textScale: number) {
       fontVariant: ['tabular-nums'],
     },
     deleteButton: {
-      width: Math.round(32 * scale),
+      width: Math.round(40 * scale),
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -127,11 +135,11 @@ function makeStyles(c: typeof Colors, scale: number, textScale: number) {
       marginRight: Spacing.xs,
     },
     sideBtn: {
-      paddingHorizontal: Math.round(7 * scale),
+      paddingHorizontal: Math.round(10 * scale),
       paddingVertical: Math.round(3 * scale),
     },
     sideBtnActive: {
-      backgroundColor: c.accent,
+      backgroundColor: c.fill.primary,
     },
     sideBtnText: {
       fontSize: Math.round(11 * scale),
@@ -139,7 +147,7 @@ function makeStyles(c: typeof Colors, scale: number, textScale: number) {
       color: c.text.tertiary,
     },
     sideBtnTextActive: {
-      color: c.text.inverse,
+      color: c.text.onFill,
     },
   });
 }
@@ -153,6 +161,7 @@ export function ExerciseRow({
   onEditLoad,
   onEditVariation,
   onSideChange,
+  mover,
 }: Props) {
   const { colors } = useTheme();
   const actionButtonSize = useActionButtonSize();
@@ -184,7 +193,19 @@ export function ExerciseRow({
   return (
     <View style={styles.outer}>
       <View style={styles.mainRow}>
-        <View style={styles.handle}>
+        <View
+          style={styles.handle}
+          accessible={!!mover}
+          accessibilityLabel={`Reorder ${exercise.name || 'exercise'}`}
+          accessibilityActions={[
+            ...(mover?.canMove(-1) ? [{ name: 'moveUp', label: 'Move up' }] : []),
+            ...(mover?.canMove(1) ? [{ name: 'moveDown', label: 'Move down' }] : []),
+          ]}
+          onAccessibilityAction={({ nativeEvent }) => {
+            if (nativeEvent.actionName === 'moveUp') mover?.move(-1);
+            if (nativeEvent.actionName === 'moveDown') mover?.move(1);
+          }}
+        >
           <Text color="tertiary" style={styles.handleIcon}>
             ≡
           </Text>
@@ -195,6 +216,7 @@ export function ExerciseRow({
           value={exercise.name}
           onChangeText={onNameChange}
           placeholder="Exercise name"
+          accessibilityLabel="Exercise name"
           placeholderTextColor={colors.text.tertiary}
           returnKeyType="done"
           maxLength={60}
@@ -202,19 +224,24 @@ export function ExerciseRow({
         />
 
         {onEditLoad && (
-          <TouchableOpacity onPress={onEditLoad} hitSlop={8} style={styles.tagButton}>
+          <IconButton
+            label={hasLoad ? 'Edit loads' : 'Add loads'}
+            onPress={onEditLoad}
+            style={styles.tagButton}
+            hitSlop={ROW_HIT_SLOP}
+          >
             <Text style={[styles.tagIcon, hasLoad && styles.tagIconActive]}>⊙</Text>
-          </TouchableOpacity>
+          </IconButton>
         )}
 
         {onEditVariation && (
-          <TouchableOpacity onPress={onEditVariation} hitSlop={8} style={styles.tagButton}>
+          <IconButton label="Variations" onPress={onEditVariation} style={styles.tagButton} hitSlop={ROW_HIT_SLOP}>
             <Text
               style={[styles.tagIcon, !!(exercise.variationSets?.length || exercise.variation) && styles.tagIconActive]}
             >
               ◈
             </Text>
-          </TouchableOpacity>
+          </IconButton>
         )}
 
         {exercise.isBilateral && onSideChange && (
@@ -222,36 +249,53 @@ export function ExerciseRow({
             <TouchableOpacity
               onPress={() => onSideChange(exercise.side === 'left' ? null : 'left')}
               style={[styles.sideBtn, exercise.side === 'left' && styles.sideBtnActive]}
-              hitSlop={4}
+              hitSlop={{ top: 12, bottom: 12 }}
+              accessibilityRole="button"
+              accessibilityLabel="Left side"
+              accessibilityState={{ selected: exercise.side === 'left' }}
             >
               <Text style={[styles.sideBtnText, exercise.side === 'left' && styles.sideBtnTextActive]}>L</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => onSideChange(exercise.side === 'right' ? null : 'right')}
               style={[styles.sideBtn, exercise.side === 'right' && styles.sideBtnActive]}
-              hitSlop={4}
+              hitSlop={{ top: 12, bottom: 12 }}
+              accessibilityRole="button"
+              accessibilityLabel="Right side"
+              accessibilityState={{ selected: exercise.side === 'right' }}
             >
               <Text style={[styles.sideBtnText, exercise.side === 'right' && styles.sideBtnTextActive]}>R</Text>
             </TouchableOpacity>
           </View>
         )}
 
-        <TouchableOpacity onPress={editDuration} style={styles.durationButton} hitSlop={8}>
+        <TouchableOpacity
+          onPress={editDuration}
+          style={styles.durationButton}
+          hitSlop={{ top: 10, bottom: 10, left: 2, right: 2 }}
+          accessibilityRole="button"
+          accessibilityLabel={`Duration, ${spokenDuration(exercise.duration)}`}
+        >
           <Text variant="label" color="secondary" style={styles.durationText}>
             {formatSeconds(exercise.duration)}
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={onDelete} hitSlop={8} style={styles.deleteButton}>
+        <IconButton
+          label={`Remove ${exercise.name || 'exercise'}`}
+          onPress={onDelete}
+          style={styles.deleteButton}
+          hitSlop={{ ...ROW_HIT_SLOP, top: 15, bottom: 15 }}
+        >
           <Text color="tertiary" style={styles.deleteIcon}>
             ✕
           </Text>
-        </TouchableOpacity>
+        </IconButton>
       </View>
 
       <View style={styles.tagsRow}>
         {exercise.tags.length > 0 && <TagChips tags={exercise.tags} />}
-        <TouchableOpacity onPress={onEditTags} hitSlop={8}>
+        <TouchableOpacity onPress={onEditTags} hitSlop={14} accessibilityRole="button">
           <Text style={styles.addTagsLabel}>{exercise.tags.length > 0 ? 'Edit tags' : '+ Add tags'}</Text>
         </TouchableOpacity>
       </View>

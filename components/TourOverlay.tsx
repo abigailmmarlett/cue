@@ -1,4 +1,11 @@
-import { StyleSheet, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import {
+  AccessibilityInfo,
+  StyleSheet,
+  Text as RNText,
+  TouchableOpacity,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import Animated, {
   Easing,
   runOnJS,
@@ -9,7 +16,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import Svg, { Rect } from 'react-native-svg';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Text } from '@/components/ui/Text';
 import { useTheme } from '@/lib/contexts/ThemeContext';
 import { useTour, type HighlightLayout, type TourStep } from '@/lib/contexts/TourContext';
@@ -41,6 +48,13 @@ export function TourOverlay() {
   const dashOffset = useSharedValue(0);
   const tooltipOpacity = useSharedValue(0);
   const tooltipTranslateY = useSharedValue(12);
+
+  // VoiceOver: once a step has faded in, move focus to its title so it's read out. A view that's
+  // still transparent is hidden from VoiceOver, so this waits for the fade.
+  const titleRef = useRef<RNText>(null);
+  const focusTitle = useCallback(() => {
+    if (titleRef.current) AccessibilityInfo.sendAccessibilityEvent(titleRef.current, 'focus');
+  }, []);
 
   // Mount / unmount the overlay with entrance/exit animations. The tooltip fades in once its step is ready.
   useEffect(() => {
@@ -76,9 +90,24 @@ export function TourOverlay() {
     // The first step waits for the dim layer to fade in.
     const delay = first ? 250 : 60;
     tooltipTranslateY.value = first ? 12 : 8;
-    tooltipOpacity.value = withDelay(delay, withTiming(1, { duration: 280 }));
+    tooltipOpacity.value = withDelay(
+      delay,
+      withTiming(1, { duration: 280 }, (finished) => {
+        'worklet';
+        if (finished) runOnJS(focusTitle)();
+      })
+    );
     tooltipTranslateY.value = withDelay(delay, withTiming(0, { duration: 280, easing: Easing.out(Easing.quad) }));
-  }, [isActive, readyStepIndex, currentStepIndex, currentStep, highlightLayout, tooltipOpacity, tooltipTranslateY]);
+  }, [
+    isActive,
+    readyStepIndex,
+    currentStepIndex,
+    currentStep,
+    highlightLayout,
+    tooltipOpacity,
+    tooltipTranslateY,
+    focusTitle,
+  ]);
 
   // Draw the highlight border around the shown step's target.
   useEffect(() => {
@@ -120,7 +149,8 @@ export function TourOverlay() {
   if (!visible) return null;
 
   return (
-    <View style={[StyleSheet.absoluteFill, { pointerEvents: 'box-none' }]}>
+    // Modal for VoiceOver, so it can't wander to the dimmed screen behind the tour.
+    <View style={[StyleSheet.absoluteFill, { pointerEvents: 'box-none' }]} accessibilityViewIsModal>
       {/* Dim overlay */}
       <Animated.View
         style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.58)', pointerEvents: 'auto' }, dimStyle]}
@@ -163,7 +193,7 @@ export function TourOverlay() {
         ]}
       >
         {/* Step dots */}
-        <View style={styles.dotsRow}>
+        <View style={styles.dotsRow} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
           {Array.from({ length: totalSteps }).map((_, i) => (
             <View
               key={i}
@@ -176,23 +206,42 @@ export function TourOverlay() {
           ))}
         </View>
 
-        <Text style={[styles.title, { color: colors.accent }]} numberOfLines={1}>
+        <Text
+          ref={titleRef}
+          style={[styles.title, { color: colors.accentText }]}
+          numberOfLines={1}
+          accessibilityRole="header"
+          accessibilityLabel={`${shown.step?.title ?? ''}, step ${shown.index + 1} of ${totalSteps}`}
+        >
           {shown.step?.title ?? ''}
         </Text>
 
         <Text style={[styles.description, { color: colors.text.secondary }]}>{shown.step?.description ?? ''}</Text>
 
         <View style={styles.actions}>
-          <TouchableOpacity onPress={skipTour} hitSlop={8} activeOpacity={0.6}>
-            <Text style={[styles.skipLabel, { color: colors.text.tertiary }]}>{isDone ? '' : 'Skip tour'}</Text>
-          </TouchableOpacity>
+          {isDone ? (
+            // Keeps Done on the right.
+            <View />
+          ) : (
+            <TouchableOpacity
+              onPress={skipTour}
+              hitSlop={12}
+              activeOpacity={0.6}
+              accessibilityRole="button"
+              accessibilityLabel="Skip tour"
+            >
+              <Text style={[styles.skipLabel, { color: colors.text.tertiary }]}>Skip tour</Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
             style={[styles.nextBtn, { backgroundColor: colors.fill.primary }]}
             onPress={nextStep}
             activeOpacity={0.8}
+            hitSlop={6}
+            accessibilityRole="button"
           >
-            <Text style={[styles.nextLabel, { color: colors.text.inverse }]}>{isLastStep ? 'Done' : 'Next'}</Text>
+            <Text style={[styles.nextLabel, { color: colors.text.onFill }]}>{isLastStep ? 'Done' : 'Next'}</Text>
           </TouchableOpacity>
         </View>
       </Animated.View>

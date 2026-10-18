@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { usePreventRemove } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import { useKeepAwake } from 'expo-keep-awake';
-import { Text } from '@/components/ui/Text';
+import { DISPLAY_MAX_MULTIPLIER, Text } from '@/components/ui/Text';
 import { TagChips } from '@/components/TagChips';
 import { LoadDotRow } from '@/components/LoadDotRow';
 import { TimerControls } from '@/components/timer/TimerControls';
@@ -18,7 +18,7 @@ import { useSequence } from '@/lib/hooks/useSequence';
 import { useTimer, type TimerExercise, type TimerSection } from '@/lib/hooks/useTimer';
 import { useHapticFeedback, fireHaptic } from '@/lib/hooks/useHapticFeedback';
 import { usePreferences } from '@/lib/hooks/usePreferences';
-import { formatSeconds } from '@/lib/utils/time';
+import { formatSeconds, spokenDuration } from '@/lib/utils/time';
 
 export { RouteErrorBoundary as ErrorBoundary } from '@/components/ErrorFallback';
 
@@ -200,15 +200,21 @@ export default function TimerScreen() {
             Add exercises to {sequence.name} to use the timer.
           </Text>
           <View style={styles.completionActions}>
-            <TouchableOpacity onPress={leave} style={styles.restartButton} activeOpacity={0.8}>
+            <TouchableOpacity
+              onPress={leave}
+              style={styles.restartButton}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+            >
               <Text variant="label" color="secondary">
                 Back
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => router.replace(`/builder/${id}`)}
-              style={[styles.exitButton, { backgroundColor: colors.accent }]}
+              style={[styles.exitButton, { backgroundColor: colors.fill.primary }]}
               activeOpacity={0.8}
+              accessibilityRole="button"
             >
               <Text variant="label" color="inverse">
                 Edit Sequence
@@ -232,18 +238,30 @@ export default function TimerScreen() {
           <Text variant="body" color="secondary" style={styles.completeSubtitle}>
             {sequence.name}
           </Text>
-          <Text style={[styles.completeTotalTime, { color: colors.accent }]}>{formatSeconds(totalDuration)}</Text>
+          <Text
+            style={[styles.completeTotalTime, { color: colors.accentText }]}
+            maxFontSizeMultiplier={DISPLAY_MAX_MULTIPLIER}
+            accessibilityLabel={`Total time ${spokenDuration(totalDuration)}`}
+          >
+            {formatSeconds(totalDuration)}
+          </Text>
 
           <View style={styles.completionActions}>
-            <TouchableOpacity onPress={controls.reset} style={styles.restartButton} activeOpacity={0.8}>
+            <TouchableOpacity
+              onPress={controls.reset}
+              style={styles.restartButton}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+            >
               <Text variant="label" color="secondary">
                 Restart
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={leave}
-              style={[styles.exitButton, { backgroundColor: colors.accent }]}
+              style={[styles.exitButton, { backgroundColor: colors.fill.primary }]}
               activeOpacity={0.8}
+              accessibilityRole="button"
             >
               <Text variant="label" color="inverse">
                 Done
@@ -270,11 +288,23 @@ export default function TimerScreen() {
         >
           <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
-        <Text variant="caption" color="tertiary" style={styles.sequenceTitle} numberOfLines={1}>
+        <Text
+          variant="caption"
+          color="tertiary"
+          style={styles.sequenceTitle}
+          numberOfLines={1}
+          maxFontSizeMultiplier={DISPLAY_MAX_MULTIPLIER}
+        >
           {sequence.name}
         </Text>
         <View style={[styles.totalTimeBadge, { backgroundColor: colors.accentDim, borderColor: colors.pill.border }]}>
-          <Text style={[styles.totalTimeBadgeText, { color: colors.accent }]}>{formatSeconds(totalTimeRemaining)}</Text>
+          <Text
+            style={[styles.totalTimeBadgeText, { color: colors.accentText }]}
+            maxFontSizeMultiplier={DISPLAY_MAX_MULTIPLIER}
+            accessibilityLabel={`${spokenDuration(totalTimeRemaining)} left in workout`}
+          >
+            {formatSeconds(totalTimeRemaining)}
+          </Text>
         </View>
       </View>
 
@@ -289,13 +319,26 @@ export default function TimerScreen() {
         >
           {currentExercise && (
             <View style={styles.ringContent}>
-              <Text variant="label" color="tertiary" style={styles.position}>
+              <Text
+                variant="label"
+                color="tertiary"
+                style={styles.position}
+                maxFontSizeMultiplier={DISPLAY_MAX_MULTIPLIER}
+              >
                 {exerciseIndex + 1} of {totalExercises}
               </Text>
-              <Text style={styles.exerciseName} numberOfLines={2}>
+              <Text style={styles.exerciseName} numberOfLines={2} maxFontSizeMultiplier={DISPLAY_MAX_MULTIPLIER}>
                 {currentExercise.name}
               </Text>
-              <Text style={styles.countdown}>{formatSeconds(timeRemaining)}</Text>
+              <Text
+                style={styles.countdown}
+                accessibilityLabel={`${spokenDuration(timeRemaining)} left`}
+                maxFontSizeMultiplier={1}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+              >
+                {formatSeconds(timeRemaining)}
+              </Text>
               {showTimerTags && <TagChips tags={currentExercise.tags} style={styles.timerTagChips} />}
               {allLoadIcons.length > 0 && hasLoadData && (
                 <View style={styles.loadRows}>
@@ -345,7 +388,7 @@ export default function TimerScreen() {
         <View style={styles.variationIndicator}>
           {hasSide && sideLabel && (
             <>
-              <Text style={[styles.variationIcon, { color: colors.accent }]}>⇌</Text>
+              <Text style={[styles.variationIcon, { color: colors.accentText }]}>⇌</Text>
               <Text variant="caption" color="secondary" style={styles.variationText}>
                 {sideLabel}
               </Text>
@@ -358,7 +401,7 @@ export default function TimerScreen() {
                   ·
                 </Text>
               )}
-              <Text style={[styles.variationIcon, { color: colors.accent }]}>◈</Text>
+              <Text style={[styles.variationIcon, { color: colors.accentText }]}>◈</Text>
               <Text variant="caption" color="secondary" style={styles.variationText}>
                 {activeVariationLabel}
               </Text>

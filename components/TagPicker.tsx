@@ -1,4 +1,5 @@
-import { View, Modal, ScrollView, TouchableOpacity, TextInput, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Modal, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+import { TextInput } from '@/components/ui/TextInput';
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'expo-router';
 import { Text } from './ui/Text';
@@ -74,7 +75,7 @@ function makeStyles(c: typeof Colors, textScale = 1.0) {
     },
     checkmark: {
       fontSize: Math.round(13 * textScale),
-      color: c.text.inverse,
+      color: c.text.onFill,
       lineHeight: 16,
     },
     addValueRow: {
@@ -188,7 +189,7 @@ export function TagPicker({ selectedTagValueIds, onConfirm, onClose }: Props) {
     <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} style={styles.headerBtn}>
+          <TouchableOpacity onPress={onClose} style={styles.headerBtn} hitSlop={12} accessibilityRole="button">
             <Text variant="label" color="secondary">
               Cancel
             </Text>
@@ -196,7 +197,12 @@ export function TagPicker({ selectedTagValueIds, onConfirm, onClose }: Props) {
           <Text variant="label" style={styles.headerTitle}>
             Tags
           </Text>
-          <TouchableOpacity onPress={() => onConfirm(Array.from(selected))} style={styles.headerBtn}>
+          <TouchableOpacity
+            onPress={() => onConfirm(Array.from(selected))}
+            style={styles.headerBtn}
+            hitSlop={12}
+            accessibilityRole="button"
+          >
             <Text variant="label">Done</Text>
           </TouchableOpacity>
         </View>
@@ -227,6 +233,9 @@ export function TagPicker({ selectedTagValueIds, onConfirm, onClose }: Props) {
                     style={styles.valueRow}
                     onPress={() => toggleValue(val.id)}
                     activeOpacity={0.7}
+                    accessibilityRole="checkbox"
+                    accessibilityLabel={val.label}
+                    accessibilityState={{ checked: isSelected }}
                   >
                     <View
                       style={[
@@ -248,6 +257,7 @@ export function TagPicker({ selectedTagValueIds, onConfirm, onClose }: Props) {
                     value={cat.newValueText}
                     onChangeText={(t) => setCategoryField(cat.id, 'newValueText', t)}
                     placeholder="Value name"
+                    accessibilityLabel={`New ${cat.name} value`}
                     placeholderTextColor={colors.text.tertiary}
                     autoFocus
                     returnKeyType="done"
@@ -256,12 +266,16 @@ export function TagPicker({ selectedTagValueIds, onConfirm, onClose }: Props) {
                   <TouchableOpacity
                     onPress={() => handleAddValue(cat.id, cat.newValueText)}
                     style={styles.inlineAddBtn}
+                    hitSlop={8}
+                    accessibilityRole="button"
                   >
                     <Text variant="label">Add</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => setCategoryField(cat.id, 'addingValue', false)}
                     style={styles.inlineCancelBtn}
+                    hitSlop={8}
+                    accessibilityRole="button"
                   >
                     <Text variant="label" color="tertiary">
                       Cancel
@@ -273,6 +287,8 @@ export function TagPicker({ selectedTagValueIds, onConfirm, onClose }: Props) {
                   style={styles.addValueRow}
                   onPress={() => setCategoryField(cat.id, 'addingValue', true)}
                   activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Add ${cat.name} value`}
                 >
                   <Text style={styles.addIcon}>+</Text>
                   <Text variant="body" color="tertiary">
@@ -291,12 +307,18 @@ export function TagPicker({ selectedTagValueIds, onConfirm, onClose }: Props) {
                   value={newCategoryText}
                   onChangeText={setNewCategoryText}
                   placeholder="Category name"
+                  accessibilityLabel="New category name"
                   placeholderTextColor={colors.text.tertiary}
                   autoFocus
                   returnKeyType="done"
                   onSubmitEditing={handleAddCategory}
                 />
-                <TouchableOpacity onPress={handleAddCategory} style={styles.inlineAddBtn}>
+                <TouchableOpacity
+                  onPress={handleAddCategory}
+                  style={styles.inlineAddBtn}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                >
                   <Text variant="label">Add</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -305,6 +327,8 @@ export function TagPicker({ selectedTagValueIds, onConfirm, onClose }: Props) {
                     setNewCategoryText('');
                   }}
                   style={styles.inlineCancelBtn}
+                  hitSlop={8}
+                  accessibilityRole="button"
                 >
                   <Text variant="label" color="tertiary">
                     Cancel
@@ -316,6 +340,8 @@ export function TagPicker({ selectedTagValueIds, onConfirm, onClose }: Props) {
                 style={styles.addCategoryRow}
                 onPress={() => setAddingCategory(true)}
                 activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="New category"
               >
                 <Text style={styles.addIcon}>+</Text>
                 <Text variant="body" color="secondary">
@@ -333,6 +359,8 @@ export function TagPicker({ selectedTagValueIds, onConfirm, onClose }: Props) {
                 router.push('/tags');
               }}
               activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Manage tags"
             >
               <Text variant="body" color="tertiary">
                 Manage tags ›

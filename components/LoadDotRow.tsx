@@ -4,6 +4,9 @@ import { LoadDot } from './LoadDot';
 import { useTheme } from '@/lib/contexts/ThemeContext';
 import type { LoadIcon } from '@/lib/db/loadIcons';
 
+/** How VoiceOver reads the short row labels. */
+const SPOKEN_LABELS: Record<string, string> = { MOD: 'Modified', BASE: 'Base', AMP: 'Amplified' };
+
 interface Props {
   label: string;
   iconIds: string[];
@@ -20,8 +23,14 @@ export function LoadDotRow({ label, iconIds, allIcons, dotDiameter = 14, style }
   if (visible.length === 0) return null;
 
   return (
-    <View style={[{ flexDirection: 'row', alignItems: 'center', gap: 5 }, style]}>
+    <View
+      style={[{ flexDirection: 'row', alignItems: 'center', gap: 5 }, style]}
+      accessible
+      accessibilityLabel={`${SPOKEN_LABELS[label] ?? label} load: ${visible.map((id) => iconMap.get(id)!.label).join(', ')}`}
+    >
       <Text
+        numberOfLines={1}
+        adjustsFontSizeToFit
         style={{
           fontSize: 8,
           fontWeight: '800',

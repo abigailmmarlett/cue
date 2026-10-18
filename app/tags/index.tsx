@@ -1,4 +1,5 @@
-import { View, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert } from 'react-native';
+import { View, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { TextInput } from '@/components/ui/TextInput';
 import { useState, useCallback, useEffect } from 'react';
 import { Text } from '@/components/ui/Text';
 import { Colors, Spacing, FontSize } from '@/constants/theme';
@@ -140,15 +141,24 @@ export default function TagsScreen() {
                 style={styles.editInput}
                 value={cat.editNameText}
                 onChangeText={(t) => setCatField(cat.id, { editNameText: t })}
+                accessibilityLabel="Category name"
                 autoFocus
                 returnKeyType="done"
                 onSubmitEditing={() => handleRenameCategory(cat)}
                 onBlur={() => handleRenameCategory(cat)}
               />
-              <TouchableOpacity onPress={() => handleRenameCategory(cat)} style={styles.actionBtn}>
+              <TouchableOpacity
+                onPress={() => handleRenameCategory(cat)}
+                style={styles.actionBtn}
+                accessibilityRole="button"
+              >
                 <Text variant="label">Done</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setCatField(cat.id, { editingName: false })} style={styles.actionBtn}>
+              <TouchableOpacity
+                onPress={() => setCatField(cat.id, { editingName: false })}
+                style={styles.actionBtn}
+                accessibilityRole="button"
+              >
                 <Text variant="label" color="tertiary">
                   Cancel
                 </Text>
@@ -161,12 +171,18 @@ export default function TagsScreen() {
               </Text>
               <TouchableOpacity
                 onPress={() => setCatField(cat.id, { editingName: true, editNameText: cat.name })}
-                hitSlop={8}
+                accessibilityLabel={`Rename ${cat.name}`}
                 style={styles.actionBtn}
+                accessibilityRole="button"
               >
                 <Text style={styles.editIcon}>✎</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => handleDeleteCategory(cat)} hitSlop={8} style={styles.actionBtn}>
+              <TouchableOpacity
+                onPress={() => handleDeleteCategory(cat)}
+                accessibilityLabel={`Delete ${cat.name}`}
+                style={styles.actionBtn}
+                accessibilityRole="button"
+              >
                 <Text style={styles.deleteIcon}>✕</Text>
               </TouchableOpacity>
             </View>
@@ -181,15 +197,24 @@ export default function TagsScreen() {
                     style={styles.editInput}
                     value={editValueText}
                     onChangeText={setEditValueText}
+                    accessibilityLabel="Value name"
                     autoFocus
                     returnKeyType="done"
                     onSubmitEditing={() => handleSaveValue(val.id)}
                     onBlur={() => handleSaveValue(val.id)}
                   />
-                  <TouchableOpacity onPress={() => handleSaveValue(val.id)} style={styles.actionBtn}>
+                  <TouchableOpacity
+                    onPress={() => handleSaveValue(val.id)}
+                    style={styles.actionBtn}
+                    accessibilityRole="button"
+                  >
                     <Text variant="label">Done</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => setEditingValueId(null)} style={styles.actionBtn}>
+                  <TouchableOpacity
+                    onPress={() => setEditingValueId(null)}
+                    style={styles.actionBtn}
+                    accessibilityRole="button"
+                  >
                     <Text variant="label" color="tertiary">
                       Cancel
                     </Text>
@@ -200,13 +225,19 @@ export default function TagsScreen() {
                   <Text variant="body" style={styles.valueLabel}>
                     {val.label}
                   </Text>
-                  <TouchableOpacity onPress={() => startEditValue(val)} hitSlop={8} style={styles.actionBtn}>
+                  <TouchableOpacity
+                    onPress={() => startEditValue(val)}
+                    accessibilityLabel={`Rename ${val.label}`}
+                    style={styles.actionBtn}
+                    accessibilityRole="button"
+                  >
                     <Text style={styles.editIcon}>✎</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => handleDeleteValue(val, cat.name)}
-                    hitSlop={8}
+                    accessibilityLabel={`Delete ${val.label}`}
                     style={styles.actionBtn}
+                    accessibilityRole="button"
                   >
                     <Text style={styles.deleteIcon}>✕</Text>
                   </TouchableOpacity>
@@ -223,17 +254,19 @@ export default function TagsScreen() {
                 value={cat.newValueText}
                 onChangeText={(t) => setCatField(cat.id, { newValueText: t })}
                 placeholder="Value name"
+                accessibilityLabel={`New ${cat.name} value`}
                 placeholderTextColor={colors.text.tertiary}
                 autoFocus
                 returnKeyType="done"
                 onSubmitEditing={() => handleAddValue(cat)}
               />
-              <TouchableOpacity onPress={() => handleAddValue(cat)} style={styles.actionBtn}>
+              <TouchableOpacity onPress={() => handleAddValue(cat)} style={styles.actionBtn} accessibilityRole="button">
                 <Text variant="label">Add</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => setCatField(cat.id, { addingValue: false, newValueText: '' })}
                 style={styles.actionBtn}
+                accessibilityRole="button"
               >
                 <Text variant="label" color="tertiary">
                   Cancel
@@ -244,7 +277,9 @@ export default function TagsScreen() {
             <TouchableOpacity
               style={styles.addRow}
               onPress={() => setCatField(cat.id, { addingValue: true })}
+              accessibilityLabel={`Add ${cat.name} value`}
               activeOpacity={0.7}
+              accessibilityRole="button"
             >
               <Text style={styles.addIcon}>+</Text>
               <Text variant="body" color="tertiary">
@@ -264,12 +299,13 @@ export default function TagsScreen() {
               value={newCategoryText}
               onChangeText={setNewCategoryText}
               placeholder="Category name"
+              accessibilityLabel="New category name"
               placeholderTextColor={colors.text.tertiary}
               autoFocus
               returnKeyType="done"
               onSubmitEditing={handleAddCategory}
             />
-            <TouchableOpacity onPress={handleAddCategory} style={styles.actionBtn}>
+            <TouchableOpacity onPress={handleAddCategory} style={styles.actionBtn} accessibilityRole="button">
               <Text variant="label">Add</Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -278,6 +314,7 @@ export default function TagsScreen() {
                 setNewCategoryText('');
               }}
               style={styles.actionBtn}
+              accessibilityRole="button"
             >
               <Text variant="label" color="tertiary">
                 Cancel
@@ -285,7 +322,13 @@ export default function TagsScreen() {
             </TouchableOpacity>
           </View>
         ) : (
-          <TouchableOpacity style={styles.addRow} onPress={() => setAddingCategory(true)} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={styles.addRow}
+            onPress={() => setAddingCategory(true)}
+            accessibilityLabel="New category"
+            activeOpacity={0.7}
+            accessibilityRole="button"
+          >
             <Text style={styles.addIcon}>+</Text>
             <Text variant="body" color="secondary">
               New category
@@ -343,9 +386,13 @@ function makeStyles(c: typeof Colors, textScale = 1.0) {
       borderBottomColor: c.borderStrong,
       paddingVertical: 2,
     },
+    // 44pt touch targets, side by side without overlapping.
     actionBtn: {
+      minWidth: 44,
+      minHeight: 44,
       paddingHorizontal: Spacing.xs,
-      paddingVertical: Spacing.xs,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     editIcon: {
       fontSize: Math.round(15 * textScale),

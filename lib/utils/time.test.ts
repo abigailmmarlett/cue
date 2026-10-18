@@ -1,6 +1,6 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatSeconds, positionAfter, splitDuration } from './time.ts';
+import { formatSeconds, positionAfter, splitDuration, spokenDuration } from './time.ts';
 
 const ex = (...durations: number[]) => durations.map((duration) => ({ duration }));
 
@@ -61,5 +61,16 @@ describe('formatSeconds', () => {
     assert.equal(formatSeconds(0), '0:00');
     assert.equal(formatSeconds(65), '1:05');
     assert.equal(formatSeconds(600), '10:00');
+  });
+});
+
+describe('spokenDuration', () => {
+  test('reads minutes and seconds as words, leaving out zeros', () => {
+    assert.equal(spokenDuration(0), '0 seconds');
+    assert.equal(spokenDuration(1), '1 second');
+    assert.equal(spokenDuration(45), '45 seconds');
+    assert.equal(spokenDuration(60), '1 minute');
+    assert.equal(spokenDuration(90), '1 minute 30 seconds');
+    assert.equal(spokenDuration(121), '2 minutes 1 second');
   });
 });

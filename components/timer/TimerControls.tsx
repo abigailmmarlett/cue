@@ -51,7 +51,7 @@ function makeStyles(c: typeof Colors) {
       fontSize: 26,
     },
     controlIconPrimary: {
-      color: c.text.inverse,
+      color: c.text.onFill,
     },
     controlIconDisabled: {
       color: c.text.tertiary,
@@ -88,7 +88,7 @@ export function TimerControls({ status, controls, onMark }: Props) {
           onPress={isRunning ? controls.pause : isPaused ? controls.resume : controls.start}
           size="lg"
           primary
-          accentColor={colors.accent}
+          accentColor={colors.fill.primary}
           styles={styles}
         />
 
@@ -96,7 +96,7 @@ export function TimerControls({ status, controls, onMark }: Props) {
       </View>
 
       <View style={styles.secondaryRow}>
-        <TouchableOpacity onPress={controls.reset} style={styles.textButton} hitSlop={8}>
+        <TouchableOpacity onPress={controls.reset} style={styles.textButton} hitSlop={12} accessibilityRole="button">
           <Text variant="label" color="tertiary">
             Reset
           </Text>
@@ -123,6 +123,9 @@ function ControlButton({ icon, label, onPress, disabled, size, primary, accentCo
       onPress={onPress}
       disabled={disabled}
       activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: !!disabled }}
       style={[
         styles.controlBtn,
         size === 'lg' && styles.controlBtnLg,
