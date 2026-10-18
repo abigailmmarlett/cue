@@ -146,7 +146,7 @@ export function ExerciseSearchSheet({ onSelect, onCreateNew, onClose }: Props) {
                     Type a name below to create one.
                   </Text>
                 </View>
-              ) : null
+              ) : undefined
             }
             renderItem={({ item }) => (
               <TouchableOpacity
@@ -175,7 +175,7 @@ export function ExerciseSearchSheet({ onSelect, onCreateNew, onClose }: Props) {
                     Create &ldquo;{query.trim()}&rdquo; as new exercise
                   </Text>
                 </TouchableOpacity>
-              ) : null
+              ) : undefined
             }
           />
         </KeyboardAvoidingView>

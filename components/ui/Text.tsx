@@ -1,5 +1,5 @@
 import type { Ref } from 'react';
-import { Text as RNText, TextProps, StyleSheet } from 'react-native';
+import { Text as RNText, TextProps, StyleSheet, type TextInstance } from 'react-native';
 import { FontSize, FontWeight } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
 import { useTextSize, TEXT_SCALE } from '@/lib/hooks/usePreferences';
@@ -10,7 +10,7 @@ type Color = 'primary' | 'secondary' | 'tertiary' | 'inverse';
 interface Props extends TextProps {
   variant?: Variant;
   color?: Color;
-  ref?: Ref<RNText>;
+  ref?: Ref<TextInstance>;
 }
 
 /**

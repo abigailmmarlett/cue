@@ -1,7 +1,6 @@
 import { View, StyleSheet, TouchableOpacity, SafeAreaView, Alert } from 'react-native';
-import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router';
+import { useLocalSearchParams, useRouter, usePreventRemove } from 'expo-router';
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
-import { usePreventRemove } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import { useKeepAwake } from 'expo-keep-awake';
 import { DISPLAY_MAX_MULTIPLIER, Text } from '@/components/ui/Text';
@@ -31,7 +30,6 @@ function KeepScreenAwake() {
 export default function TimerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const navigation = useNavigation();
   const { colors, isDark } = useTheme();
   const { sequence, sections, exercises } = useSequence(id);
   const [allLoadIcons] = useState<LoadIcon[]>(() => getAllLoadIcons());
@@ -90,10 +88,18 @@ export default function TimerScreen() {
   const inProgress = status === 'running' || status === 'paused';
 
   // Leaving mid-workout (the ← button or a swipe back) asks first, so a stray swipe can't end the class.
-  usePreventRemove(inProgress, ({ data }) => {
+  const [ending, setEnding] = useState(false);
+  usePreventRemove(inProgress && !ending, ({ repeat }) => {
     Alert.alert('End workout?', 'The timer will stop.', [
       { text: 'Keep going', style: 'cancel' },
-      { text: 'End', style: 'destructive', onPress: () => navigation.dispatch(data.action) },
+      {
+        text: 'End',
+        style: 'destructive',
+        onPress: () => {
+          setEnding(true);
+          repeat();
+        },
+      },
     ]);
   });
 

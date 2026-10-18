@@ -19,7 +19,7 @@ import {
 } from '@/lib/hooks/usePreferences';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Switch, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Switch, TouchableOpacity, View, type ViewInstance } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const LOAD_COLORS: { hex: string; name: string }[] = [
@@ -315,7 +315,7 @@ export default function PreferencesScreen() {
   const styles = makeStyles(colors);
 
   const { registerTarget, unregisterTarget, startTour } = useTour();
-  const contentRef = useRef<View>(null);
+  const contentRef = useRef<ViewInstance>(null);
 
   useEffect(() => {
     registerTarget('preferences-content', contentRef);
