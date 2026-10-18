@@ -6,17 +6,8 @@ import { Colors, Spacing, Radius } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
 import { getAllSequences } from '@/lib/db/sequences';
 import { getSectionsBySequenceId, type Section } from '@/lib/db/sections';
-import { getExercisesBySectionId, parseVariationSets } from '@/lib/db/exercises';
-import { parseLoad } from '@/lib/db/loadIcons';
-import { getOwnTagsForExercise } from '@/lib/db/tags';
-import { generateId } from '@/lib/utils/id';
-import type { LocalExercise } from '@/components/ExerciseRow';
-
-interface LocalSection {
-  id: string;
-  name: string;
-  exercises: LocalExercise[];
-}
+import { getExercisesBySectionId } from '@/lib/db/exercises';
+import { copySectionToDraft, type DraftSection } from '@/lib/db/sequenceDraft';
 
 interface SequenceRow {
   id: string;
@@ -30,7 +21,7 @@ interface SectionRow extends Section {
 
 interface Props {
   currentSequenceId?: string;
-  onImport: (section: LocalSection) => void;
+  onImport: (section: DraftSection) => void;
   onClose: () => void;
 }
 
@@ -85,35 +76,6 @@ export function SectionImportSheet({ currentSequenceId, onImport, onClose }: Pro
     setSelectedSequence(seq);
   };
 
-  const importSection = (section: SectionRow) => {
-    const dbExercises = getExercisesBySectionId(section.id);
-    const localSection: LocalSection = {
-      id: generateId(),
-      name: section.name,
-      exercises: dbExercises.map((ex): LocalExercise => {
-        // Copy only the exercise's own tags; linked exercises keep inheriting their library tags.
-        const ownTags = getOwnTagsForExercise(ex.id);
-        return {
-          id: generateId(),
-          name: ex.name,
-          duration: ex.duration,
-          notes: ex.notes ?? null,
-          tagValueIds: ownTags.map((t) => t.tagValueId),
-          tags: ownTags,
-          libraryExerciseId: ex.library_exercise_id ?? null,
-          loadModified: parseLoad(ex.load_modified),
-          loadBase: parseLoad(ex.load_base),
-          loadAmplified: parseLoad(ex.load_amplified),
-          variation: ex.variation ?? null,
-          variationSets: parseVariationSets(ex.variation_sets),
-          isBilateral: ex.is_bilateral !== 0,
-          side: ex.side ?? null,
-        };
-      }),
-    };
-    onImport(localSection);
-  };
-
   const goBack = () => {
     setSelectedSequence(null);
     setSections([]);
@@ -160,7 +122,7 @@ export function SectionImportSheet({ currentSequenceId, onImport, onClose }: Pro
           renderItem={({ item }) => (
             <TouchableOpacity
               style={styles.row}
-              onPress={() => importSection(item)}
+              onPress={() => onImport(copySectionToDraft(item))}
               activeOpacity={0.7}
               accessibilityRole="button"
             >
