@@ -1,8 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { View, ScrollView, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { TextInput } from '@/components/ui/TextInput';
-import { useRouter, useNavigation } from 'expo-router';
-import { usePreventRemove } from '@react-navigation/native';
+import { useRouter, usePreventRemove } from 'expo-router';
 import { DISPLAY_MAX_MULTIPLIER, Text } from '@/components/ui/Text';
 import { DraggableList } from '@/components/DraggableList';
 import { ExerciseRow, type LocalExercise } from '@/components/ExerciseRow';
@@ -41,7 +40,6 @@ export { RouteErrorBoundary as ErrorBoundary } from '@/components/ErrorFallback'
 
 export default function NewSequenceScreen() {
   const router = useRouter();
-  const navigation = useNavigation();
   const { colors } = useTheme();
   const styles = makeStyles(colors, TEXT_SCALE[useTextSize()]);
   const [isDirty, setIsDirty] = useState(false);
@@ -56,15 +54,22 @@ export default function NewSequenceScreen() {
 
   const hasSavedRef = useRef(false);
 
-  usePreventRemove(isDirty, ({ data }) => {
+  usePreventRemove(isDirty, ({ repeat }) => {
     // Right after a save, isDirty is still true until the next render; leave without asking.
     if (hasSavedRef.current) {
-      navigation.dispatch(data.action);
+      repeat();
       return;
     }
     Alert.alert('Discard changes?', 'You have unsaved changes. Are you sure you want to leave?', [
       { text: 'Keep editing', style: 'cancel' },
-      { text: 'Discard', style: 'destructive', onPress: () => navigation.dispatch(data.action) },
+      {
+        text: 'Discard',
+        style: 'destructive',
+        onPress: () => {
+          setIsDirty(false);
+          repeat();
+        },
+      },
     ]);
   });
 

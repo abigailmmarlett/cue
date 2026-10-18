@@ -1,5 +1,10 @@
-import { DarkTheme, DefaultTheme, ThemeProvider as NavThemeProvider } from '@react-navigation/native';
-import { Stack, type ErrorBoundaryProps } from 'expo-router';
+import {
+  DarkTheme,
+  DefaultTheme,
+  Stack,
+  ThemeProvider as NavThemeProvider,
+  type ErrorBoundaryProps,
+} from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
@@ -15,7 +20,7 @@ import { TourOverlay } from '@/components/TourOverlay';
 import { ErrorFallback } from '@/components/ErrorFallback';
 
 // Keep the home screen under deep-linked routes (e.g. cue://import) so they can always go back.
-export const unstable_settings = { initialRouteName: 'index' };
+export const unstable_settings = { anchor: 'index' };
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 

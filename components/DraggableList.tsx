@@ -1,13 +1,8 @@
 import React, { useCallback } from 'react';
 import { AccessibilityInfo, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  runOnJS,
-  type SharedValue,
-} from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring, type SharedValue } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 
 export const DRAG_ITEM_HEIGHT = 88;
 
@@ -94,26 +89,26 @@ function DraggableItem({ index, total, activeIndex, translateY, onDragStart, onR
   const gesture = Gesture.Pan()
     .activateAfterLongPress(150)
     .onStart(() => {
-      activeIndex.value = index;
-      translateY.value = 0;
-      runOnJS(onDragStart)();
+      activeIndex.set(index);
+      translateY.set(0);
+      scheduleOnRN(onDragStart);
     })
     .onUpdate((e) => {
-      translateY.value = e.translationY;
+      translateY.set(e.translationY);
     })
     .onEnd(() => {
-      const from = activeIndex.value;
-      const rawTo = from + translateY.value / DRAG_ITEM_HEIGHT;
+      const from = activeIndex.get();
+      const rawTo = from + translateY.get() / DRAG_ITEM_HEIGHT;
       const to = Math.round(Math.max(0, Math.min(rawTo, total - 1)));
 
-      activeIndex.value = -1;
-      translateY.value = withSpring(0, SPRING);
+      activeIndex.set(-1);
+      translateY.set(withSpring(0, SPRING));
 
-      runOnJS(onReorder)(from, to);
+      scheduleOnRN(onReorder, from, to);
     });
 
   const animatedStyle = useAnimatedStyle(() => {
-    const active = activeIndex.value;
+    const active = activeIndex.get();
 
     if (active === -1) {
       return {
@@ -125,7 +120,7 @@ function DraggableItem({ index, total, activeIndex, translateY, onDragStart, onR
 
     if (active === index) {
       return {
-        transform: [{ translateY: translateY.value }],
+        transform: [{ translateY: translateY.get() }],
         zIndex: 10,
         opacity: 0.92,
         shadowColor: '#000',
@@ -136,7 +131,7 @@ function DraggableItem({ index, total, activeIndex, translateY, onDragStart, onR
       };
     }
 
-    const hoverIdx = Math.round(Math.max(0, Math.min(active + translateY.value / DRAG_ITEM_HEIGHT, total - 1)));
+    const hoverIdx = Math.round(Math.max(0, Math.min(active + translateY.get() / DRAG_ITEM_HEIGHT, total - 1)));
 
     let shift = 0;
     if (active < hoverIdx && index > active && index <= hoverIdx) {

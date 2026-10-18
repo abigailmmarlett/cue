@@ -1,6 +1,5 @@
 import { View, ScrollView, StyleSheet, ActivityIndicator, Share } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useNavigation } from '@react-navigation/native';
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { SymbolView } from 'expo-symbols';
 import { serializeSequence, buildShareUrl } from '@/lib/utils/shareSequence';

@@ -1,4 +1,4 @@
-import { View, FlatList, TouchableOpacity, StyleSheet, Share, Alert } from 'react-native';
+import { View, FlatList, TouchableOpacity, StyleSheet, Share, Alert, type ViewInstance } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { Text } from '@/components/ui/Text';
 import { SequenceCard } from '@/components/SequenceCard';
@@ -9,8 +9,7 @@ import { useTheme } from '@/lib/contexts/ThemeContext';
 import { useSequences } from '@/lib/hooks/useSequences';
 import { deleteSequence, duplicateSequence, updateSequenceFavorite } from '@/lib/db/sequences';
 import { serializeSequence, buildShareUrl, importRouteData } from '@/lib/utils/shareSequence';
-import { useRouter } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ExerciseTag } from '@/lib/db/tags';
@@ -57,10 +56,10 @@ export default function SequencesScreen() {
   const styles = makeStyles(colors);
 
   const { registerTarget, unregisterTarget } = useTour();
-  const sequencesListRef = useRef<View>(null);
-  const addButtonRef = useRef<View>(null);
-  const filterAreaRef = useRef<View>(null);
-  const firstCardRef = useRef<View>(null);
+  const sequencesListRef = useRef<ViewInstance>(null);
+  const addButtonRef = useRef<ViewInstance>(null);
+  const filterAreaRef = useRef<ViewInstance>(null);
+  const firstCardRef = useRef<ViewInstance>(null);
 
   useEffect(() => {
     registerTarget('sequences-list', sequencesListRef);

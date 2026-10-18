@@ -1,20 +1,20 @@
 import {
   AccessibilityInfo,
   StyleSheet,
-  Text as RNText,
   TouchableOpacity,
   View,
   useWindowDimensions,
+  type TextInstance,
 } from 'react-native';
 import Animated, {
   Easing,
-  runOnJS,
   useAnimatedProps,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
   withTiming,
 } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 import Svg, { Rect } from 'react-native-svg';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Text } from '@/components/ui/Text';
@@ -51,7 +51,7 @@ export function TourOverlay() {
 
   // VoiceOver: once a step has faded in, move focus to its title so it's read out. A view that's
   // still transparent is hidden from VoiceOver, so this waits for the fade.
-  const titleRef = useRef<RNText>(null);
+  const titleRef = useRef<TextInstance>(null);
   const focusTitle = useCallback(() => {
     if (titleRef.current) AccessibilityInfo.sendAccessibilityEvent(titleRef.current, 'focus');
   }, []);
@@ -60,23 +60,25 @@ export function TourOverlay() {
   useEffect(() => {
     if (isActive) {
       setVisible(true);
-      dimOpacity.value = withTiming(1, { duration: 300 });
+      dimOpacity.set(withTiming(1, { duration: 300 }));
     } else {
       shownIndexRef.current = -1;
-      dimOpacity.value = withTiming(0, { duration: 250 }, (finished) => {
-        'worklet';
-        if (finished) runOnJS(setVisible)(false);
-      });
-      svgOpacity.value = withTiming(0, { duration: 150 });
-      tooltipOpacity.value = withTiming(0, { duration: 150 });
+      dimOpacity.set(
+        withTiming(0, { duration: 250 }, (finished) => {
+          'worklet';
+          if (finished) scheduleOnRN(setVisible, false);
+        })
+      );
+      svgOpacity.set(withTiming(0, { duration: 150 }));
+      tooltipOpacity.set(withTiming(0, { duration: 150 }));
     }
   }, [isActive, dimOpacity, svgOpacity, tooltipOpacity]);
 
   // Leaving a step: fade the tooltip and highlight out while the next step's target is measured.
   useEffect(() => {
     if (!isActive) return;
-    tooltipOpacity.value = withTiming(0, { duration: 120 });
-    svgOpacity.value = withTiming(0, { duration: 120 });
+    tooltipOpacity.set(withTiming(0, { duration: 120 }));
+    svgOpacity.set(withTiming(0, { duration: 120 }));
   }, [isActive, currentStepIndex, svgOpacity, tooltipOpacity]);
 
   // The step is ready: swap in its content while hidden, then fade it in. A re-measure of the
@@ -89,15 +91,17 @@ export function TourOverlay() {
     shownIndexRef.current = currentStepIndex;
     // The first step waits for the dim layer to fade in.
     const delay = first ? 250 : 60;
-    tooltipTranslateY.value = first ? 12 : 8;
-    tooltipOpacity.value = withDelay(
-      delay,
-      withTiming(1, { duration: 280 }, (finished) => {
-        'worklet';
-        if (finished) runOnJS(focusTitle)();
-      })
+    tooltipTranslateY.set(first ? 12 : 8);
+    tooltipOpacity.set(
+      withDelay(
+        delay,
+        withTiming(1, { duration: 280 }, (finished) => {
+          'worklet';
+          if (finished) scheduleOnRN(focusTitle);
+        })
+      )
     );
-    tooltipTranslateY.value = withDelay(delay, withTiming(0, { duration: 280, easing: Easing.out(Easing.quad) }));
+    tooltipTranslateY.set(withDelay(delay, withTiming(0, { duration: 280, easing: Easing.out(Easing.quad) })));
   }, [
     isActive,
     readyStepIndex,
@@ -112,23 +116,23 @@ export function TourOverlay() {
   // Draw the highlight border around the shown step's target.
   useEffect(() => {
     if (!shown.layout) return;
-    dashOffset.value = 2 * (shown.layout.width + shown.layout.height + PAD * 4);
-    svgOpacity.value = withTiming(1, { duration: 150 });
-    dashOffset.value = withDelay(100, withTiming(0, { duration: 480, easing: Easing.out(Easing.cubic) }));
+    dashOffset.set(2 * (shown.layout.width + shown.layout.height + PAD * 4));
+    svgOpacity.set(withTiming(1, { duration: 150 }));
+    dashOffset.set(withDelay(100, withTiming(0, { duration: 480, easing: Easing.out(Easing.cubic) })));
   }, [shown.layout, dashOffset, svgOpacity]);
 
-  const dimStyle = useAnimatedStyle(() => ({ opacity: dimOpacity.value }));
-  const svgLayerStyle = useAnimatedStyle(() => ({ opacity: svgOpacity.value }));
+  const dimStyle = useAnimatedStyle(() => ({ opacity: dimOpacity.get() }));
+  const svgLayerStyle = useAnimatedStyle(() => ({ opacity: svgOpacity.get() }));
   const tooltipStyle = useAnimatedStyle(() => ({
-    opacity: tooltipOpacity.value,
-    transform: [{ translateY: tooltipTranslateY.value }],
+    opacity: tooltipOpacity.get(),
+    transform: [{ translateY: tooltipTranslateY.get() }],
   }));
 
   const highlight = shown.layout;
   const perimeter = highlight ? 2 * (highlight.width + PAD * 2 + highlight.height + PAD * 2) : 0;
 
   const animatedRectProps = useAnimatedProps(() => ({
-    strokeDashoffset: dashOffset.value,
+    strokeDashoffset: dashOffset.get(),
   }));
 
   // Tooltip positioning: below highlight in top half, above in bottom half.

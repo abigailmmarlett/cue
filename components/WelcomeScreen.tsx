@@ -2,12 +2,12 @@ import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-na
 import Animated, {
   Easing,
   ReduceMotion,
-  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
   withTiming,
 } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 import Svg, { G, Path } from 'react-native-svg';
 import { useEffect, useRef, useState } from 'react';
 import { useTheme } from '@/lib/contexts/ThemeContext';
@@ -42,35 +42,44 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
   const screenOpacity = useSharedValue(1);
 
   const [labelWidth, setLabelWidth] = useState(0);
-  const mountTimeRef = useRef(Date.now());
+  const mountTimeRef = useRef(0);
   const skippedRef = useRef(false);
 
   const heyClipStyle = useAnimatedStyle(() => ({
-    width: heyClipWidth.value,
+    width: heyClipWidth.get(),
   }));
 
   const subClipStyle = useAnimatedStyle(() => ({
-    width: subWidth.value,
+    width: subWidth.get(),
   }));
 
   const screenStyle = useAnimatedStyle(() => ({
-    opacity: screenOpacity.value,
+    opacity: screenOpacity.get(),
   }));
 
   useEffect(() => {
-    heyClipWidth.value = withTiming(PATH_WIDTH, {
-      duration: 1400,
-      easing: Easing.out(Easing.cubic),
-    });
+    mountTimeRef.current = Date.now();
+    heyClipWidth.set(
+      withTiming(PATH_WIDTH, {
+        duration: 1400,
+        easing: Easing.out(Easing.cubic),
+      })
+    );
     // With Reduce Motion on, Reanimated shows the text reveals at their end state. The fade-out
     // opts out so the text still stays up long enough to read, then dissolves instead of vanishing.
-    screenOpacity.value = withDelay(
-      2700,
-      withTiming(0, { duration: 500, easing: Easing.in(Easing.quad), reduceMotion: ReduceMotion.Never }, (finished) => {
-        'worklet';
-        if (finished) runOnJS(onComplete)();
-      }),
-      ReduceMotion.Never
+    screenOpacity.set(
+      withDelay(
+        2700,
+        withTiming(
+          0,
+          { duration: 500, easing: Easing.in(Easing.quad), reduceMotion: ReduceMotion.Never },
+          (finished) => {
+            'worklet';
+            if (finished) scheduleOnRN(onComplete);
+          }
+        ),
+        ReduceMotion.Never
+      )
     );
   }, []);
 
@@ -78,17 +87,19 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
   const skip = () => {
     if (skippedRef.current) return;
     skippedRef.current = true;
-    screenOpacity.value = withTiming(0, { duration: 200, reduceMotion: ReduceMotion.Never }, (finished) => {
-      'worklet';
-      if (finished) runOnJS(onComplete)();
-    });
+    screenOpacity.set(
+      withTiming(0, { duration: 200, reduceMotion: ReduceMotion.Never }, (finished) => {
+        'worklet';
+        if (finished) scheduleOnRN(onComplete);
+      })
+    );
   };
 
   useEffect(() => {
     if (labelWidth <= 0) return;
     const elapsed = Date.now() - mountTimeRef.current;
     const remaining = Math.max(0, 1800 - elapsed);
-    subWidth.value = withDelay(remaining, withTiming(labelWidth, { duration: 600, easing: Easing.out(Easing.quad) }));
+    subWidth.set(withDelay(remaining, withTiming(labelWidth, { duration: 600, easing: Easing.out(Easing.quad) })));
   }, [labelWidth]);
 
   return (

@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useRef, useState } from 'react';
-import { View } from 'react-native';
+import { View, type ViewInstance } from 'react-native';
 import { useRouter } from 'expo-router';
 import { setPreference } from '@/lib/db/preferences';
 import { getDb } from '@/lib/db/client';
@@ -28,7 +28,7 @@ interface TourContextValue {
   highlightLayout: HighlightLayout | null;
   /** The step whose target has been measured (or that has none), so it's ready to show; -1 if none. */
   readyStepIndex: number;
-  registerTarget: (id: string, ref: React.RefObject<View | null>) => void;
+  registerTarget: (id: string, ref: React.RefObject<ViewInstance | null>) => void;
   unregisterTarget: (id: string) => void;
   startTour: () => void;
   nextStep: () => void;
@@ -146,7 +146,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     _setActiveSteps(v);
   };
 
-  const targetRefs = useRef<Map<string, React.RefObject<View | null>>>(new Map());
+  const targetRefs = useRef<Map<string, React.RefObject<ViewInstance | null>>>(new Map());
   const pendingTargetId = useRef<string | null>(null);
   const isTransitioning = useRef(false);
 
@@ -189,7 +189,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   );
 
   const registerTarget = useCallback(
-    (id: string, ref: React.RefObject<View | null>) => {
+    (id: string, ref: React.RefObject<ViewInstance | null>) => {
       targetRefs.current.set(id, ref);
       if (isActiveRef.current && pendingTargetId.current === id) {
         pendingTargetId.current = null;

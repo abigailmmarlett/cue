@@ -1,4 +1,4 @@
-import { View, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, ScrollView, TouchableOpacity, StyleSheet, type ViewInstance } from 'react-native';
 import { TextInput } from '@/components/ui/TextInput';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SymbolView } from 'expo-symbols';
@@ -23,8 +23,8 @@ interface Props {
   tagPills?: ExerciseTag[];
   activeTagIds?: string[];
   onTagToggle?: (tag: ExerciseTag) => void;
-  addButtonRef?: RefObject<View | null>;
-  filterAreaRef?: RefObject<View | null>;
+  addButtonRef?: RefObject<ViewInstance | null>;
+  filterAreaRef?: RefObject<ViewInstance | null>;
 }
 
 function makeStyles(c: typeof Colors, textScale = 1.0) {

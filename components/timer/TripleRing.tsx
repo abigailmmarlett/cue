@@ -50,27 +50,27 @@ export function TripleRing({
   const outerVal = useSharedValue(totalProgress);
 
   useEffect(() => {
-    innerVal.value = withTiming(exerciseProgress, { duration: 220, easing: Easing.linear });
+    innerVal.set(withTiming(exerciseProgress, { duration: 220, easing: Easing.linear }));
   }, [exerciseProgress]);
 
   useEffect(() => {
-    midVal.value = withTiming(sectionProgress, { duration: 220, easing: Easing.linear });
+    midVal.set(withTiming(sectionProgress, { duration: 220, easing: Easing.linear }));
   }, [sectionProgress]);
 
   useEffect(() => {
-    outerVal.value = withTiming(totalProgress, { duration: 220, easing: Easing.linear });
+    outerVal.set(withTiming(totalProgress, { duration: 220, easing: Easing.linear }));
   }, [totalProgress]);
 
   const innerProps = useAnimatedProps(() => ({
-    strokeDashoffset: C_INNER * (1 - innerVal.value),
+    strokeDashoffset: C_INNER * (1 - innerVal.get()),
   }));
 
   const midProps = useAnimatedProps(() => ({
-    strokeDashoffset: C_MID * (1 - midVal.value),
+    strokeDashoffset: C_MID * (1 - midVal.get()),
   }));
 
   const outerProps = useAnimatedProps(() => ({
-    strokeDashoffset: C_OUTER * (1 - outerVal.value),
+    strokeDashoffset: C_OUTER * (1 - outerVal.get()),
   }));
 
   return (

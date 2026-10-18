@@ -110,18 +110,21 @@ export function useTimer(
   // Works the position out from the clock rather than counting ticks, so time that passed while the
   // app was in the background (when timers don't fire) is caught up instead of lost.
   const sync = useCallback(() => {
-    clearTick();
-    if (statusRef.current !== 'running') return;
-    const now = Date.now();
-    const pos = positionAfter(exercisesRef.current, indexRef.current, now - startedAtRef.current);
-    if (!pos) {
-      finish();
-      return;
-    }
-    startedAtRef.current = now - pos.elapsedMs;
-    show(pos.index, pos.elapsedMs);
-    // Wake just after the next whole second instead of polling.
-    timeoutRef.current = setTimeout(sync, 1000 - (pos.elapsedMs % 1000) + 5);
+    const tick = () => {
+      clearTick();
+      if (statusRef.current !== 'running') return;
+      const now = Date.now();
+      const pos = positionAfter(exercisesRef.current, indexRef.current, now - startedAtRef.current);
+      if (!pos) {
+        finish();
+        return;
+      }
+      startedAtRef.current = now - pos.elapsedMs;
+      show(pos.index, pos.elapsedMs);
+      // Wake just after the next whole second instead of polling.
+      timeoutRef.current = setTimeout(tick, 1000 - (pos.elapsedMs % 1000) + 5);
+    };
+    tick();
   }, [clearTick, finish, show]);
 
   useEffect(() => {

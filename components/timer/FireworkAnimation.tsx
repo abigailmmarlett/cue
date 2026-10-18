@@ -28,21 +28,23 @@ function Particle({ angle, distance, delay, color, size }: ParticleProps) {
     const dx = Math.cos(angle) * distance;
     const dy = Math.sin(angle) * distance;
 
-    translateX.value = withDelay(delay, withTiming(dx, { duration: 750, easing: Easing.out(Easing.cubic) }));
-    translateY.value = withDelay(delay, withTiming(dy, { duration: 750, easing: Easing.out(Easing.cubic) }));
-    opacity.value = withDelay(
-      delay,
-      withSequence(
-        withTiming(1, { duration: 60 }),
-        withTiming(1, { duration: 420 }),
-        withTiming(0, { duration: 270, easing: Easing.in(Easing.quad) })
+    translateX.set(withDelay(delay, withTiming(dx, { duration: 750, easing: Easing.out(Easing.cubic) })));
+    translateY.set(withDelay(delay, withTiming(dy, { duration: 750, easing: Easing.out(Easing.cubic) })));
+    opacity.set(
+      withDelay(
+        delay,
+        withSequence(
+          withTiming(1, { duration: 60 }),
+          withTiming(1, { duration: 420 }),
+          withTiming(0, { duration: 270, easing: Easing.in(Easing.quad) })
+        )
       )
     );
   }, []);
 
   const animStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: translateX.value }, { translateY: translateY.value }],
-    opacity: opacity.value,
+    transform: [{ translateX: translateX.get() }, { translateY: translateY.get() }],
+    opacity: opacity.get(),
   }));
 
   return (
