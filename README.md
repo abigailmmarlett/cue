@@ -58,7 +58,8 @@ app/                 Screens, one file per route (Expo Router)
 components/          Shared UI; ui/ holds the basics (Text, TextInput, Sheet, IconButton…)
   preferences/       The sections of the Settings screen
   timer/             The timer's rings, controls and finish animation
-constants/           Spacing, type sizes and the color themes
+constants/           Spacing, type sizes, the color themes and the support/privacy links
+docs/                The support and privacy pages, published with GitHub Pages
 lib/
   contexts/          Theme and onboarding-tour state
   db/                SQLite access, one module per table, plus the schema and migrations
