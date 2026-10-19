@@ -213,6 +213,10 @@ export const THEME_PRESETS: ThemePreset[] = [
   },
 ];
 
+/** The theme a new install starts with, and the fallback when a saved theme no longer exists. */
+export const DEFAULT_THEME_ID: ThemeId = 'ocean';
+export const DEFAULT_PRESET = THEME_PRESETS.find((p) => p.id === DEFAULT_THEME_ID) ?? THEME_PRESETS[0];
+
 export type ThemeColors = typeof BaseColors;
 
 const WHITE = '#ffffff';
