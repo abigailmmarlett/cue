@@ -120,3 +120,33 @@ test('restarting after finishing plays the countdown again from the first exerci
   tick(28_100);
   assert.equal(played(), COUNTDOWN);
 });
+
+test('the load-change buzz ignores an emptied load and the end of the workout, but not a real change', () => {
+  hook.unmount();
+  const loads: (string[] | null)[] = [null, [], ['band']];
+  const withLoads = list.map((ex, i) => ({ ...ex, loadBase: loads[i] }));
+  const loadSettings: HapticSettings = {
+    ...settings,
+    countdownWarnings: [],
+    onExerciseTransition: { enabled: false, style: 'heavy' },
+    onLoadChange: { enabled: true, timing: 'countdown', secondsBefore: 5, style: 'rigid' },
+  };
+  hook = renderHook(() => {
+    const state = useTimer(withLoads, sections);
+    useHapticFeedback(state, loadSettings);
+    return state;
+  }, null);
+  fired.length = 0;
+
+  // A second at a time, like the real timer, since these cross from one exercise to the next.
+  const run = (seconds: number) => {
+    for (let i = 0; i < seconds; i++) tick(1000);
+  };
+  press('start');
+  run(26); // 4 s before the end of E0: E1's load is empty, which is no change
+  assert.equal(played(), '(none)');
+  run(30); // 4 s before the end of E1: E2 has a band
+  assert.equal(played(), 'rigid');
+  run(30); // 4 s before the end of E2, the last exercise
+  assert.equal(played(), '(none)');
+});

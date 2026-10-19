@@ -131,6 +131,20 @@ test("a linked exercise stores only the loads that differ from its library entry
   assert.deepEqual(loadSequenceDraft(id)!.sections[0].exercises[0].loadBase, ['lib-base']);
 });
 
+test("clearing a linked exercise's load sticks, instead of showing the library's again", () => {
+  const lib = createLibraryExercise('Lunge');
+  updateLibraryExerciseLoad(lib.id, null, '["lib-base"]', null);
+  const draft = newSequenceDraft();
+  draft.sections[0].exercises.push(exercise('Lunge', { libraryExerciseId: lib.id, loadBase: null }));
+  const id = saveSequenceDraft(null, draft, false);
+
+  const cleared = loadSequenceDraft(id)!;
+  assert.deepEqual(cleared.sections[0].exercises[0].loadBase, []);
+  // Saving again keeps it cleared.
+  saveSequenceDraft(id, cleared, false);
+  assert.deepEqual(loadSequenceDraft(id)!.sections[0].exercises[0].loadBase, []);
+});
+
 test('with addToLibrary, unlinked exercises are added to the library and linked', () => {
   const draft = newSequenceDraft();
   draft.sections[0].exercises.push(exercise('Brand new move', { isBilateral: true }));

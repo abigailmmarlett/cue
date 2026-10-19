@@ -43,20 +43,27 @@ export function fireHaptic(style: HapticStyle): void {
   }
 }
 
+// These compare an exercise with the next one. At the end of the workout there's no next one, so
+// nothing changes.
+
+// No load and an emptied one look the same.
+const loadKey = (ids: string[] | null) => ids?.join(',') ?? '';
+
 function hasLoadChanged(a: TimerExercise | null, b: TimerExercise | null): boolean {
+  if (!a || !b) return false;
   return (
-    JSON.stringify(a?.loadModified) !== JSON.stringify(b?.loadModified) ||
-    JSON.stringify(a?.loadBase) !== JSON.stringify(b?.loadBase) ||
-    JSON.stringify(a?.loadAmplified) !== JSON.stringify(b?.loadAmplified)
+    loadKey(a.loadModified) !== loadKey(b.loadModified) ||
+    loadKey(a.loadBase) !== loadKey(b.loadBase) ||
+    loadKey(a.loadAmplified) !== loadKey(b.loadAmplified)
   );
 }
 
 function hasSideChanged(a: TimerExercise | null, b: TimerExercise | null): boolean {
-  return a?.side !== b?.side;
+  return !!a && !!b && a.side !== b.side;
 }
 
 function hasVariationChanged(a: TimerExercise | null, b: TimerExercise | null): boolean {
-  return a?.variation !== b?.variation;
+  return !!a && !!b && a.variation !== b.variation;
 }
 
 export function useHapticFeedback(state: HapticTimerState, settings: HapticSettings): void {

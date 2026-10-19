@@ -68,9 +68,12 @@ export function serializeLoad(ids: string[] | null): string | null {
 
 /**
  * The builders show a linked exercise's effective loads (its own, else the library's).
- * Store only a load that differs from the library's so later library edits still apply.
+ * Store only a load that differs from the library's so later library edits still apply. A load
+ * cleared where the library has one is stored as an empty list; null would show the library's again.
  */
 export function loadOverride(load: string[] | null, libraryLoad: string | null | undefined): string | null {
   const own = serializeLoad(load);
-  return own === serializeLoad(parseLoad(libraryLoad ?? null)) ? null : own;
+  const inherited = serializeLoad(parseLoad(libraryLoad ?? null));
+  if (own === inherited) return null;
+  return own ?? '[]';
 }
