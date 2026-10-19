@@ -13,6 +13,7 @@ import { useState, useEffect, useCallback } from 'react';
 
 import { DatabaseTooNewError, runMigrations } from '@/lib/db/schema';
 import { getPreference } from '@/lib/db/preferences';
+import { addSampleSequenceIfNew } from '@/lib/db/sampleSequence';
 import { ThemeProvider, useTheme } from '@/lib/contexts/ThemeContext';
 import { TourProvider, useTour } from '@/lib/contexts/TourContext';
 import { WelcomeScreen } from '@/components/WelcomeScreen';
@@ -28,11 +29,17 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 function openDatabase(): Error | null {
   try {
     runMigrations();
-    return null;
   } catch (e) {
     console.error('Could not open the database', e);
     return e instanceof Error ? e : new Error(String(e));
   }
+  // A new install starts with a sample to explore. It's only a nice-to-have, so it can't stop Cue opening.
+  try {
+    addSampleSequenceIfNew();
+  } catch (e) {
+    console.warn('Could not add the sample sequence', e);
+  }
+  return null;
 }
 
 // Last-resort fallback for errors that no route-level boundary caught.
