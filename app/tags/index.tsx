@@ -1,6 +1,6 @@
 import { View, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { TextInput } from '@/components/ui/TextInput';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { Text } from '@/components/ui/Text';
 import { Colors, Spacing, FontSize } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
@@ -26,32 +26,27 @@ interface CategoryWithValues extends TagCategory {
   newValueText: string;
 }
 
+function readCategories(): CategoryWithValues[] {
+  return getAllTagCategories().map((c) => ({
+    ...c,
+    values: getTagValuesByCategory(c.id),
+    editingName: false,
+    editNameText: c.name,
+    addingValue: false,
+    newValueText: '',
+  }));
+}
+
 export default function TagsScreen() {
   const { colors } = useTheme();
   const styles = makeStyles(colors, TEXT_SCALE[useTextSize()]);
-  const [categories, setCategories] = useState<CategoryWithValues[]>([]);
+  const [categories, setCategories] = useState(readCategories);
   const [addingCategory, setAddingCategory] = useState(false);
   const [newCategoryText, setNewCategoryText] = useState('');
   const [editingValueId, setEditingValueId] = useState<string | null>(null);
   const [editValueText, setEditValueText] = useState('');
 
-  const load = useCallback(() => {
-    const cats = getAllTagCategories();
-    setCategories(
-      cats.map((c) => ({
-        ...c,
-        values: getTagValuesByCategory(c.id),
-        editingName: false,
-        editNameText: c.name,
-        addingValue: false,
-        newValueText: '',
-      }))
-    );
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  const load = useCallback(() => setCategories(readCategories()), []);
 
   const setCatField = (
     id: string,

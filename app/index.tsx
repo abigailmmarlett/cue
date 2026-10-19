@@ -49,7 +49,7 @@ export default function SequencesScreen() {
   const router = useRouter();
   const { top } = useSafeAreaInsets();
   const { colors } = useTheme();
-  const { sequences, loading, refresh } = useSequences();
+  const { sequences, refresh } = useSequences();
   const [search, setSearch] = useState('');
   const [activeFilterTags, setActiveFilterTags] = useState<ExerciseTag[]>([]);
   const listRef = useRef<FlatList>(null);
@@ -142,7 +142,7 @@ export default function SequencesScreen() {
       />
 
       <View ref={sequencesListRef} style={styles.listWrapper}>
-        {loading ? null : filteredSequences.length === 0 ? (
+        {filteredSequences.length === 0 ? (
           <View style={styles.empty}>
             <Text variant="body" color="tertiary">
               {search || activeFilterTags.length > 0 ? 'No sequences match.' : 'No sequences yet.'}

@@ -1,50 +1,89 @@
-# Welcome to your Expo app 👋
+# Cue: Coach Confidently
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Cue is an iPhone app for fitness coaches who teach on the move. You build a class as a sequence of
+timed exercises, grouped into sections, then run it with a timer that shows what's now and what's
+next, and buzzes at each transition so you can keep your eyes on the room.
 
-## Get started
+- **Builder:** sections of exercises with durations, drag-to-reorder, tags, load icons (modified /
+  base / amplified), left/right sides and timed variation cues.
+- **Exercise library:** reusable exercises whose tags, loads and sides carry into every sequence that
+  uses them.
+- **Timer:** three progress rings (exercise, section, whole class), haptic cues for transitions,
+  countdowns, and load, side or variation changes, and a screen that stays awake.
+- **Sharing:** a sequence can be copied as a `cue://import?data=…` link and imported on another phone.
+- **Settings:** 14 color themes, light/dark mode, text and button sizes, and haptic patterns.
 
-1. Install dependencies
+Everything is stored on the device in SQLite. Nothing is sent anywhere.
 
-   ```bash
-   npm install
-   ```
+## Stack
 
-2. Start the app
+[Expo](https://expo.dev) SDK 58 (React Native 0.88, React 19.3) with Expo Router, the React Compiler,
+Reanimated 4, Gesture Handler 3, expo-sqlite and TypeScript. Cue is iOS-only for now.
 
-   ```bash
-   npx expo start
-   ```
+## Getting started
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+You need macOS with Xcode and an iOS Simulator, and Node 24 (see `.nvmrc`; the tests use Node's
+built-in SQLite).
 
 ```bash
-npm run reset-project
+npm ci
+npx expo run:ios   # builds the development app and opens it in the Simulator
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+`expo run:ios` builds the native app, which you only need to redo when native dependencies or
+`app.json` change. Otherwise `npm start` starts the bundler for the app you already have installed.
+To try it on an iPhone, use `npx expo run:ios --device`; add `--configuration Release` to test
+behavior that differs in development, such as keeping the screen awake.
 
-## Learn more
+The `ios/` folder is generated from `app.json` and isn't checked in.
 
-To learn more about developing your project with Expo, look at the following resources:
+## Scripts
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+| Command             | What it does                                          |
+| ------------------- | ----------------------------------------------------- |
+| `npm start`         | Starts the Metro bundler for the development app      |
+| `npm run ios`       | Builds and runs the app in the Simulator              |
+| `npm test`          | Runs the unit and database tests (`lib/**/*.test.ts`) |
+| `npm run typecheck` | Type checks with `tsc`                                |
+| `npm run lint`      | Lints the whole project; any warning fails            |
+| `npm run format`    | Formats with Prettier (`format:check` only checks)    |
 
-## Join the community
+CI (`.github/workflows/checks.yml`) runs the type check, lint, formatting check and tests, then
+bundles the app for iOS, on every pull request and every push to `master`.
 
-Join our community of developers creating universal apps.
+## Project layout
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```
+app/                 Screens, one file per route (Expo Router)
+components/          Shared UI; ui/ holds the basics (Text, TextInput, Sheet, IconButton…)
+  preferences/       The sections of the Settings screen
+  timer/             The timer's rings, controls and finish animation
+constants/           Spacing, type sizes and the color themes
+lib/
+  contexts/          Theme and onboarding-tour state
+  db/                SQLite access, one module per table, plus the schema and migrations
+  hooks/             The timer, haptics, preferences and sequence loading
+  utils/             Time formatting, share links, contrast checks and other pure helpers
+test/                Test helpers, stubs for native modules, and frozen old schemas
+```
+
+## Working on the database
+
+- All access goes through `getDb()` and `transaction()` in `lib/db/client.ts`. Nested transactions
+  join the outer one.
+- Schema changes are numbered migrations in `lib/db/schema.ts`, tracked with `PRAGMA user_version`.
+  Never edit a migration that has shipped; add a new one.
+- The tests run against an in-memory database per file. `test/fixtures/schemas.ts` holds copies of
+  old schemas so the migrations are tested from each one; never edit those either.
+
+## Releasing
+
+Builds and App Store submissions go through [EAS](https://docs.expo.dev/eas/) (`eas.json`):
+
+```bash
+eas build --platform ios --profile production
+eas submit --platform ios --profile production
+```
+
+EAS keeps the build number and bumps it on every production build. The version people see comes from
+`version` in `app.json`, and Settings shows it too.

@@ -1,4 +1,5 @@
-import { View, StyleSheet, TouchableOpacity, SafeAreaView, Alert } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter, usePreventRemove } from 'expo-router';
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { StatusBar } from 'expo-status-bar';

@@ -8,29 +8,11 @@ import { Colors, Spacing, FontSize, FontWeight } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
 import { useActionButtonSize, useTextSize, ACTION_BUTTON_SCALE, TEXT_SCALE } from '@/lib/hooks/usePreferences';
 import { formatSeconds, spokenDuration } from '@/lib/utils/time';
-import type { ExerciseTag } from '@/lib/db/tags';
-import type { VariationItem } from '@/lib/db/exercises';
+import type { DraftExercise } from '@/lib/db/sequenceDraft';
 import { DRAG_ITEM_HEIGHT, DragHandle, type ItemMover } from './DraggableList';
 
-export interface LocalExercise {
-  id: string;
-  name: string;
-  duration: number;
-  notes?: string | null;
-  tagValueIds: string[];
-  tags: ExerciseTag[];
-  libraryExerciseId?: string | null;
-  loadModified: string[] | null;
-  loadBase: string[] | null;
-  loadAmplified: string[] | null;
-  variation: string | null;
-  variationSets: VariationItem[] | null;
-  isBilateral: boolean;
-  side: 'left' | 'right' | null;
-}
-
 interface Props {
-  exercise: LocalExercise;
+  exercise: DraftExercise;
   onNameChange: (name: string) => void;
   onDurationChange: (duration: number) => void;
   onDelete: () => void;

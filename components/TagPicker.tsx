@@ -1,8 +1,9 @@
-import { View, Modal, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+import { View, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { TextInput } from '@/components/ui/TextInput';
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { Text } from './ui/Text';
+import { Sheet } from './ui/Sheet';
 import { Colors, Spacing, Radius, FontSize } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
 import { useTextSize, TEXT_SCALE } from '@/lib/hooks/usePreferences';
@@ -27,20 +28,17 @@ interface CategoryWithValues extends TagCategory {
   newValueText: string;
 }
 
+function readCategories(): CategoryWithValues[] {
+  return getAllTagCategories().map((c) => ({
+    ...c,
+    values: getTagValuesByCategory(c.id),
+    addingValue: false,
+    newValueText: '',
+  }));
+}
+
 function makeStyles(c: typeof Colors, textScale = 1.0) {
   return StyleSheet.create({
-    container: { flex: 1, backgroundColor: c.background },
-    header: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: Spacing.md,
-      paddingVertical: Spacing.md,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: c.border,
-    },
-    headerBtn: { minWidth: 60 },
-    headerTitle: { textAlign: 'center' },
     scroll: { flex: 1 },
     empty: {
       alignItems: 'center',
@@ -110,7 +108,7 @@ function makeStyles(c: typeof Colors, textScale = 1.0) {
     },
     input: {
       flex: 1,
-      fontSize: FontSize.base,
+      fontSize: Math.round(FontSize.base * textScale),
       color: c.text.primary,
       borderBottomWidth: 1,
       borderBottomColor: c.borderStrong,
@@ -131,26 +129,10 @@ export function TagPicker({ selectedTagValueIds, onConfirm, onClose }: Props) {
   const { colors } = useTheme();
   const router = useRouter();
   const styles = makeStyles(colors, TEXT_SCALE[useTextSize()]);
-  const [categories, setCategories] = useState<CategoryWithValues[]>([]);
+  const [categories, setCategories] = useState(readCategories);
   const [selected, setSelected] = useState<Set<string>>(new Set(selectedTagValueIds));
   const [addingCategory, setAddingCategory] = useState(false);
   const [newCategoryText, setNewCategoryText] = useState('');
-
-  const loadCategories = useCallback(() => {
-    const cats = getAllTagCategories();
-    setCategories(
-      cats.map((c) => ({
-        ...c,
-        values: getTagValuesByCategory(c.id),
-        addingValue: false,
-        newValueText: '',
-      }))
-    );
-  }, []);
-
-  useEffect(() => {
-    loadCategories();
-  }, [loadCategories]);
 
   const toggleValue = (id: string) => {
     setSelected((prev) => {
@@ -167,7 +149,7 @@ export function TagPicker({ selectedTagValueIds, onConfirm, onClose }: Props) {
     createTagCategory(name);
     setNewCategoryText('');
     setAddingCategory(false);
-    loadCategories();
+    setCategories(readCategories());
   };
 
   const handleAddValue = (categoryId: string, label: string) => {
@@ -186,135 +168,70 @@ export function TagPicker({ selectedTagValueIds, onConfirm, onClose }: Props) {
   };
 
   return (
-    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} style={styles.headerBtn} hitSlop={12} accessibilityRole="button">
-            <Text variant="label" color="secondary">
-              Cancel
+    <Sheet
+      title="Tags"
+      onClose={onClose}
+      left={{ label: 'Cancel', onPress: onClose }}
+      right={{ label: 'Done', onPress: () => onConfirm(Array.from(selected)), primary: true }}
+    >
+      <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled">
+        {categories.length === 0 && !addingCategory && (
+          <View style={styles.empty}>
+            <Text variant="body" color="tertiary">
+              No tag categories yet.
             </Text>
-          </TouchableOpacity>
-          <Text variant="label" style={styles.headerTitle}>
-            Tags
-          </Text>
-          <TouchableOpacity
-            onPress={() => onConfirm(Array.from(selected))}
-            style={styles.headerBtn}
-            hitSlop={12}
-            accessibilityRole="button"
-          >
-            <Text variant="label">Done</Text>
-          </TouchableOpacity>
-        </View>
+            <Text variant="caption" color="tertiary">
+              Add one below to get started.
+            </Text>
+          </View>
+        )}
 
-        <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled">
-          {categories.length === 0 && !addingCategory && (
-            <View style={styles.empty}>
-              <Text variant="body" color="tertiary">
-                No tag categories yet.
-              </Text>
-              <Text variant="caption" color="tertiary">
-                Add one below to get started.
-              </Text>
-            </View>
-          )}
+        {categories.map((cat) => (
+          <View key={cat.id} style={styles.category}>
+            <Text variant="label" color="secondary" style={styles.categoryName}>
+              {cat.name.toUpperCase()}
+            </Text>
 
-          {categories.map((cat) => (
-            <View key={cat.id} style={styles.category}>
-              <Text variant="label" color="secondary" style={styles.categoryName}>
-                {cat.name.toUpperCase()}
-              </Text>
-
-              {cat.values.map((val) => {
-                const isSelected = selected.has(val.id);
-                return (
-                  <TouchableOpacity
-                    key={val.id}
-                    style={styles.valueRow}
-                    onPress={() => toggleValue(val.id)}
-                    activeOpacity={0.7}
-                    accessibilityRole="checkbox"
-                    accessibilityLabel={val.label}
-                    accessibilityState={{ checked: isSelected }}
-                  >
-                    <View
-                      style={[
-                        styles.checkbox,
-                        isSelected && { backgroundColor: colors.fill.primary, borderColor: colors.fill.primary },
-                      ]}
-                    >
-                      {isSelected && <Text style={styles.checkmark}>✓</Text>}
-                    </View>
-                    <Text variant="body">{val.label}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-
-              {cat.addingValue ? (
-                <View style={styles.inlineInput}>
-                  <TextInput
-                    style={styles.input}
-                    value={cat.newValueText}
-                    onChangeText={(t) => setCategoryField(cat.id, 'newValueText', t)}
-                    placeholder="Value name"
-                    accessibilityLabel={`New ${cat.name} value`}
-                    placeholderTextColor={colors.text.tertiary}
-                    autoFocus
-                    returnKeyType="done"
-                    onSubmitEditing={() => handleAddValue(cat.id, cat.newValueText)}
-                  />
-                  <TouchableOpacity
-                    onPress={() => handleAddValue(cat.id, cat.newValueText)}
-                    style={styles.inlineAddBtn}
-                    hitSlop={8}
-                    accessibilityRole="button"
-                  >
-                    <Text variant="label">Add</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => setCategoryField(cat.id, 'addingValue', false)}
-                    style={styles.inlineCancelBtn}
-                    hitSlop={8}
-                    accessibilityRole="button"
-                  >
-                    <Text variant="label" color="tertiary">
-                      Cancel
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
+            {cat.values.map((val) => {
+              const isSelected = selected.has(val.id);
+              return (
                 <TouchableOpacity
-                  style={styles.addValueRow}
-                  onPress={() => setCategoryField(cat.id, 'addingValue', true)}
+                  key={val.id}
+                  style={styles.valueRow}
+                  onPress={() => toggleValue(val.id)}
                   activeOpacity={0.7}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Add ${cat.name} value`}
+                  accessibilityRole="checkbox"
+                  accessibilityLabel={val.label}
+                  accessibilityState={{ checked: isSelected }}
                 >
-                  <Text style={styles.addIcon}>+</Text>
-                  <Text variant="body" color="tertiary">
-                    Add value
-                  </Text>
+                  <View
+                    style={[
+                      styles.checkbox,
+                      isSelected && { backgroundColor: colors.fill.primary, borderColor: colors.fill.primary },
+                    ]}
+                  >
+                    {isSelected && <Text style={styles.checkmark}>✓</Text>}
+                  </View>
+                  <Text variant="body">{val.label}</Text>
                 </TouchableOpacity>
-              )}
-            </View>
-          ))}
+              );
+            })}
 
-          <View style={styles.addCategorySection}>
-            {addingCategory ? (
+            {cat.addingValue ? (
               <View style={styles.inlineInput}>
                 <TextInput
                   style={styles.input}
-                  value={newCategoryText}
-                  onChangeText={setNewCategoryText}
-                  placeholder="Category name"
-                  accessibilityLabel="New category name"
+                  value={cat.newValueText}
+                  onChangeText={(t) => setCategoryField(cat.id, 'newValueText', t)}
+                  placeholder="Value name"
+                  accessibilityLabel={`New ${cat.name} value`}
                   placeholderTextColor={colors.text.tertiary}
                   autoFocus
                   returnKeyType="done"
-                  onSubmitEditing={handleAddCategory}
+                  onSubmitEditing={() => handleAddValue(cat.id, cat.newValueText)}
                 />
                 <TouchableOpacity
-                  onPress={handleAddCategory}
+                  onPress={() => handleAddValue(cat.id, cat.newValueText)}
                   style={styles.inlineAddBtn}
                   hitSlop={8}
                   accessibilityRole="button"
@@ -322,10 +239,7 @@ export function TagPicker({ selectedTagValueIds, onConfirm, onClose }: Props) {
                   <Text variant="label">Add</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  onPress={() => {
-                    setAddingCategory(false);
-                    setNewCategoryText('');
-                  }}
+                  onPress={() => setCategoryField(cat.id, 'addingValue', false)}
                   style={styles.inlineCancelBtn}
                   hitSlop={8}
                   accessibilityRole="button"
@@ -337,38 +251,90 @@ export function TagPicker({ selectedTagValueIds, onConfirm, onClose }: Props) {
               </View>
             ) : (
               <TouchableOpacity
-                style={styles.addCategoryRow}
-                onPress={() => setAddingCategory(true)}
+                style={styles.addValueRow}
+                onPress={() => setCategoryField(cat.id, 'addingValue', true)}
                 activeOpacity={0.7}
                 accessibilityRole="button"
-                accessibilityLabel="New category"
+                accessibilityLabel={`Add ${cat.name} value`}
               >
                 <Text style={styles.addIcon}>+</Text>
-                <Text variant="body" color="secondary">
-                  New category
+                <Text variant="body" color="tertiary">
+                  Add value
                 </Text>
               </TouchableOpacity>
             )}
           </View>
+        ))}
 
-          <View style={styles.addCategorySection}>
+        <View style={styles.addCategorySection}>
+          {addingCategory ? (
+            <View style={styles.inlineInput}>
+              <TextInput
+                style={styles.input}
+                value={newCategoryText}
+                onChangeText={setNewCategoryText}
+                placeholder="Category name"
+                accessibilityLabel="New category name"
+                placeholderTextColor={colors.text.tertiary}
+                autoFocus
+                returnKeyType="done"
+                onSubmitEditing={handleAddCategory}
+              />
+              <TouchableOpacity
+                onPress={handleAddCategory}
+                style={styles.inlineAddBtn}
+                hitSlop={8}
+                accessibilityRole="button"
+              >
+                <Text variant="label">Add</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  setAddingCategory(false);
+                  setNewCategoryText('');
+                }}
+                style={styles.inlineCancelBtn}
+                hitSlop={8}
+                accessibilityRole="button"
+              >
+                <Text variant="label" color="tertiary">
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
             <TouchableOpacity
               style={styles.addCategoryRow}
-              onPress={() => {
-                onClose();
-                router.push('/tags');
-              }}
+              onPress={() => setAddingCategory(true)}
               activeOpacity={0.7}
               accessibilityRole="button"
-              accessibilityLabel="Manage tags"
+              accessibilityLabel="New category"
             >
-              <Text variant="body" color="tertiary">
-                Manage tags ›
+              <Text style={styles.addIcon}>+</Text>
+              <Text variant="body" color="secondary">
+                New category
               </Text>
             </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </SafeAreaView>
-    </Modal>
+          )}
+        </View>
+
+        <View style={styles.addCategorySection}>
+          <TouchableOpacity
+            style={styles.addCategoryRow}
+            onPress={() => {
+              onClose();
+              router.push('/tags');
+            }}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Manage tags"
+          >
+            <Text variant="body" color="tertiary">
+              Manage tags ›
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </Sheet>
   );
 }
