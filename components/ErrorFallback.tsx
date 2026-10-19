@@ -3,7 +3,7 @@ import { StyleSheet, Text, TouchableOpacity, useColorScheme, View } from 'react-
 import { useRouter, type ErrorBoundaryProps } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
-import { THEME_PRESETS, buildColors } from '@/constants/themes';
+import { DEFAULT_PRESET, buildColors } from '@/constants/themes';
 
 interface Action {
   label: string;
@@ -23,7 +23,7 @@ interface Props {
  */
 export function ErrorFallback({ title, message, actions, error }: Props) {
   // The default theme's colors, built here because the theme may not have loaded.
-  const c = buildColors(THEME_PRESETS[0], useColorScheme() === 'dark');
+  const c = buildColors(DEFAULT_PRESET, useColorScheme() === 'dark');
 
   useEffect(() => {
     // The app may have failed before it hid the native splash screen.

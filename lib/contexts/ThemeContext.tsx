@@ -1,7 +1,14 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
 import { useColorScheme } from 'react-native';
-import { Colors as BaseColors } from '@/constants/theme';
-import { THEME_PRESETS, buildColors, type Mode, type ThemeColors, type ThemeId } from '@/constants/themes';
+import {
+  DEFAULT_PRESET,
+  DEFAULT_THEME_ID,
+  THEME_PRESETS,
+  buildColors,
+  type Mode,
+  type ThemeColors,
+  type ThemeId,
+} from '@/constants/themes';
 import { getPreference, setPreference } from '@/lib/db/preferences';
 
 interface ThemeContextValue {
@@ -14,10 +21,10 @@ interface ThemeContextValue {
 }
 
 const ThemeContext = createContext<ThemeContextValue>({
-  themeId: 'forest',
+  themeId: DEFAULT_THEME_ID,
   mode: 'system',
   isDark: false,
-  colors: BaseColors,
+  colors: buildColors(DEFAULT_PRESET, false),
   setTheme: () => {},
   setMode: () => {},
 });
@@ -27,7 +34,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const [themeId, setThemeId] = useState<ThemeId>(() => {
     const saved = getPreference('themeId');
-    return (saved as ThemeId) ?? 'forest';
+    return (saved as ThemeId) ?? DEFAULT_THEME_ID;
   });
 
   const [mode, setModeState] = useState<Mode>(() => {
@@ -37,7 +44,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const isDark = mode === 'dark' || (mode === 'system' && systemScheme === 'dark');
 
-  const preset = THEME_PRESETS.find((p) => p.id === themeId) ?? THEME_PRESETS[0];
+  const preset = THEME_PRESETS.find((p) => p.id === themeId) ?? DEFAULT_PRESET;
   const colors = useMemo(() => buildColors(preset, isDark), [preset, isDark]);
 
   const setTheme = (id: ThemeId) => {
