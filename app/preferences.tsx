@@ -7,13 +7,23 @@ import { HapticsSection } from '@/components/preferences/HapticsSection';
 import { LoadIconsSection } from '@/components/preferences/LoadIconsSection';
 import { SizePicker } from '@/components/preferences/SizePicker';
 import { useSettingsStyles } from '@/components/preferences/styles';
+import { PRIVACY_POLICY_URL, SUPPORT_EMAIL, SUPPORT_URL } from '@/constants/links';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/lib/contexts/ThemeContext';
 import { useTour } from '@/lib/contexts/TourContext';
 import { usePreferences } from '@/lib/hooks/usePreferences';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef } from 'react';
-import { ScrollView, StyleSheet, Switch, TouchableOpacity, View, type ViewInstance } from 'react-native';
+import {
+  Alert,
+  Linking,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  TouchableOpacity,
+  View,
+  type ViewInstance,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const screenStyles = StyleSheet.create({
@@ -26,6 +36,12 @@ const screenStyles = StyleSheet.create({
     paddingTop: 22,
   },
 });
+
+function openLink(url: string) {
+  Linking.openURL(url).catch(() =>
+    Alert.alert("Couldn't open the page", `Visit ${url} in your browser, or email ${SUPPORT_EMAIL}.`)
+  );
+}
 
 export default function PreferencesScreen() {
   const { top } = useSafeAreaInsets();
@@ -119,6 +135,25 @@ export default function PreferencesScreen() {
               <Text style={styles.rowLabel}>Version</Text>
               <Text style={styles.rowValue}>{Constants.expoConfig?.version}</Text>
             </View>
+            {(
+              [
+                ['Privacy Policy', PRIVACY_POLICY_URL],
+                ['Support', SUPPORT_URL],
+              ] as const
+            ).map(([label, url]) => (
+              <TouchableOpacity
+                key={label}
+                style={[styles.row, styles.rowBorder]}
+                onPress={() => openLink(url)}
+                activeOpacity={0.7}
+                accessibilityRole="link"
+                accessibilityLabel={label}
+                accessibilityHint="Opens in Safari"
+              >
+                <Text style={styles.rowLabel}>{label}</Text>
+                <Text style={styles.rowValue}>↗</Text>
+              </TouchableOpacity>
+            ))}
           </View>
 
           <View style={{ height: Spacing.xl }} />
